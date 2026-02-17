@@ -8,4 +8,8 @@ export class PayrollService {
     const proof = await ZKProofGenerator.generateProof({ recipient, amount });
     return this.contract.deposit(amount);
   }
+
+  filterTransactions(transactions: any[], criteria: any) {
+    return transactions.filter((t) => t.amount > criteria.minAmount);
+  }
 }
