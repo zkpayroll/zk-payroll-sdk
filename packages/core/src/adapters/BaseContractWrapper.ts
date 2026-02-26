@@ -7,7 +7,7 @@ import {
   xdr,
   Keypair,
 } from "@stellar/stellar-sdk";
-import { ContractExecutionError, mapRpcError } from "../errors";
+import { ContractExecutionError, ContractErrorCode, mapRpcError } from "../errors";
 
 /** How long (ms) to wait between transaction status polls */
 const POLL_INTERVAL_MS = 2_000;
@@ -72,7 +72,7 @@ export abstract class BaseContractWrapper {
       if (rpc.Api.isSimulationError(simResult)) {
         throw new ContractExecutionError(
           `Simulation failed for "${method}": ${simResult.error}`,
-          1001 // ContractErrorCode.SIMULATION_FAILED
+          ContractErrorCode.SIMULATION_FAILED
         );
       }
 
@@ -89,7 +89,7 @@ export abstract class BaseContractWrapper {
           `Transaction submission failed for "${method}": ${JSON.stringify(
             sendResult.errorResult
           )}`,
-          1002 // ContractErrorCode.TRANSACTION_SUBMISSION_FAILED
+          ContractErrorCode.TRANSACTION_SUBMISSION_FAILED
         );
       }
 
@@ -125,7 +125,7 @@ export abstract class BaseContractWrapper {
       if (statusResult.status === rpc.Api.GetTransactionStatus.FAILED) {
         throw new ContractExecutionError(
           `Contract reverted during "${method}": ${JSON.stringify(statusResult.resultMetaXdr)}`,
-          1005 // ContractErrorCode.CONTRACT_REVERT
+          ContractErrorCode.CONTRACT_REVERT
         );
       }
 
@@ -134,7 +134,7 @@ export abstract class BaseContractWrapper {
 
     throw new ContractExecutionError(
       `Transaction timed out after ${MAX_POLLS} polls for "${method}" (hash: ${txHash})`,
-      1003 // ContractErrorCode.TRANSACTION_TIMEOUT
+      ContractErrorCode.TRANSACTION_TIMEOUT
     );
   }
 }

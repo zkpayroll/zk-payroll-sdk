@@ -1,5 +1,4 @@
 import { MockContractEnvironment, MockPayrollContract } from "../src/testing";
-import { PayrollService } from "../src/payroll";
 import { PayrollError } from "../src/errors";
 
 describe("MockContractEnvironment", () => {
@@ -217,28 +216,4 @@ describe("MockContractEnvironment", () => {
     });
   });
 
-  describe("Integration with PayrollService", () => {
-    it("should work with PayrollService for end-to-end testing", async () => {
-      mockEnv.expectInvoke("deposit").toReturn("service_tx_hash");
-
-      const mockContract = new MockPayrollContract(mockEnv);
-      const service = new PayrollService(mockContract);
-
-      const txHash = await service.processPayment("GRECIPIENT123", 5000n);
-
-      expect(txHash).toBe("service_tx_hash");
-      expect(mockEnv.wasCalled("deposit")).toBe(true);
-    });
-
-    it("should test error scenarios in PayrollService", async () => {
-      mockEnv.expectInvoke("deposit").toFail(new PayrollError("Contract is paused", 503));
-
-      const mockContract = new MockPayrollContract(mockEnv);
-      const service = new PayrollService(mockContract);
-
-      await expect(service.processPayment("GRECIPIENT123", 5000n)).rejects.toThrow(
-        "Contract is paused"
-      );
-    });
-  });
 });

@@ -9,7 +9,6 @@
 import {
   MockContractEnvironment,
   MockPayrollContract,
-  PayrollService,
   PayrollError,
 } from "../../src";
 
@@ -35,17 +34,15 @@ async function example1_basicMocking(): Promise<void> {
   console.log(`Call count: ${mockEnv.getCallCount("deposit")}`);
 }
 
-// Example 2: Testing with PayrollService
-async function example2_payrollService(): Promise<void> {
-  console.log("\n=== Example 2: Testing PayrollService ===");
+// Example 2: Testing MockPayrollContract deposit
+async function example2_mockDeposit(): Promise<void> {
+  console.log("\n=== Example 2: Mock Deposit ===");
 
   const mockEnv = new MockContractEnvironment();
   mockEnv.expectInvoke("deposit").toReturn("service_tx_hash");
 
   const mockContract = new MockPayrollContract(mockEnv);
-  const service = new PayrollService(mockContract);
-
-  const txHash = await service.processPayment("GRECIPIENT", 2500n);
+  const txHash = await mockContract.deposit(2500n);
 
   console.log(`Payment processed: ${txHash}`);
   console.log(`Deposit called: ${mockEnv.wasCalled("deposit")}`);
@@ -170,7 +167,7 @@ async function runExamples(): Promise<void> {
 
   try {
     await example1_basicMocking();
-    await example2_payrollService();
+    await example2_mockDeposit();
     await example3_customHandler();
     await example4_errorHandling();
     await example5_callHistory();
@@ -195,7 +192,7 @@ if (typeof require !== "undefined" && require.main === module) {
 
 export {
   example1_basicMocking,
-  example2_payrollService,
+  example2_mockDeposit,
   example3_customHandler,
   example4_errorHandling,
   example5_callHistory,
