@@ -6,3 +6,4 @@ coverage
 .vscode
 .idea
 package-lock.json
+docs/api

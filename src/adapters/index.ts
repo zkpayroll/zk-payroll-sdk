@@ -1,0 +1,1 @@
+export { BaseContractWrapper } from "./BaseContractWrapper";
