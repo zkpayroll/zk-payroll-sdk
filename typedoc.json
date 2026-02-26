@@ -1,0 +1,23 @@
+{
+    "$schema": "https://typedoc.org/schema.json",
+    "entryPoints": [
+        "src/index.ts",
+        "src/config.ts",
+        "src/contract.ts",
+        "src/payroll.ts",
+        "src/errors.ts",
+        "src/events.ts",
+        "src/crypto/proofs.ts",
+        "src/types/index.ts"
+    ],
+    "out": "docs/api",
+    "name": "@zk-payroll/sdk",
+    "readme": "README.md",
+    "excludePrivate": true,
+    "excludeInternal": true,
+    "includeVersion": true,
+    "tsconfig": "tsconfig.json",
+    "plugin": [],
+    "categorizeByGroup": true,
+    "searchInComments": true
+}

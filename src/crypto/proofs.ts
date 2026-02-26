@@ -3,10 +3,20 @@ import { SnarkjsProofGenerator } from "./SnarkjsProofGenerator";
 import { ProofPayload, ProofGeneratorConfig } from "./IProofGenerator";
 
 /**
+ * Witness data for ZK proof generation.
+ * Can contain various circuit inputs like recipient address, amount, etc.
+ */
+export interface ProofWitness {
+  recipient?: string;
+  amount?: bigint;
+  [key: string]: unknown;
+}
+
+/**
  * Derives a stable cache key from the proof witness.
  * Handles bigint values so common witness fields (e.g. amount) are serializable.
  */
-function witnessKey(witness: Record<string, unknown>): string {
+function witnessKey(witness: Record<string, unknown> | ProofWitness): string {
   return `proof:${JSON.stringify(witness, (_, value) =>
     typeof value === "bigint" ? value.toString() : value
   )}`;
@@ -35,7 +45,7 @@ export class ZKProofGenerator {
    * @deprecated Use SnarkjsProofGenerator for real proof generation
    */
   static async generateProof(
-    witness: Record<string, unknown>,
+    witness: Record<string, unknown> | ProofWitness,
     cache?: CacheProvider<string>
   ): Promise<Uint8Array> {
     if (cache) {
@@ -54,7 +64,6 @@ export class ZKProofGenerator {
     // Proof generation without caching.
     return new Uint8Array(32);
   }
-
   /**
    * Creates a configured SnarkjsProofGenerator instance.
    *

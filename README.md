@@ -29,6 +29,7 @@ await service.processPayment(
 - **ZK Proof Generation**: Client-side proof generation using snarkjs for privacy.
 - **Caching**: Built-in caching for proofs and circuit artifacts.
 - **Error Handling**: Robust error typing and management.
+- **Mock Testing Environment**: Comprehensive testing utilities for unit tests without a live network.
 
 ## Zero-Knowledge Proof Generation
 
@@ -60,6 +61,22 @@ const proof = await generator.generateProof(witness);
 ```
 
 See [ZK Proof Generation Guide](./docs/ZK_PROOF_GENERATION.md) for detailed documentation.
+
+## Testing
+
+The SDK includes a powerful mock testing environment for writing unit tests:
+
+```typescript
+import { MockContractEnvironment, MockPayrollContract } from "@zk-payroll/sdk";
+
+const mockEnv = new MockContractEnvironment();
+mockEnv.expectInvoke("deposit").toReturn("tx_hash_123");
+
+const mockContract = new MockPayrollContract(mockEnv);
+const txHash = await mockContract.deposit(1000n);
+```
+
+See the [Testing Guide](docs/TESTING.md) for complete documentation.
 
 ## Documentation
 
