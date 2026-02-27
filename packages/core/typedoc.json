@@ -11,7 +11,7 @@
         "src/types/index.ts"
     ],
     "out": "docs/api",
-    "name": "@zk-payroll/sdk",
+    "name": "@zk-payroll/core",
     "readme": "README.md",
     "excludePrivate": true,
     "excludeInternal": true,

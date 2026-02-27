@@ -7,3 +7,4 @@ coverage
 .idea
 package-lock.json
 docs/api
+.turbo

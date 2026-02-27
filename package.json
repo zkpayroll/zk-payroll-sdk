@@ -1,15 +1,15 @@
 {
-  "name": "@zk-payroll/sdk",
+  "name": "zk-payroll-sdk",
   "version": "0.1.0",
-  "description": "SDK for interacting with ZK Payroll contracts",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "private": true,
+  "packageManager": "npm@10.8.2",
+  "description": "ZK Payroll SDK monorepo",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
-    "prepare": "husky install",
     "build": "rimraf dist && tsc",
     "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
     "clean": "rimraf dist",
     "lint": "eslint \"src/**/*.ts\" \"tests/**/*.ts\"",
     "lint:fix": "eslint \"src/**/*.ts\" \"tests/**/*.ts\" --fix",
@@ -24,26 +24,6 @@
     "stellar-sdk": "^11.0.0"
   },
   "devDependencies": {
-    "@types/jest": "^29.0.0",
-    "@types/node": "^20.0.0",
-    "@typescript-eslint/eslint-plugin": "^8.56.1",
-    "@typescript-eslint/parser": "^8.56.1",
-    "eslint": "^10.0.2",
-    "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-prettier": "^5.5.5",
-    "husky": "^9.1.7",
-    "jest": "^29.0.0",
-    "lint-staged": "^16.2.7",
-    "prettier": "^3.8.1",
-    "rimraf": "^6.1.3",
-    "ts-jest": "^29.0.0",
-    "typedoc": "^0.28.17",
-    "typescript": "^5.0.0"
-  },
-  "lint-staged": {
-    "*.ts": [
-      "eslint --fix",
-      "prettier --write"
-    ]
+    "turbo": "^2.0.0"
   }
 }
