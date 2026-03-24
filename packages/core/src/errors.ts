@@ -1,24 +1,13 @@
-export class PayrollError extends Error {
-  constructor(
-    message: string,
-    public code: number
-  ) {
-    super(message);
-    this.name = "PayrollError";
-  }
-}
-
-// Error codes for Soroban RPC failures
-export const ContractErrorCode = {
-  SIMULATION_FAILED: 1001,
-  TRANSACTION_SUBMISSION_FAILED: 1002,
-  TRANSACTION_TIMEOUT: 1003,
-  INSUFFICIENT_FEE: 1004,
-  CONTRACT_REVERT: 1005,
-  UNKNOWN_RPC_ERROR: 1099,
-} as const;
-
-export type ContractErrorCode = (typeof ContractErrorCode)[keyof typeof ContractErrorCode];
+export {
+  ZkPayrollError,
+  NetworkError,
+  ProofGenerationError,
+  ContractExecutionError,
+  ValidationError,
+  ContractErrorCode,
+  mapRpcError,
+} from "./core/errors";
+export type { ErrorContext, ContractErrorCodeType } from "./core/errors";
 
 // Error codes for PayrollService validation/orchestration failures
 export const PayrollServiceErrorCode = {
@@ -31,30 +20,13 @@ export const PayrollServiceErrorCode = {
 export type PayrollServiceErrorCode =
   (typeof PayrollServiceErrorCode)[keyof typeof PayrollServiceErrorCode];
 
-/**
- * Re-exports from core error module.
- * Import from "./core/errors" for the full error hierarchy.
- * This file maintains backward compatibility for existing consumers.
- */
-export {
-  ZkPayrollError,
-  NetworkError,
-  ProofGenerationError,
-  ContractExecutionError,
-  ValidationError,
-  ContractErrorCode,
-  mapRpcError,
-} from "./core/errors";
-export type { ErrorContext, ContractErrorCodeType } from "./core/errors";
-
-// ── Backward-compatible alias ───────────────────────────────────────────────
 import { ZkPayrollError } from "./core/errors";
 
 /**
- * @deprecated Use `ZkPayrollError` instead. Kept for backward compatibility.
+ * @deprecated Prefer `ZkPayrollError` with string codes. Kept for call sites using numeric codes.
  */
 export class PayrollError extends ZkPayrollError {
-  constructor(message: string, code: number) {
+  constructor(message: string, code: number | string) {
     super(message, String(code));
     this.name = "PayrollError";
   }

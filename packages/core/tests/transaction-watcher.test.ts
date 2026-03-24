@@ -2,9 +2,7 @@ import { rpc } from "@stellar/stellar-sdk";
 import { TransactionWatcher, ConfirmationResult } from "../src/events";
 import { ContractExecutionError, ContractErrorCode } from "../src/errors";
 
-function createMockServer(
-  responses: rpc.Api.GetTransactionResponse[]
-): rpc.Server {
+function createMockServer(responses: rpc.Api.GetTransactionResponse[]): rpc.Server {
   let callIndex = 0;
   return {
     getTransaction: jest.fn().mockImplementation(() => {
@@ -53,11 +51,7 @@ describe("TransactionWatcher", () => {
     });
 
     it("polls until transaction is found", async () => {
-      const server = createMockServer([
-        NOT_FOUND_RESPONSE,
-        NOT_FOUND_RESPONSE,
-        SUCCESS_RESPONSE,
-      ]);
+      const server = createMockServer([NOT_FOUND_RESPONSE, NOT_FOUND_RESPONSE, SUCCESS_RESPONSE]);
       const watcher = new TransactionWatcher(server);
 
       const result = await watcher.waitForConfirmation("tx_hash_123", {
@@ -106,24 +100,19 @@ describe("TransactionWatcher", () => {
 
     it("throws on RPC errors", async () => {
       const server = {
-        getTransaction: jest
-          .fn()
-          .mockRejectedValue(new Error("Network failure")),
+        getTransaction: jest.fn().mockRejectedValue(new Error("Network failure")),
       } as unknown as rpc.Server;
       const watcher = new TransactionWatcher(server);
 
-      await expect(
-        watcher.waitForConfirmation("tx_hash", { pollIntervalMs: 10 })
-      ).rejects.toThrow("Network failure");
+      await expect(watcher.waitForConfirmation("tx_hash", { pollIntervalMs: 10 })).rejects.toThrow(
+        "Network failure"
+      );
     });
   });
 
   describe("event emitter", () => {
     it("emits 'polling' on each attempt", async () => {
-      const server = createMockServer([
-        NOT_FOUND_RESPONSE,
-        SUCCESS_RESPONSE,
-      ]);
+      const server = createMockServer([NOT_FOUND_RESPONSE, SUCCESS_RESPONSE]);
       const watcher = new TransactionWatcher(server);
       const pollingEvents: unknown[] = [];
 
@@ -160,9 +149,7 @@ describe("TransactionWatcher", () => {
         confirmedResult = result;
       });
 
-      await watcher
-        .waitForConfirmation("tx_hash", { pollIntervalMs: 10 })
-        .catch(() => {});
+      await watcher.waitForConfirmation("tx_hash", { pollIntervalMs: 10 }).catch(() => {});
 
       expect(confirmedResult).not.toBeNull();
       expect(confirmedResult!.status).toBe("FAILED");
@@ -192,9 +179,7 @@ describe("TransactionWatcher", () => {
 
     it("emits 'error' on RPC errors", async () => {
       const server = {
-        getTransaction: jest
-          .fn()
-          .mockRejectedValue(new Error("RPC down")),
+        getTransaction: jest.fn().mockRejectedValue(new Error("RPC down")),
       } as unknown as rpc.Server;
       const watcher = new TransactionWatcher(server);
       let emittedError: Error | null = null;
@@ -203,9 +188,7 @@ describe("TransactionWatcher", () => {
         emittedError = err;
       });
 
-      await watcher
-        .waitForConfirmation("tx_hash", { pollIntervalMs: 10 })
-        .catch(() => {});
+      await watcher.waitForConfirmation("tx_hash", { pollIntervalMs: 10 }).catch(() => {});
 
       expect(emittedError).not.toBeNull();
       expect(emittedError!.message).toBe("RPC down");

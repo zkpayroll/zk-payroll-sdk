@@ -84,10 +84,7 @@ export class PayrollService {
   /**
    * Filter transactions by criteria (preserved from existing API).
    */
-  filterTransactions(
-    transactions: Transaction[],
-    criteria: FilterCriteria
-  ): Transaction[] {
+  filterTransactions(transactions: Transaction[], criteria: FilterCriteria): Transaction[] {
     return transactions.filter((t) => t.amount > criteria.minAmount);
   }
 
@@ -105,10 +102,7 @@ export class PayrollService {
       );
     }
     if (!params.asset || params.asset.trim() === "") {
-      throw new PayrollError(
-        "Asset identifier is required",
-        PayrollServiceErrorCode.INVALID_ASSET
-      );
+      throw new PayrollError("Asset identifier is required", PayrollServiceErrorCode.INVALID_ASSET);
     }
   }
 }

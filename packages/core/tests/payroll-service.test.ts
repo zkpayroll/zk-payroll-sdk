@@ -18,7 +18,11 @@ const MOCK_PROOF: ProofPayload = {
   publicSignals: ["123", "456"],
 };
 
-function createMocks() {
+function createMocks(): {
+  mockWrapper: PayrollContractWrapper;
+  mockProofGen: IProofGenerator;
+  signer: Keypair;
+} {
   const mockWrapper = {
     privatePay: jest.fn().mockResolvedValue(xdr.ScVal.scvVoid()),
   } as unknown as PayrollContractWrapper;
@@ -88,12 +92,7 @@ describe("PayrollService", () => {
 
     it("passes custom network to contract wrapper", async () => {
       const { mockWrapper, mockProofGen, signer } = createMocks();
-      const service = new PayrollService(
-        mockWrapper,
-        mockProofGen,
-        signer,
-        Networks.PUBLIC
-      );
+      const service = new PayrollService(mockWrapper, mockProofGen, signer, Networks.PUBLIC);
 
       await service.processPayment({
         recipient: "GABC123",
@@ -122,7 +121,7 @@ describe("PayrollService", () => {
       await expect(
         service.processPayment({ recipient: "", amount: 100n, asset: "native" })
       ).rejects.toMatchObject({
-        code: PayrollServiceErrorCode.INVALID_RECIPIENT,
+        code: String(PayrollServiceErrorCode.INVALID_RECIPIENT),
       });
     });
 
@@ -137,7 +136,7 @@ describe("PayrollService", () => {
           asset: "native",
         })
       ).rejects.toMatchObject({
-        code: PayrollServiceErrorCode.INVALID_AMOUNT,
+        code: String(PayrollServiceErrorCode.INVALID_AMOUNT),
       });
     });
 
@@ -152,7 +151,7 @@ describe("PayrollService", () => {
           asset: "native",
         })
       ).rejects.toMatchObject({
-        code: PayrollServiceErrorCode.INVALID_AMOUNT,
+        code: String(PayrollServiceErrorCode.INVALID_AMOUNT),
       });
     });
 
@@ -167,22 +166,16 @@ describe("PayrollService", () => {
           asset: "",
         })
       ).rejects.toMatchObject({
-        code: PayrollServiceErrorCode.INVALID_ASSET,
+        code: String(PayrollServiceErrorCode.INVALID_ASSET),
       });
     });
 
     it("wraps proof generation errors in PayrollError(2001)", async () => {
       const { mockWrapper, signer } = createMocks();
       const failingProofGen: IProofGenerator = {
-        generateProof: jest
-          .fn()
-          .mockRejectedValue(new Error("circuit mismatch")),
+        generateProof: jest.fn().mockRejectedValue(new Error("circuit mismatch")),
       };
-      const service = new PayrollService(
-        mockWrapper,
-        failingProofGen,
-        signer
-      );
+      const service = new PayrollService(mockWrapper, failingProofGen, signer);
 
       await expect(
         service.processPayment({
@@ -191,7 +184,7 @@ describe("PayrollService", () => {
           asset: "native",
         })
       ).rejects.toMatchObject({
-        code: PayrollServiceErrorCode.PROOF_GENERATION_FAILED,
+        code: String(PayrollServiceErrorCode.PROOF_GENERATION_FAILED),
         message: expect.stringContaining("circuit mismatch"),
       });
     });
@@ -202,11 +195,7 @@ describe("PayrollService", () => {
       const failingProofGen: IProofGenerator = {
         generateProof: jest.fn().mockRejectedValue(customError),
       };
-      const service = new PayrollService(
-        mockWrapper,
-        failingProofGen,
-        signer
-      );
+      const service = new PayrollService(mockWrapper, failingProofGen, signer);
 
       await expect(
         service.processPayment({

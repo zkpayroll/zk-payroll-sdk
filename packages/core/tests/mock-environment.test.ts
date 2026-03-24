@@ -215,5 +215,4 @@ describe("MockContractEnvironment", () => {
       expect(mockEnv.getCallHistory("deposit")).toEqual([]);
     });
   });
-
 });
