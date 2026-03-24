@@ -7,12 +7,6 @@
  *   adapters/ — Low-level blockchain/Soroban wrappers
  */
 
-// ── API Layer ───────────────────────────────────────────────────────────────
-export * from "./api";
-
-// ── Core Layer ──────────────────────────────────────────────────────────────
-export * from "./core";
-
 // ── Adapters Layer ──────────────────────────────────────────────────────────
 export { PayrollService } from "./payroll";
 export { PayrollContract } from "./contract";
@@ -34,6 +28,7 @@ export * from "./cache";
 export * from "./types";
 export * from "./crypto/IProofGenerator";
 export * from "./adapters";
+export * from "./utils/xdr-formatters";
 
 // ── Testing Utilities ───────────────────────────────────────────────────────
 export * from "./testing";

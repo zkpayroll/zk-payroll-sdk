@@ -82,11 +82,9 @@ describe("Core Error Classes", () => {
     });
 
     it("accepts ContractErrorCode values", () => {
-      const error = new ContractExecutionError(
-        "sim failed",
-        ContractErrorCode.SIMULATION_FAILED,
-        { transactionId: "tx_456" }
-      );
+      const error = new ContractExecutionError("sim failed", ContractErrorCode.SIMULATION_FAILED, {
+        transactionId: "tx_456",
+      });
       expect(error.code).toBe("SIMULATION_FAILED");
       expect(error.context.transactionId).toBe("tx_456");
     });

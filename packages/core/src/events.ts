@@ -94,15 +94,13 @@ export class TransactionWatcher extends EventEmitter {
       try {
         txResponse = await this.server.getTransaction(txHash);
       } catch (err) {
-        const error =
-          err instanceof Error ? err : new Error(String(err));
+        const error = err instanceof Error ? err : new Error(String(err));
         this.emit("error", error);
         throw error;
       }
 
       if (txResponse.status === rpc.Api.GetTransactionStatus.SUCCESS) {
-        const successResponse =
-          txResponse as rpc.Api.GetSuccessfulTransactionResponse;
+        const successResponse = txResponse as rpc.Api.GetSuccessfulTransactionResponse;
         const result: ConfirmationResult = {
           txHash,
           status: "SUCCESS",

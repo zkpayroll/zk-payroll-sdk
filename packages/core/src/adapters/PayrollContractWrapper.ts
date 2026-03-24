@@ -1,11 +1,4 @@
-import {
-  rpc,
-  xdr,
-  nativeToScVal,
-  Address,
-  Keypair,
-  Networks,
-} from "@stellar/stellar-sdk";
+import { rpc, xdr, nativeToScVal, Address, Keypair, Networks } from "@stellar/stellar-sdk";
 import { BaseContractWrapper } from "./BaseContractWrapper";
 import { ProofPayload } from "../crypto/IProofGenerator";
 
@@ -70,19 +63,13 @@ export class PayrollContractWrapper extends BaseContractWrapper {
    * Encode a ProofPayload into an XDR ScVal map for the contract verifier.
    */
   private encodeProof(proof: ProofPayload): xdr.ScVal {
-    const piA = xdr.ScVal.scvVec(
-      proof.proof.pi_a.map((s) => nativeToScVal(s, { type: "string" }))
-    );
+    const piA = xdr.ScVal.scvVec(proof.proof.pi_a.map((s) => nativeToScVal(s, { type: "string" })));
     const piB = xdr.ScVal.scvVec(
       proof.proof.pi_b.map((pair) =>
-        xdr.ScVal.scvVec(
-          pair.map((s) => nativeToScVal(s, { type: "string" }))
-        )
+        xdr.ScVal.scvVec(pair.map((s) => nativeToScVal(s, { type: "string" })))
       )
     );
-    const piC = xdr.ScVal.scvVec(
-      proof.proof.pi_c.map((s) => nativeToScVal(s, { type: "string" }))
-    );
+    const piC = xdr.ScVal.scvVec(proof.proof.pi_c.map((s) => nativeToScVal(s, { type: "string" })));
     const publicSignals = xdr.ScVal.scvVec(
       proof.publicSignals.map((s) => nativeToScVal(s, { type: "string" }))
     );

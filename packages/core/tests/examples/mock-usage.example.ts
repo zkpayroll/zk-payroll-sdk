@@ -6,11 +6,7 @@
  * provided by the ZK Payroll SDK.
  */
 
-import {
-  MockContractEnvironment,
-  MockPayrollContract,
-  PayrollError,
-} from "../../src";
+import { MockContractEnvironment, MockPayrollContract, PayrollError } from "../../src";
 
 // Example 1: Basic Mock Setup
 async function example1_basicMocking(): Promise<void> {
