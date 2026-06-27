@@ -30,6 +30,13 @@ export {
 } from "./errors";
 export type { ErrorContext, ContractErrorCodeType } from "./errors";
 export { DEFAULT_CONFIG } from "./config";
+export {
+  localPreset,
+  testnetPreset,
+  productionPreset,
+  validateConfig,
+} from "./config-presets";
+export type { SdkConfig } from "./config-presets";
 export * from "./cache";
 export * from "./types";
 export * from "./crypto/IProofGenerator";
