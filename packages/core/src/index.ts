@@ -116,3 +116,6 @@ export * from "./summary";
 
 // ── Audit View-Key Helpers ──────────────────────────────────────────────────
 export * from "./audit";
+
+// ── Idempotent Payroll Request Builder ─────────────────────────────────────
+export * from "./request";
