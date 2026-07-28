@@ -152,10 +152,7 @@ export class PayrollService {
       // The error message is sanitized through redactError() before logging
       // to prevent sensitive field values (privateKey=..., recipient=..., etc.)
       // embedded in contract-level error messages from leaking into logs.
-      const safeMessage =
-        error instanceof Error
-          ? redactError(error).message
-          : String(error);
+      const safeMessage = error instanceof Error ? redactError(error).message : String(error);
       this.logger?.error("contract_invocation_failed", {
         method: "private_pay",
         error: safeMessage,

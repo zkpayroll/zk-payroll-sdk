@@ -72,10 +72,7 @@ describe("ArchiveFilterBuilder", () => {
     });
 
     it("deduplicates via Set", () => {
-      const q = new ArchiveFilterBuilder()
-        .forEmployee("emp1")
-        .forEmployee("emp1")
-        .build();
+      const q = new ArchiveFilterBuilder().forEmployee("emp1").forEmployee("emp1").build();
       const ids = q.toParams()["employeeIds"]!.split(",");
       expect(ids.filter((id) => id === "emp1")).toHaveLength(1);
     });
@@ -118,10 +115,7 @@ describe("ArchiveFilterBuilder", () => {
     });
 
     it("second call replaces first", () => {
-      const q = new ArchiveFilterBuilder()
-        .withStatus("completed")
-        .withStatus("failed")
-        .build();
+      const q = new ArchiveFilterBuilder().withStatus("completed").withStatus("failed").build();
       expect(q.toParams()["status"]).toBe("failed");
     });
   });
@@ -169,9 +163,9 @@ describe("ArchiveFilterBuilder", () => {
     });
 
     it("throws ValidationError when maxAmount < minAmount (already set)", () => {
-      expect(() =>
-        new ArchiveFilterBuilder().withMinAmount(500n).withMaxAmount(499n)
-      ).toThrow(ValidationError);
+      expect(() => new ArchiveFilterBuilder().withMinAmount(500n).withMaxAmount(499n)).toThrow(
+        ValidationError
+      );
     });
 
     it("thrown error has field 'maxAmount'", () => {

@@ -2,7 +2,12 @@ import { Keypair, Networks, xdr } from "@stellar/stellar-sdk";
 import { PayrollService } from "../src/payroll";
 import { PayrollContractWrapper } from "../src/adapters/PayrollContractWrapper";
 import { IProofGenerator, ProofPayload } from "../src/crypto/IProofGenerator";
-import { PayrollError, PayrollServiceErrorCode, ContractExecutionError, ContractErrorCode } from "../src/errors";
+import {
+  PayrollError,
+  PayrollServiceErrorCode,
+  ContractExecutionError,
+  ContractErrorCode,
+} from "../src/errors";
 import type { SdkLogger } from "../src/logging/SdkLogger";
 
 const MOCK_PROOF: ProofPayload = {
@@ -340,7 +345,13 @@ describe("PayrollService", () => {
       );
       (mockWrapper.privatePay as jest.Mock).mockRejectedValue(stateError);
       const logger = createMockLogger();
-      const service = new PayrollService(mockWrapper, mockProofGen, signer, Networks.TESTNET, logger);
+      const service = new PayrollService(
+        mockWrapper,
+        mockProofGen,
+        signer,
+        Networks.TESTNET,
+        logger
+      );
 
       await expect(
         service.processPayment({ recipient: "GABC123", amount: 100n, asset: "native" })
@@ -395,7 +406,13 @@ describe("PayrollService", () => {
     it("does not log an error and does call payment_complete on a successful invocation", async () => {
       const { mockWrapper, mockProofGen, signer } = createMocks();
       const logger = createMockLogger();
-      const service = new PayrollService(mockWrapper, mockProofGen, signer, Networks.TESTNET, logger);
+      const service = new PayrollService(
+        mockWrapper,
+        mockProofGen,
+        signer,
+        Networks.TESTNET,
+        logger
+      );
 
       await service.processPayment({ recipient: "GABC123", amount: 100n, asset: "native" });
 

@@ -23,14 +23,10 @@ import {
 // These are reused across fixtures and verification tests so reviewers can
 // trace each entry back to its expected error position.
 
-export const FIXTURE_BATCH_RECIPIENT_A =
-  "GABATCHRECIPIENT1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZA";
-export const FIXTURE_BATCH_RECIPIENT_B =
-  "GBBATCHRECIPIENT1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZB";
-export const FIXTURE_BATCH_RECIPIENT_C =
-  "GCBATCHRECIPIENT1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZC";
-export const FIXTURE_BATCH_RECIPIENT_D =
-  "GDBATCHRECIPIENT1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZD";
+export const FIXTURE_BATCH_RECIPIENT_A = "GABATCHRECIPIENT1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZA";
+export const FIXTURE_BATCH_RECIPIENT_B = "GBBATCHRECIPIENT1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZB";
+export const FIXTURE_BATCH_RECIPIENT_C = "GCBATCHRECIPIENT1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZC";
+export const FIXTURE_BATCH_RECIPIENT_D = "GDBATCHRECIPIENT1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZD";
 
 /** Soroban token contract ID placeholder (deterministic, non-functional). */
 export const FIXTURE_BATCH_ASSET_USDC = "CUSDC000000000000000000000000000000000000000000";
@@ -153,10 +149,7 @@ export const SCENARIO_BATCH_EMPTY: BatchValidationScenario = {
 
 export const SCENARIO_BATCH_INVALID_RECIPIENT: BatchValidationScenario = {
   name: "invalid-empty-recipient",
-  input: [
-    BATCH_ENTRY_ALICE,
-    { recipient: "  ", amount: 100n, asset: "native" },
-  ],
+  input: [BATCH_ENTRY_ALICE, { recipient: "  ", amount: 100n, asset: "native" }],
   expected: [
     {
       code: "INVALID_RECIPIENT",
@@ -182,9 +175,7 @@ export const SCENARIO_BATCH_INVALID_AMOUNT: BatchValidationScenario = {
 
 export const SCENARIO_BATCH_NEGATIVE_AMOUNT: BatchValidationScenario = {
   name: "invalid-negative-amount",
-  input: [
-    { recipient: FIXTURE_BATCH_RECIPIENT_A, amount: -1n, asset: "native" },
-  ],
+  input: [{ recipient: FIXTURE_BATCH_RECIPIENT_A, amount: -1n, asset: "native" }],
   expected: [
     {
       code: "INVALID_AMOUNT",
@@ -197,9 +188,7 @@ export const SCENARIO_BATCH_NEGATIVE_AMOUNT: BatchValidationScenario = {
 
 export const SCENARIO_BATCH_MISSING_ASSET: BatchValidationScenario = {
   name: "invalid-missing-asset",
-  input: [
-    { recipient: FIXTURE_BATCH_RECIPIENT_A, amount: 100n, asset: "" },
-  ],
+  input: [{ recipient: FIXTURE_BATCH_RECIPIENT_A, amount: 100n, asset: "" }],
   expected: [
     {
       code: "MISSING_ASSET",
@@ -232,9 +221,7 @@ export const SCENARIO_BATCH_DUPLICATE_RECIPIENT: BatchValidationScenario = {
  */
 export const SCENARIO_BATCH_MULTIPLE_ERRORS: BatchValidationScenario = {
   name: "invalid-multiple-errors",
-  input: [
-    { recipient: "", amount: 0n, asset: "" },
-  ],
+  input: [{ recipient: "", amount: 0n, asset: "" }],
   expected: [
     {
       code: "INVALID_RECIPIENT",

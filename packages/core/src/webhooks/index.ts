@@ -12,28 +12,22 @@
  * ```
  */
 
-export {
-    computeSignature,
-    verifyWebhookSignature,
-    parseWebhookEnvelope,
-} from "./verify";
+export { computeSignature, verifyWebhookSignature, parseWebhookEnvelope } from "./verify";
 
-export {
-    WebhookVerificationError,
-} from "./types";
+export { WebhookVerificationError } from "./types";
 
 export type {
-    WebhookEventType,
-    WebhookPayloadBase,
-    PayrollCompletedPayload,
-    PayrollFailedPayload,
-    TransactionConfirmedPayload,
-    TransactionFailedPayload,
-    TransactionPendingPayload,
-    AuditViewKeyGrantedPayload,
-    AuditViewKeyRevokedPayload,
-    AuditViewKeyExpiredPayload,
-    WebhookPayload,
-    SignedWebhookEnvelope,
-    WebhookVerificationOptions,
+  WebhookEventType,
+  WebhookPayloadBase,
+  PayrollCompletedPayload,
+  PayrollFailedPayload,
+  TransactionConfirmedPayload,
+  TransactionFailedPayload,
+  TransactionPendingPayload,
+  AuditViewKeyGrantedPayload,
+  AuditViewKeyRevokedPayload,
+  AuditViewKeyExpiredPayload,
+  WebhookPayload,
+  SignedWebhookEnvelope,
+  WebhookVerificationOptions,
 } from "./types";

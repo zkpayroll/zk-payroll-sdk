@@ -20,12 +20,9 @@ export const FIXTURE_DRAFT_LABEL = "April 2025 Payroll";
 export const FIXTURE_DRAFT_CREATED_AT = "2025-04-01T00:00:00.000Z";
 export const FIXTURE_DRAFT_UPDATED_AT = "2025-04-02T00:00:00.000Z";
 
-export const FIXTURE_DRAFT_RECIPIENT_A =
-  "GDRAFTRECIPIENT1234567890ABCDEFGHIJKLMNOPQRSTUVWX";
-export const FIXTURE_DRAFT_RECIPIENT_B =
-  "GDRAFTRECIPIENT2234567890ABCDEFGHIJKLMNOPQRSTUVWX";
-export const FIXTURE_DRAFT_RECIPIENT_C =
-  "GDRAFTRECIPIENT3234567890ABCDEFGHIJKLMNOPQRSTUVWX";
+export const FIXTURE_DRAFT_RECIPIENT_A = "GDRAFTRECIPIENT1234567890ABCDEFGHIJKLMNOPQRSTUVWX";
+export const FIXTURE_DRAFT_RECIPIENT_B = "GDRAFTRECIPIENT2234567890ABCDEFGHIJKLMNOPQRSTUVWX";
+export const FIXTURE_DRAFT_RECIPIENT_C = "GDRAFTRECIPIENT3234567890ABCDEFGHIJKLMNOPQRSTUVWX";
 
 // ── Message constants (must mirror messages emitted by DraftBuilder) ───────
 
@@ -35,8 +32,7 @@ const MSG_INVALID_AMOUNT = "Amount must be a positive numeric value";
 const MSG_MISSING_ASSET = "Asset identifier is required";
 const MSG_DUPLICATE = (a: number, b: number): string =>
   `Duplicate recipient at indices ${a} and ${b}`;
-const MSG_EMPTY_NOTE =
-  "Note is empty and will be omitted from the draft output";
+const MSG_EMPTY_NOTE = "Note is empty and will be omitted from the draft output";
 const MSG_MIXED_ASSETS = (n: number, list: string): string =>
   `Draft mixes ${n} assets (${list}); review whether a single-asset batch is required.`;
 const MSG_LARGE_DRAFT = (count: number): string =>
@@ -110,9 +106,7 @@ export const SCENARIO_DRAFT_INVALID_RECIPIENT: DraftValidationScenario = {
 
 export const SCENARIO_DRAFT_INVALID_AMOUNT: DraftValidationScenario = {
   name: "invalid-amount-zero",
-  entries: [
-    { recipientId: FIXTURE_DRAFT_RECIPIENT_A, amount: "0", asset: "native" },
-  ],
+  entries: [{ recipientId: FIXTURE_DRAFT_RECIPIENT_A, amount: "0", asset: "native" }],
   expectedErrors: [
     {
       code: "INVALID_AMOUNT",
@@ -128,9 +122,7 @@ export const SCENARIO_DRAFT_INVALID_AMOUNT: DraftValidationScenario = {
 
 export const SCENARIO_DRAFT_INVALID_NON_NUMERIC: DraftValidationScenario = {
   name: "invalid-amount-non-numeric",
-  entries: [
-    { recipientId: FIXTURE_DRAFT_RECIPIENT_A, amount: "abc", asset: "native" },
-  ],
+  entries: [{ recipientId: FIXTURE_DRAFT_RECIPIENT_A, amount: "abc", asset: "native" }],
   expectedErrors: [
     {
       code: "INVALID_AMOUNT",
@@ -165,9 +157,7 @@ export const SCENARIO_DRAFT_DUPLICATE_RECIPIENT: DraftValidationScenario = {
 
 export const SCENARIO_DRAFT_MISSING_ASSET: DraftValidationScenario = {
   name: "missing-asset",
-  entries: [
-    { recipientId: FIXTURE_DRAFT_RECIPIENT_A, amount: "100", asset: "" },
-  ],
+  entries: [{ recipientId: FIXTURE_DRAFT_RECIPIENT_A, amount: "100", asset: "" }],
   expectedErrors: [
     {
       code: "MISSING_ASSET",

@@ -66,9 +66,7 @@ export function serializeAuditReceipt(
     }
   }
 
-  return options.pretty
-    ? JSON.stringify(copy, null, 2)
-    : JSON.stringify(copy);
+  return options.pretty ? JSON.stringify(copy, null, 2) : JSON.stringify(copy);
 }
 
 /**
