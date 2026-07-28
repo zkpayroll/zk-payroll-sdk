@@ -62,22 +62,22 @@ import { AssetMetadata } from "./types";
  * Machine-readable error codes for amount parsing failures.
  */
 export enum AmountParseErrorCode {
-    /** Input string is empty or contains only whitespace. */
-    EMPTY_INPUT = "EMPTY_INPUT",
-    /** Input contains non-numeric characters after sanitisation. */
-    INVALID_FORMAT = "INVALID_FORMAT",
-    /** Input represents a negative amount (not allowed). */
-    NEGATIVE_VALUE = "NEGATIVE_VALUE",
-    /** Input is zero (not allowed in payroll contexts). */
-    ZERO_VALUE = "ZERO_VALUE",
-    /** Parsed amount is below the configured minimum bound. */
-    BELOW_MINIMUM = "BELOW_MINIMUM",
-    /** Parsed amount exceeds the configured maximum bound. */
-    EXCEEDS_MAXIMUM = "EXCEEDS_MAXIMUM",
-    /** Input has more decimal places than the asset supports. */
-    EXCESS_PRECISION = "EXCESS_PRECISION",
-    /** Parsed amount exceeds safe integer range for the asset's decimals. */
-    OVERFLOW = "OVERFLOW",
+  /** Input string is empty or contains only whitespace. */
+  EMPTY_INPUT = "EMPTY_INPUT",
+  /** Input contains non-numeric characters after sanitisation. */
+  INVALID_FORMAT = "INVALID_FORMAT",
+  /** Input represents a negative amount (not allowed). */
+  NEGATIVE_VALUE = "NEGATIVE_VALUE",
+  /** Input is zero (not allowed in payroll contexts). */
+  ZERO_VALUE = "ZERO_VALUE",
+  /** Parsed amount is below the configured minimum bound. */
+  BELOW_MINIMUM = "BELOW_MINIMUM",
+  /** Parsed amount exceeds the configured maximum bound. */
+  EXCEEDS_MAXIMUM = "EXCEEDS_MAXIMUM",
+  /** Input has more decimal places than the asset supports. */
+  EXCESS_PRECISION = "EXCESS_PRECISION",
+  /** Parsed amount exceeds safe integer range for the asset's decimals. */
+  OVERFLOW = "OVERFLOW",
 }
 
 /**
@@ -100,14 +100,14 @@ export enum AmountParseErrorCode {
  * ```
  */
 export class AmountParseError extends Error {
-    constructor(
-        message: string,
-        public readonly code: AmountParseErrorCode,
-        public readonly context: Record<string, unknown> = {}
-    ) {
-        super(message);
-        this.name = "AmountParseError";
-    }
+  constructor(
+    message: string,
+    public readonly code: AmountParseErrorCode,
+    public readonly context: Record<string, unknown> = {}
+  ) {
+    super(message);
+    this.name = "AmountParseError";
+  }
 }
 
 // ── Rounding Modes ──────────────────────────────────────────────────────────
@@ -117,26 +117,26 @@ export class AmountParseError extends Error {
  * places than the asset supports.
  */
 export enum RoundingMode {
-    /**
-     * Round half away from zero (standard rounding).
-     * 1.5 → 2, 2.5 → 3, -1.5 → -2
-     */
-    HALF_UP = "HALF_UP",
-    /**
-     * Truncate (round toward zero). Drops excess digits.
-     * 1.9 → 1, 2.1 → 2
-     */
-    TRUNCATE = "TRUNCATE",
-    /**
-     * Round up (ceil for positive, floor for negative).
-     * 1.1 → 2, 2.9 → 3
-     */
-    CEIL = "CEIL",
-    /**
-     * Round down (floor for positive, ceil for negative).
-     * 1.9 → 1, 2.1 → 2
-     */
-    FLOOR = "FLOOR",
+  /**
+   * Round half away from zero (standard rounding).
+   * 1.5 → 2, 2.5 → 3, -1.5 → -2
+   */
+  HALF_UP = "HALF_UP",
+  /**
+   * Truncate (round toward zero). Drops excess digits.
+   * 1.9 → 1, 2.1 → 2
+   */
+  TRUNCATE = "TRUNCATE",
+  /**
+   * Round up (ceil for positive, floor for negative).
+   * 1.1 → 2, 2.9 → 3
+   */
+  CEIL = "CEIL",
+  /**
+   * Round down (floor for positive, ceil for negative).
+   * 1.9 → 1, 2.1 → 2
+   */
+  FLOOR = "FLOOR",
 }
 
 // ── Bounds Configuration ────────────────────────────────────────────────────
@@ -149,10 +149,10 @@ export enum RoundingMode {
  * is skipped.
  */
 export interface AmountBounds {
-    /** Minimum allowed value in smallest units (inclusive). */
-    min?: bigint;
-    /** Maximum allowed value in smallest units (inclusive). */
-    max?: bigint;
+  /** Minimum allowed value in smallest units (inclusive). */
+  min?: bigint;
+  /** Maximum allowed value in smallest units (inclusive). */
+  max?: bigint;
 }
 
 // ── Parsing Options ─────────────────────────────────────────────────────────
@@ -161,21 +161,21 @@ export interface AmountBounds {
  * Configuration for `parsePayrollAmount`.
  */
 export interface ParsePayrollAmountOptions {
-    /**
-     * Bounds to enforce on the parsed amount (in smallest units).
-     * Omit to skip bounds checking.
-     */
-    bounds?: AmountBounds;
-    /**
-     * Rounding strategy when the input exceeds the asset's decimal
-     * precision. Defaults to `RoundingMode.HALF_UP`.
-     */
-    rounding?: RoundingMode;
-    /**
-     * Asset metadata to use for decimal scaling. Required if not
-     * passed as the second positional argument.
-     */
-    metadata?: AssetMetadata;
+  /**
+   * Bounds to enforce on the parsed amount (in smallest units).
+   * Omit to skip bounds checking.
+   */
+  bounds?: AmountBounds;
+  /**
+   * Rounding strategy when the input exceeds the asset's decimal
+   * precision. Defaults to `RoundingMode.HALF_UP`.
+   */
+  rounding?: RoundingMode;
+  /**
+   * Asset metadata to use for decimal scaling. Required if not
+   * passed as the second positional argument.
+   */
+  metadata?: AssetMetadata;
 }
 
 // ── Parse Result ────────────────────────────────────────────────────────────
@@ -184,15 +184,15 @@ export interface ParsePayrollAmountOptions {
  * Successful result of `parsePayrollAmount`.
  */
 export interface ParsedPayrollAmount {
-    /** The parsed amount in the asset's smallest unit (e.g. stroops). */
-    amount: bigint;
-    /** The asset's decimal count (for reference/display). */
-    decimals: number;
-    /**
-     * Whether the parsed value was rounded due to excess precision
-     * in the input.
-     */
-    wasRounded: boolean;
+  /** The parsed amount in the asset's smallest unit (e.g. stroops). */
+  amount: bigint;
+  /** The asset's decimal count (for reference/display). */
+  decimals: number;
+  /**
+   * Whether the parsed value was rounded due to excess precision
+   * in the input.
+   */
+  wasRounded: boolean;
 }
 
 // ── Internal helpers ────────────────────────────────────────────────────────
@@ -203,12 +203,12 @@ export interface ParsedPayrollAmount {
 const scaleCache = new Map<number, bigint>();
 
 function getScale(decimals: number): bigint {
-    let scale = scaleCache.get(decimals);
-    if (scale === undefined) {
-        scale = BigInt(10) ** BigInt(decimals);
-        scaleCache.set(decimals, scale);
-    }
-    return scale;
+  let scale = scaleCache.get(decimals);
+  if (scale === undefined) {
+    scale = BigInt(10) ** BigInt(decimals);
+    scaleCache.set(decimals, scale);
+  }
+  return scale;
 }
 
 /**
@@ -225,10 +225,10 @@ function getScale(decimals: number): bigint {
  * @returns       The cleaned numeric string, or empty if nothing remains.
  */
 function sanitizeInput(input: string, symbol: string): string {
-    return input
-        .replace(new RegExp(symbol.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"), "")
-        .replace(/[$€£¥,]/g, "")
-        .trim();
+  return input
+    .replace(new RegExp(symbol.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"), "")
+    .replace(/[$€£¥,]/g, "")
+    .trim();
 }
 
 /**
@@ -242,39 +242,39 @@ function sanitizeInput(input: string, symbol: string): string {
  * @returns            The adjusted fractional part as a bigint.
  */
 function applyRounding(
-    excessDigit: number,
-    currentFrac: string,
-    decimals: number,
-    mode: RoundingMode
+  excessDigit: number,
+  currentFrac: string,
+  decimals: number,
+  mode: RoundingMode
 ): bigint {
-    const fracBigInt = BigInt(currentFrac.padEnd(decimals, "0"));
+  const fracBigInt = BigInt(currentFrac.padEnd(decimals, "0"));
 
-    switch (mode) {
-        case RoundingMode.TRUNCATE:
-            // Already truncated — no adjustment needed.
-            return fracBigInt;
+  switch (mode) {
+    case RoundingMode.TRUNCATE:
+      // Already truncated — no adjustment needed.
+      return fracBigInt;
 
-        case RoundingMode.HALF_UP:
-            if (excessDigit >= 5) {
-                return fracBigInt + 1n;
-            }
-            return fracBigInt;
+    case RoundingMode.HALF_UP:
+      if (excessDigit >= 5) {
+        return fracBigInt + 1n;
+      }
+      return fracBigInt;
 
-        case RoundingMode.CEIL:
-            // For positive payroll amounts, CEIL always rounds up when
-            // there is an excess digit.
-            if (excessDigit > 0) {
-                return fracBigInt + 1n;
-            }
-            return fracBigInt;
+    case RoundingMode.CEIL:
+      // For positive payroll amounts, CEIL always rounds up when
+      // there is an excess digit.
+      if (excessDigit > 0) {
+        return fracBigInt + 1n;
+      }
+      return fracBigInt;
 
-        case RoundingMode.FLOOR:
-            // For positive payroll amounts, FLOOR always truncates.
-            return fracBigInt;
+    case RoundingMode.FLOOR:
+      // For positive payroll amounts, FLOOR always truncates.
+      return fracBigInt;
 
-        default:
-            return fracBigInt;
-    }
+    default:
+      return fracBigInt;
+  }
 }
 
 // ── Public API ──────────────────────────────────────────────────────────────
@@ -318,147 +318,146 @@ function applyRounding(
  * ```
  */
 export function parsePayrollAmount(
-    input: string,
-    metadata: AssetMetadata,
-    options: ParsePayrollAmountOptions = {}
+  input: string,
+  metadata: AssetMetadata,
+  options: ParsePayrollAmountOptions = {}
 ): ParsedPayrollAmount {
-    const { decimals, symbol } = metadata;
-    const rounding = options.rounding ?? RoundingMode.HALF_UP;
-    const bounds = options.bounds;
+  const { decimals, symbol } = metadata;
+  const rounding = options.rounding ?? RoundingMode.HALF_UP;
+  const bounds = options.bounds;
 
-    // ── Step 1: Sanitize ────────────────────────────────────────────────────
-    const cleaned = sanitizeInput(input, symbol);
+  // ── Step 1: Sanitize ────────────────────────────────────────────────────
+  const cleaned = sanitizeInput(input, symbol);
 
-    if (cleaned.length === 0) {
-        throw new AmountParseError(
-            `Amount input is empty after sanitization: "${input}"`,
-            AmountParseErrorCode.EMPTY_INPUT,
-            { input, assetSymbol: symbol }
-        );
-    }
+  if (cleaned.length === 0) {
+    throw new AmountParseError(
+      `Amount input is empty after sanitization: "${input}"`,
+      AmountParseErrorCode.EMPTY_INPUT,
+      { input, assetSymbol: symbol }
+    );
+  }
 
-    // ── Step 2: Validate numeric format ─────────────────────────────────────
-    // Allow: "123", "123.456", ".5", "0.1"
-    // Disallow: "abc", "12.34.56"
-    const numericPattern = /^-?(\d*\.?\d+|\d+\.?\d*)$/;
-    if (!numericPattern.test(cleaned)) {
-        throw new AmountParseError(
-            `Amount input contains non-numeric characters: "${input}"`,
-            AmountParseErrorCode.INVALID_FORMAT,
-            { input, cleaned, assetSymbol: symbol }
-        );
-    }
+  // ── Step 2: Validate numeric format ─────────────────────────────────────
+  // Allow: "123", "123.456", ".5", "0.1"
+  // Disallow: "abc", "12.34.56"
+  const numericPattern = /^-?(\d*\.?\d+|\d+\.?\d*)$/;
+  if (!numericPattern.test(cleaned)) {
+    throw new AmountParseError(
+      `Amount input contains non-numeric characters: "${input}"`,
+      AmountParseErrorCode.INVALID_FORMAT,
+      { input, cleaned, assetSymbol: symbol }
+    );
+  }
 
-    // ── Step 3: Check for negative values ───────────────────────────────────
-    if (cleaned.startsWith("-")) {
-        throw new AmountParseError(
-            `Amount cannot be negative: "${input}"`,
-            AmountParseErrorCode.NEGATIVE_VALUE,
-            { input, assetSymbol: symbol }
-        );
-    }
+  // ── Step 3: Check for negative values ───────────────────────────────────
+  if (cleaned.startsWith("-")) {
+    throw new AmountParseError(
+      `Amount cannot be negative: "${input}"`,
+      AmountParseErrorCode.NEGATIVE_VALUE,
+      { input, assetSymbol: symbol }
+    );
+  }
 
-    // ── Step 4: Split into whole and fractional parts ───────────────────────
-    const dotIndex = cleaned.indexOf(".");
-    let wholePart: string;
-    let fracPart: string;
+  // ── Step 4: Split into whole and fractional parts ───────────────────────
+  const dotIndex = cleaned.indexOf(".");
+  let wholePart: string;
+  let fracPart: string;
 
-    if (dotIndex === -1) {
-        wholePart = cleaned;
-        fracPart = "";
-    } else {
-        wholePart = cleaned.slice(0, dotIndex) || "0";
-        fracPart = cleaned.slice(dotIndex + 1);
-    }
+  if (dotIndex === -1) {
+    wholePart = cleaned;
+    fracPart = "";
+  } else {
+    wholePart = cleaned.slice(0, dotIndex) || "0";
+    fracPart = cleaned.slice(dotIndex + 1);
+  }
 
-    // ── Step 5: Check for zero value ────────────────────────────────────────
-    const isEffectivelyZero =
-        (wholePart === "0" || wholePart === "") &&
-        (fracPart.length === 0 || /^0+$/.test(fracPart));
+  // ── Step 5: Check for zero value ────────────────────────────────────────
+  const isEffectivelyZero =
+    (wholePart === "0" || wholePart === "") && (fracPart.length === 0 || /^0+$/.test(fracPart));
 
-    if (isEffectivelyZero) {
-        throw new AmountParseError(
-            `Amount cannot be zero: "${input}"`,
-            AmountParseErrorCode.ZERO_VALUE,
-            { input, assetSymbol: symbol }
-        );
-    }
+  if (isEffectivelyZero) {
+    throw new AmountParseError(
+      `Amount cannot be zero: "${input}"`,
+      AmountParseErrorCode.ZERO_VALUE,
+      { input, assetSymbol: symbol }
+    );
+  }
 
-    // ── Step 6: Handle excess precision (rounding) ──────────────────────────
-    let wasRounded = false;
+  // ── Step 6: Handle excess precision (rounding) ──────────────────────────
+  let wasRounded = false;
 
-    if (fracPart.length > decimals) {
-        wasRounded = true;
-        const excessDigit = parseInt(fracPart[decimals], 10);
-        fracPart = fracPart.slice(0, decimals);
+  if (fracPart.length > decimals) {
+    wasRounded = true;
+    const excessDigit = parseInt(fracPart[decimals], 10);
+    fracPart = fracPart.slice(0, decimals);
 
-        const adjustedFrac = applyRounding(excessDigit, fracPart, decimals, rounding);
+    const adjustedFrac = applyRounding(excessDigit, fracPart, decimals, rounding);
 
-        // If rounding caused the fractional part to overflow (e.g. ".999" → 1000),
-        // carry the overflow to the whole part.
-        const scale = getScale(decimals);
-        if (adjustedFrac >= scale) {
-            wholePart = (BigInt(wholePart || "0") + 1n).toString();
-            fracPart = adjustedFrac.toString().padStart(decimals, "0").slice(-decimals);
-        } else {
-            fracPart = adjustedFrac.toString().padStart(decimals, "0");
-        }
-    } else {
-        fracPart = fracPart.padEnd(decimals, "0");
-    }
-
-    // ── Step 7: Compute final amount ────────────────────────────────────────
+    // If rounding caused the fractional part to overflow (e.g. ".999" → 1000),
+    // carry the overflow to the whole part.
     const scale = getScale(decimals);
-    const wholeBigInt = BigInt(wholePart);
-    const fracBigInt = BigInt(fracPart);
+    if (adjustedFrac >= scale) {
+      wholePart = (BigInt(wholePart || "0") + 1n).toString();
+      fracPart = adjustedFrac.toString().padStart(decimals, "0").slice(-decimals);
+    } else {
+      fracPart = adjustedFrac.toString().padStart(decimals, "0");
+    }
+  } else {
+    fracPart = fracPart.padEnd(decimals, "0");
+  }
 
-    // Check for overflow before computing the final value.
-    if (wholeBigInt > BigInt(Number.MAX_SAFE_INTEGER)) {
-        throw new AmountParseError(
-            `Amount exceeds safe integer range for asset ${symbol}: "${input}"`,
-            AmountParseErrorCode.OVERFLOW,
-            { input, assetSymbol: symbol, wholePart }
-        );
+  // ── Step 7: Compute final amount ────────────────────────────────────────
+  const scale = getScale(decimals);
+  const wholeBigInt = BigInt(wholePart);
+  const fracBigInt = BigInt(fracPart);
+
+  // Check for overflow before computing the final value.
+  if (wholeBigInt > BigInt(Number.MAX_SAFE_INTEGER)) {
+    throw new AmountParseError(
+      `Amount exceeds safe integer range for asset ${symbol}: "${input}"`,
+      AmountParseErrorCode.OVERFLOW,
+      { input, assetSymbol: symbol, wholePart }
+    );
+  }
+
+  const finalAmount = wholeBigInt * scale + fracBigInt;
+
+  // ── Step 8: Bounds check ────────────────────────────────────────────────
+  if (bounds) {
+    if (bounds.min !== undefined && finalAmount < bounds.min) {
+      throw new AmountParseError(
+        `Amount ${formatDebugAmount(finalAmount, decimals, symbol)} is below the minimum of ${formatDebugAmount(bounds.min, decimals, symbol)}`,
+        AmountParseErrorCode.BELOW_MINIMUM,
+        {
+          input,
+          assetSymbol: symbol,
+          parsedAmount: finalAmount.toString(),
+          min: bounds.min.toString(),
+          max: bounds.max?.toString(),
+        }
+      );
     }
 
-    const finalAmount = wholeBigInt * scale + fracBigInt;
-
-    // ── Step 8: Bounds check ────────────────────────────────────────────────
-    if (bounds) {
-        if (bounds.min !== undefined && finalAmount < bounds.min) {
-            throw new AmountParseError(
-                `Amount ${formatDebugAmount(finalAmount, decimals, symbol)} is below the minimum of ${formatDebugAmount(bounds.min, decimals, symbol)}`,
-                AmountParseErrorCode.BELOW_MINIMUM,
-                {
-                    input,
-                    assetSymbol: symbol,
-                    parsedAmount: finalAmount.toString(),
-                    min: bounds.min.toString(),
-                    max: bounds.max?.toString(),
-                }
-            );
+    if (bounds.max !== undefined && finalAmount > bounds.max) {
+      throw new AmountParseError(
+        `Amount ${formatDebugAmount(finalAmount, decimals, symbol)} exceeds the maximum of ${formatDebugAmount(bounds.max, decimals, symbol)}`,
+        AmountParseErrorCode.EXCEEDS_MAXIMUM,
+        {
+          input,
+          assetSymbol: symbol,
+          parsedAmount: finalAmount.toString(),
+          min: bounds.min?.toString(),
+          max: bounds.max.toString(),
         }
-
-        if (bounds.max !== undefined && finalAmount > bounds.max) {
-            throw new AmountParseError(
-                `Amount ${formatDebugAmount(finalAmount, decimals, symbol)} exceeds the maximum of ${formatDebugAmount(bounds.max, decimals, symbol)}`,
-                AmountParseErrorCode.EXCEEDS_MAXIMUM,
-                {
-                    input,
-                    assetSymbol: symbol,
-                    parsedAmount: finalAmount.toString(),
-                    min: bounds.min?.toString(),
-                    max: bounds.max.toString(),
-                }
-            );
-        }
+      );
     }
+  }
 
-    return {
-        amount: finalAmount,
-        decimals,
-        wasRounded,
-    };
+  return {
+    amount: finalAmount,
+    decimals,
+    wasRounded,
+  };
 }
 
 /**
@@ -471,14 +470,14 @@ export function parsePayrollAmount(
  * @returns         Formatted string like "100.50 XLM".
  */
 function formatDebugAmount(rawAmount: bigint, decimals: number, symbol: string): string {
-    const scale = getScale(decimals);
-    const whole = rawAmount / scale;
-    const frac = rawAmount % scale;
-    const fracStr = frac.toString().padStart(decimals, "0").replace(/0+$/, "");
-    if (fracStr.length === 0) {
-        return `${whole} ${symbol}`;
-    }
-    return `${whole}.${fracStr} ${symbol}`;
+  const scale = getScale(decimals);
+  const whole = rawAmount / scale;
+  const frac = rawAmount % scale;
+  const fracStr = frac.toString().padStart(decimals, "0").replace(/0+$/, "");
+  if (fracStr.length === 0) {
+    return `${whole} ${symbol}`;
+  }
+  return `${whole}.${fracStr} ${symbol}`;
 }
 
 /**
@@ -501,33 +500,30 @@ function formatDebugAmount(rawAmount: bigint, decimals: number, symbol: string):
  * }
  * ```
  */
-export function checkAmountBounds(
-    amount: bigint,
-    bounds: AmountBounds
-): AmountParseError[] {
-    const errors: AmountParseError[] = [];
+export function checkAmountBounds(amount: bigint, bounds: AmountBounds): AmountParseError[] {
+  const errors: AmountParseError[] = [];
 
-    if (bounds.min !== undefined && amount < bounds.min) {
-        errors.push(
-            new AmountParseError(
-                `Amount ${amount} is below minimum ${bounds.min}`,
-                AmountParseErrorCode.BELOW_MINIMUM,
-                { amount: amount.toString(), min: bounds.min.toString() }
-            )
-        );
-    }
+  if (bounds.min !== undefined && amount < bounds.min) {
+    errors.push(
+      new AmountParseError(
+        `Amount ${amount} is below minimum ${bounds.min}`,
+        AmountParseErrorCode.BELOW_MINIMUM,
+        { amount: amount.toString(), min: bounds.min.toString() }
+      )
+    );
+  }
 
-    if (bounds.max !== undefined && amount > bounds.max) {
-        errors.push(
-            new AmountParseError(
-                `Amount ${amount} exceeds maximum ${bounds.max}`,
-                AmountParseErrorCode.EXCEEDS_MAXIMUM,
-                { amount: amount.toString(), max: bounds.max.toString() }
-            )
-        );
-    }
+  if (bounds.max !== undefined && amount > bounds.max) {
+    errors.push(
+      new AmountParseError(
+        `Amount ${amount} exceeds maximum ${bounds.max}`,
+        AmountParseErrorCode.EXCEEDS_MAXIMUM,
+        { amount: amount.toString(), max: bounds.max.toString() }
+      )
+    );
+  }
 
-    return errors;
+  return errors;
 }
 
 /**
@@ -550,16 +546,16 @@ export function checkAmountBounds(
  * ```
  */
 export function makeBoundsFromStrings(
-    minStr: string,
-    maxStr: string,
-    metadata: AssetMetadata,
-    rounding?: RoundingMode
+  minStr: string,
+  maxStr: string,
+  metadata: AssetMetadata,
+  rounding?: RoundingMode
 ): AmountBounds {
-    const minResult = parsePayrollAmount(minStr, metadata, { rounding });
-    const maxResult = parsePayrollAmount(maxStr, metadata, { rounding });
+  const minResult = parsePayrollAmount(minStr, metadata, { rounding });
+  const maxResult = parsePayrollAmount(maxStr, metadata, { rounding });
 
-    return {
-        min: minResult.amount,
-        max: maxResult.amount,
-    };
+  return {
+    min: minResult.amount,
+    max: maxResult.amount,
+  };
 }

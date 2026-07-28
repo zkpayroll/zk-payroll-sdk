@@ -43,12 +43,7 @@ export interface ObservedPaymentState {
  * - `"unexpected"`         — an observed payment has no corresponding expected outcome at all
  */
 export type ReconciliationDiffCategory =
-  | "match"
-  | "missing"
-  | "failed_mismatch"
-  | "amount_mismatch"
-  | "still_pending"
-  | "unexpected";
+  "match" | "missing" | "failed_mismatch" | "amount_mismatch" | "still_pending" | "unexpected";
 
 export interface ReconciliationDiffEntry {
   recipient: string;

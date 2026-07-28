@@ -63,18 +63,14 @@ describe("getArchivedPayrollPage", () => {
   describe("pageSize clamping", () => {
     it("clamps pageSize < 1 to 1 without throwing", () => {
       const records = [makeRecord(), makeRecord(), makeRecord()];
-      expect(() =>
-        getArchivedPayrollPage(records, emptyQuery(), { pageSize: 0 })
-      ).not.toThrow();
+      expect(() => getArchivedPayrollPage(records, emptyQuery(), { pageSize: 0 })).not.toThrow();
       const result = getArchivedPayrollPage(records, emptyQuery(), { pageSize: 0 });
       expect(result.meta.pageSize).toBe(1);
     });
 
     it("clamps pageSize > 100 to 100 without throwing", () => {
       const records = Array.from({ length: 5 }, () => makeRecord());
-      expect(() =>
-        getArchivedPayrollPage(records, emptyQuery(), { pageSize: 999 })
-      ).not.toThrow();
+      expect(() => getArchivedPayrollPage(records, emptyQuery(), { pageSize: 999 })).not.toThrow();
       const result = getArchivedPayrollPage(records, emptyQuery(), { pageSize: 999 });
       expect(result.meta.pageSize).toBe(100);
     });
@@ -108,16 +104,12 @@ describe("getArchivedPayrollPage", () => {
 
   describe("ValidationError for inverted period", () => {
     it("throws when periodStart > periodEnd", () => {
-      const query = new ArchiveFilterBuilder()
-        .forPeriod("2024-12-31", "2024-01-01")
-        .build();
+      const query = new ArchiveFilterBuilder().forPeriod("2024-12-31", "2024-01-01").build();
       expect(() => getArchivedPayrollPage([], query)).toThrow(ValidationError);
     });
 
     it("thrown error has field 'periodStart'", () => {
-      const query = new ArchiveFilterBuilder()
-        .forPeriod("2024-12-31", "2024-01-01")
-        .build();
+      const query = new ArchiveFilterBuilder().forPeriod("2024-12-31", "2024-01-01").build();
       try {
         getArchivedPayrollPage([], query);
       } catch (e) {
@@ -126,9 +118,7 @@ describe("getArchivedPayrollPage", () => {
     });
 
     it("thrown error message contains periodStart and periodEnd", () => {
-      const query = new ArchiveFilterBuilder()
-        .forPeriod("2024-12-31", "2024-01-01")
-        .build();
+      const query = new ArchiveFilterBuilder().forPeriod("2024-12-31", "2024-01-01").build();
       try {
         getArchivedPayrollPage([], query);
       } catch (e) {

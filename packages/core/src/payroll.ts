@@ -152,10 +152,7 @@ export class PayrollService {
       // The error message is sanitized through redactError() before logging
       // to prevent sensitive field values (privateKey=..., recipient=..., etc.)
       // embedded in contract-level error messages from leaking into logs.
-      const safeMessage =
-        error instanceof Error
-          ? redactError(error).message
-          : String(error);
+      const safeMessage = error instanceof Error ? redactError(error).message : String(error);
       this.logger?.error("contract_invocation_failed", {
         method: "private_pay",
         error: safeMessage,
@@ -192,7 +189,7 @@ export class PayrollService {
    * Validate a batch payroll payload locally before processing.
    * Returns structured validation errors or empty array if valid.
    */
-  validateBatch(entries: any[]): any[] {
+  validateBatch(entries: unknown[]): unknown[] {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { PayrollValidation } = require("./core/validation");
     return PayrollValidation.validateBatchPayload(entries);
@@ -202,7 +199,7 @@ export class PayrollService {
    * Process a batch of private payroll payments.
    * Validates all batch payment entries first; rejects invalid payloads before submission.
    */
-  async processBatchPayments(entries: any[]): Promise<PaymentResult[]> {
+  async processBatchPayments(entries: unknown[]): Promise<PaymentResult[]> {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { PayrollValidation } = require("./core/validation");
     const payload = PayrollValidation.assertValidBatchPayload(entries);

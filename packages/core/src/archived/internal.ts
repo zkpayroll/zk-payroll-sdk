@@ -37,18 +37,14 @@ export function applyArchiveQuery(
   const rawPeriodEnd = params["periodEnd"];
   // If a period string is present but unparseable, we treat it as an impossible
   // constraint — no records can satisfy it, so we flag it with a sentinel.
-  const periodStartMs =
-    rawPeriodStart !== undefined ? Date.parse(rawPeriodStart) : undefined;
-  const periodEndMs =
-    rawPeriodEnd !== undefined ? Date.parse(rawPeriodEnd) : undefined;
+  const periodStartMs = rawPeriodStart !== undefined ? Date.parse(rawPeriodStart) : undefined;
+  const periodEndMs = rawPeriodEnd !== undefined ? Date.parse(rawPeriodEnd) : undefined;
   // If either bound parsed to NaN the caller set a malformed date — safe-fail
   // by marking it as "unsatisfiable" so the filter will exclude all records.
   const periodStartInvalid = periodStartMs !== undefined && isNaN(periodStartMs);
   const periodEndInvalid = periodEndMs !== undefined && isNaN(periodEndMs);
-  const minAmountVal =
-    params["minAmount"] !== undefined ? BigInt(params["minAmount"]) : undefined;
-  const maxAmountVal =
-    params["maxAmount"] !== undefined ? BigInt(params["maxAmount"]) : undefined;
+  const minAmountVal = params["minAmount"] !== undefined ? BigInt(params["minAmount"]) : undefined;
+  const maxAmountVal = params["maxAmount"] !== undefined ? BigInt(params["maxAmount"]) : undefined;
 
   // Fast-path: no filters set — return a shallow copy
   if (

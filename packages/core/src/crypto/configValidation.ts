@@ -10,11 +10,15 @@ import { ValidationError } from "../errors";
  */
 export function validateProofConfig(config: ProofGeneratorConfig): void {
   const wasmUrl = config.wasmSource
-    ? (config.wasmSource.type === "local" ? config.wasmSource.path : config.wasmSource.url)
+    ? config.wasmSource.type === "local"
+      ? config.wasmSource.path
+      : config.wasmSource.url
     : config.wasmUrl;
 
   const zkeyUrl = config.zkeySource
-    ? (config.zkeySource.type === "local" ? config.zkeySource.path : config.zkeySource.url)
+    ? config.zkeySource.type === "local"
+      ? config.zkeySource.path
+      : config.zkeySource.url
     : config.zkeyUrl;
 
   if (!wasmUrl || typeof wasmUrl !== "string" || wasmUrl.trim() === "") {
@@ -30,8 +34,11 @@ export function validateProofConfig(config: ProofGeneratorConfig): void {
     if (/^https?:\/\//i.test(url)) {
       try {
         new URL(url);
-      } catch (e) {
-        throw new ValidationError(`Malformed ${fieldName.replace("Url", "").toUpperCase()} URL`, fieldName);
+      } catch {
+        throw new ValidationError(
+          `Malformed ${fieldName.replace("Url", "").toUpperCase()} URL`,
+          fieldName
+        );
       }
     }
     // Note: Local paths are kept flexible to allow relative or absolute file paths.

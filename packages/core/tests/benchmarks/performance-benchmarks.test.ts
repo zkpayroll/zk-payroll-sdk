@@ -209,7 +209,7 @@ async function simulateCacheMissWorkflow(): Promise<void> {
     amount: amount.toString(),
     asset,
   };
-  const witnessKey = `proof:${JSON.stringify(witness)}`;
+  const _witnessKey = `proof:${JSON.stringify(witness)}`;
 
   // Step 2: Simulate proof compute (simplified)
   const proof = {

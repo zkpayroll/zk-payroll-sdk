@@ -209,6 +209,7 @@ export class AlbedoAdapter implements IWalletAdapter {
   }
 
   isAvailable(): boolean {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return typeof window !== "undefined" && !!(window as any).Albedo;
   }
 
@@ -229,10 +230,12 @@ export class AlbedoAdapter implements IWalletAdapter {
 
   // ── Private helpers ──────────────────────────────────────────────────────
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private getAlbedoApi(): any {
     if (!this.isAvailable()) {
       throw new WalletError("Albedo is not available", WalletErrorCode.NOT_INSTALLED, this.id);
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (window as any).Albedo;
   }
 

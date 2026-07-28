@@ -92,7 +92,13 @@ function diffOne(
     );
   }
 
-  return entry(outcome.recipient, "match", "Expected and observed outcomes agree.", expected, observed);
+  return entry(
+    outcome.recipient,
+    "match",
+    "Expected and observed outcomes agree.",
+    expected,
+    observed
+  );
 }
 
 /**
