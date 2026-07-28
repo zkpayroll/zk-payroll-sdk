@@ -1,5 +1,5 @@
 import { IProofGenerator, ProofPayload, ProofGeneratorConfig, witnessKey } from "./IProofGenerator";
-import { WorkerRequest, WorkerResponse, ProofProgressStage } from "./WorkerMessages";
+import { WorkerRequest, WorkerResponse } from "./WorkerMessages";
 import { PayrollError } from "../errors";
 import { IdempotencyRegistry } from "../core/idempotency";
 
@@ -135,7 +135,7 @@ export class WorkerProofGenerator implements IProofGenerator {
 
       case "PROGRESS":
         for (const cb of pending.progressCallbacks) {
-          const rawStage = "event" in msg && msg.event ? msg.event.stage : (msg as any).stage;
+          const rawStage = "event" in msg && msg.event ? msg.event.stage : (msg as any).stage; // eslint-disable-line @typescript-eslint/no-explicit-any
           const mappedStage: PayrollProgressStage =
             rawStage === "loading_zkey"
               ? "proof_loading_zkey"
@@ -154,6 +154,7 @@ export class WorkerProofGenerator implements IProofGenerator {
                   operation: "proof",
                   stage: mappedStage,
                   message: "Generating proof",
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   progress: (msg as any).progress,
                   timestamp: new Date().toISOString(),
                 };

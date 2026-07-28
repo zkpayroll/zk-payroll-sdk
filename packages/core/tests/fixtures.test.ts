@@ -18,7 +18,7 @@ import {
   COMMITMENT_ENTRY_EDGE,
   COMMITMENT_ENTRY_ALICE,
   COMMITMENT_ENTRY_BOB_REVEALED,
-  COMMIT_REQUEST_NORMAL,
+  COMMIT_REQUEST_NORMAL, // eslint-disable-line @typescript-eslint/no-unused-vars
   COMMIT_REQUEST_EDGE,
   COMMIT_REQUEST_ALICE,
   BATCH_COMMIT_ITEM_ALICE,
@@ -65,7 +65,10 @@ import { normalizePayrollPayload } from "../src/normalization/normalizer";
 import { DraftBuilder } from "../src/draft/DraftBuilder";
 import { PayrollValidation } from "../src/core/validation";
 import { generateCommitments } from "../src/simulation/commitmentGenerator";
-import { encodeCommitmentEntry, decodeCommitmentEntry } from "../src/serialization/commitmentSerialization";
+import {
+  encodeCommitmentEntry,
+  decodeCommitmentEntry,
+} from "../src/serialization/commitmentSerialization";
 
 // ── Sanity: every fixture re-imports to an equal value ─────────────────────
 
@@ -156,14 +159,8 @@ describe("deterministic fixtures — SDK behaviour matches expected outcomes", (
   });
 
   it("commitment hash generation is deterministic across runs", () => {
-    const first = generateCommitments(
-      [SIMULATION_EMPLOYEE_ALICE],
-      PAYROLL_PERIOD_2025_Q2_P1,
-    );
-    const second = generateCommitments(
-      [SIMULATION_EMPLOYEE_ALICE],
-      PAYROLL_PERIOD_2025_Q2_P1,
-    );
+    const first = generateCommitments([SIMULATION_EMPLOYEE_ALICE], PAYROLL_PERIOD_2025_Q2_P1);
+    const second = generateCommitments([SIMULATION_EMPLOYEE_ALICE], PAYROLL_PERIOD_2025_Q2_P1);
     expect(first[0].commitmentHash).toBe(second[0].commitmentHash);
     expect(first[0].commitmentHash).toMatch(/^commit:[0-9a-f]{64}$/);
   });

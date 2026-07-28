@@ -26,7 +26,7 @@ export interface SdkLogger extends EventEmitter {
 export function createHookLogger(hook: LoggerHook): SdkLogger {
   const emitter = new EventEmitter() as SdkLogger;
 
-  function emit(level: LogLevel, event: string, context?: Record<string, unknown>) {
+  function emit(level: LogLevel, event: string, context?: Record<string, unknown>): void {
     const logEntry: LogEvent = { event, level, context, timestamp: new Date().toISOString() };
     hook(logEntry);
     emitter.emit("log", logEntry);

@@ -24,7 +24,11 @@ function deriveStatus(outcomes: PaymentExecutionOutcome[]): PayrollExecutionSumm
 /**
  * Count outcomes by status category.
  */
-function countByStatus(outcomes: PaymentExecutionOutcome[]) {
+function countByStatus(outcomes: PaymentExecutionOutcome[]): {
+  successCount: number;
+  failureCount: number;
+  pendingCount: number;
+} {
   let successCount = 0;
   let failureCount = 0;
   let pendingCount = 0;

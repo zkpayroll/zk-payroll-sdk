@@ -117,8 +117,8 @@ export class TransactionWatcher extends EventEmitter {
     for (let attempt = 1; attempt <= maxPolls; attempt++) {
       try {
         await sleep(pollInterval, signal);
-      } catch (err: any) {
-        if (err.message === "AbortError") {
+      } catch (err: unknown) {
+        if (err instanceof Error && err.message === "AbortError") {
           this.emit("cancelled", { txHash });
           throw new Error(`Polling for transaction ${txHash} was cancelled.`);
         }

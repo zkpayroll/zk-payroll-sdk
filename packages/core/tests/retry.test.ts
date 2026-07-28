@@ -1,4 +1,10 @@
-import { classifyError, withRetry, RetryCategory, RetryDecision, RetryTimeoutError } from "../src/core/retry";
+import {
+  classifyError,
+  withRetry,
+  RetryCategory,
+  RetryDecision,
+  RetryTimeoutError,
+} from "../src/core/retry";
 import {
   ZkPayrollError,
   NetworkError,
@@ -221,10 +227,7 @@ describe("withRetry", () => {
   });
 
   it("succeeds after a retryable failure (success after retry)", async () => {
-    const fn = jest
-      .fn()
-      .mockRejectedValueOnce(new Error("ECONNRESET"))
-      .mockResolvedValueOnce("ok");
+    const fn = jest.fn().mockRejectedValueOnce(new Error("ECONNRESET")).mockResolvedValueOnce("ok");
 
     const result = await withRetry(fn, { attempts: 3, delayMs: 1 });
 
@@ -282,9 +285,7 @@ describe("withRetry", () => {
     }) as unknown as typeof global.setTimeout);
 
     const fn = jest.fn().mockRejectedValue(new Error("ECONNRESET"));
-    await expect(
-      withRetry(fn, { attempts: 4, delayMs: 10, backoffFactor: 2 })
-    ).rejects.toThrow();
+    await expect(withRetry(fn, { attempts: 4, delayMs: 10, backoffFactor: 2 })).rejects.toThrow();
 
     expect(delays).toEqual([10, 20, 40]);
     jest.restoreAllMocks();
@@ -297,14 +298,12 @@ describe("withRetry", () => {
       // Second call onward takes long enough to blow past the deadline.
       return call === 1
         ? Promise.reject(new Error("ECONNRESET"))
-        : new Promise((_, reject) =>
-            setTimeout(() => reject(new Error("ECONNRESET")), 50)
-          );
+        : new Promise((_, reject) => setTimeout(() => reject(new Error("ECONNRESET")), 50));
     });
 
-    await expect(
-      withRetry(fn, { attempts: 10, delayMs: 5, timeoutMs: 20 })
-    ).rejects.toThrow("ECONNRESET");
+    await expect(withRetry(fn, { attempts: 10, delayMs: 5, timeoutMs: 20 })).rejects.toThrow(
+      "ECONNRESET"
+    );
 
     // Should have stopped well short of 10 attempts.
     expect(fn.mock.calls.length).toBeLessThan(10);
@@ -312,10 +311,7 @@ describe("withRetry", () => {
 
   it("calls onRetry with the attempt number and classification before each retry", async () => {
     const onRetry = jest.fn();
-    const fn = jest
-      .fn()
-      .mockRejectedValueOnce(new Error("ECONNRESET"))
-      .mockResolvedValueOnce("ok");
+    const fn = jest.fn().mockRejectedValueOnce(new Error("ECONNRESET")).mockResolvedValueOnce("ok");
 
     await withRetry(fn, { attempts: 3, delayMs: 1, onRetry });
 

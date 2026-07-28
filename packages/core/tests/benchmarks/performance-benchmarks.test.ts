@@ -209,7 +209,7 @@ async function simulateCacheMissWorkflow(): Promise<void> {
     amount: amount.toString(),
     asset,
   };
-  const witnessKey = `proof:${JSON.stringify(witness)}`;
+  const _witnessKey = `proof:${JSON.stringify(witness)}`;
 
   // Step 2: Simulate proof compute (simplified)
   const proof = {
@@ -451,6 +451,7 @@ describe("Performance benchmarks - proof setup, caching, and submission", () => 
 
   afterAll(() => {
     const table = formatPerformanceTable(results);
+    // eslint-disable-next-line no-console
     console.log("\n" + table + "\n");
     persistPerformanceBaseline(results);
   });

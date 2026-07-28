@@ -11,8 +11,7 @@ import { ValidationResult } from "../../src/core/validation";
 
 // ── Shared recipient addresses ─────────────────────────────────────────────
 
-export const FIXTURE_PAYMENT_RECIPIENT_VALID =
-  "GVALIDPAYMENT1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+export const FIXTURE_PAYMENT_RECIPIENT_VALID = "GVALIDPAYMENT1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 export const FIXTURE_PAYMENT_RECIPIENT_EMPTY = "";
 
 // ── Message constants (must mirror messages emitted by PayrollValidation) ──

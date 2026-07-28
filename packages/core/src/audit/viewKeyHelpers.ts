@@ -151,10 +151,7 @@ function defaultExpiryFromNow(): string {
 }
 
 /** Derives the display status of a ViewKey at a given point in time. */
-function resolveKeyStatus(
-  key: ViewKey,
-  now: Date
-): "active" | "revoked" | "expired" {
+function resolveKeyStatus(key: ViewKey, now: Date): "active" | "revoked" | "expired" {
   if (!key.isActive) return "revoked";
   if (new Date(key.expiresAt) <= now) return "expired";
   return "active";
@@ -183,10 +180,7 @@ function resolveKeyStatus(
  * addViewKey(key); // persist via Zustand store or API
  * ```
  */
-export function createViewKeyRequest(
-  request: ViewKeyRequest,
-  grantedBy: string
-): ViewKeyResponse {
+export function createViewKeyRequest(request: ViewKeyRequest, grantedBy: string): ViewKeyResponse {
   const now = new Date();
   return {
     id: `vk_${now.getTime()}`,
@@ -253,14 +247,9 @@ export function validateViewKeyRequest(request: ViewKeyRequest): string[] {
  * // update the key in your store using result.revokedAt
  * ```
  */
-export function revokeViewKey(
-  key: ViewKey,
-  request: ViewKeyRevokeRequest
-): ViewKeyRevokeResult {
+export function revokeViewKey(key: ViewKey, request: ViewKeyRevokeRequest): ViewKeyRevokeResult {
   if (key.id !== request.id) {
-    throw new Error(
-      `View key id mismatch: expected "${request.id}", got "${key.id}"`
-    );
+    throw new Error(`View key id mismatch: expected "${request.id}", got "${key.id}"`);
   }
   if (!key.isActive) {
     throw new Error(`View key "${key.id}" is already inactive`);
@@ -286,10 +275,7 @@ export function revokeViewKey(
  * console.log(entry.status); // "active" | "revoked" | "expired"
  * ```
  */
-export function getViewKeyStatus(
-  key: ViewKey,
-  now: Date = new Date()
-): ViewKeyStatusEntry {
+export function getViewKeyStatus(key: ViewKey, now: Date = new Date()): ViewKeyStatusEntry {
   return {
     id: key.id,
     keyId: key.keyId,
@@ -362,9 +348,6 @@ export function isViewKeyValid(key: ViewKey, now: Date = new Date()): boolean {
  * const usable = filterActiveViewKeys(viewKeys);
  * ```
  */
-export function filterActiveViewKeys(
-  keys: ViewKey[],
-  now: Date = new Date()
-): ViewKey[] {
+export function filterActiveViewKeys(keys: ViewKey[], now: Date = new Date()): ViewKey[] {
   return keys.filter((k) => isViewKeyValid(k, now));
 }

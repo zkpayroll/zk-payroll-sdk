@@ -450,7 +450,10 @@ describe("Core Error Classes", () => {
     });
 
     it("auto-classifies TRANSACTION_SUBMISSION_FAILED as RETRYABLE", () => {
-      const err = new ContractExecutionError("submission failed", ContractErrorCode.TRANSACTION_SUBMISSION_FAILED);
+      const err = new ContractExecutionError(
+        "submission failed",
+        ContractErrorCode.TRANSACTION_SUBMISSION_FAILED
+      );
       expect(err.failureState).toBe(TimeoutFailureState.RETRYABLE);
     });
 
@@ -460,7 +463,10 @@ describe("Core Error Classes", () => {
     });
 
     it("auto-classifies INVALID_RESPONSE as RETRYABLE", () => {
-      const err = new ContractExecutionError("invalid response", ContractErrorCode.INVALID_RESPONSE);
+      const err = new ContractExecutionError(
+        "invalid response",
+        ContractErrorCode.INVALID_RESPONSE
+      );
       expect(err.failureState).toBe(TimeoutFailureState.RETRYABLE);
     });
 

@@ -7,7 +7,7 @@
 
 import {
   paginate,
-  paginate as paginateRecords,
+  paginate as _paginateRecords,
   encodeCursor,
   decodeCursor,
   resolvePageSize,

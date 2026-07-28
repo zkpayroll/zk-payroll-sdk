@@ -75,6 +75,7 @@ export class FreighterAdapter implements IWalletAdapter {
 
       // If network preference is provided and doesn't match, warn but continue
       if (network && this._network !== network) {
+        // eslint-disable-next-line no-console
         console.warn(
           `Freighter is on ${this._network} but requested ${network}. Transaction may fail.`
         );
@@ -259,6 +260,7 @@ export class FreighterAdapter implements IWalletAdapter {
       }
     } catch (error) {
       // Silently handle errors in event handlers
+      // eslint-disable-next-line no-console
       console.error("Error handling connection change:", error);
     }
   }
@@ -274,6 +276,7 @@ export class FreighterAdapter implements IWalletAdapter {
       }
     } catch (error) {
       // Silently handle errors in event handlers
+      // eslint-disable-next-line no-console
       console.error("Error handling network change:", error);
     }
   }
@@ -288,6 +291,7 @@ export class FreighterAdapter implements IWalletAdapter {
       }
     } catch (error) {
       // Silently handle errors in event handlers
+      // eslint-disable-next-line no-console
       console.error("Error handling account change:", error);
     }
   }
