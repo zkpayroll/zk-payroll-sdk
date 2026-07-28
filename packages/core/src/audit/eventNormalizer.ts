@@ -47,15 +47,7 @@
  */
 
 import type { TypedContractEvent } from "../event-parser";
-import type {
-  PayrollCompletedPayload,
-  PayrollFailedPayload,
-  TransactionConfirmedPayload,
-  TransactionFailedPayload,
-  AuditViewKeyGrantedPayload,
-  AuditViewKeyRevokedPayload,
-  WebhookEventType,
-} from "../webhooks/types";
+import type { WebhookEventType } from "../webhooks/types";
 
 // ── Audit Event Category ────────────────────────────────────────────────────
 
@@ -264,18 +256,20 @@ function contractEventToSeverity(event: TypedContractEvent): AuditEventSeverity 
 
 /** Derive the actor from a typed contract event. */
 function contractEventActor(event: TypedContractEvent): string {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const e = event as any;
   switch (event.type) {
     case "registered":
     case "registry_updated":
     case "registry_deactivated":
-      return (event as any).employer ?? "";
+      return e.employer ?? "";
     case "committed":
     case "salary_revealed":
-      return (event as any).employer ?? "";
+      return e.employer ?? "";
     case "payment_executed":
-      return (event as any).recipient ?? "";
+      return e.recipient ?? "";
     case "payment_scheduled":
-      return (event as any).recipient ?? "";
+      return e.recipient ?? "";
     case "payment_cancelled":
       return "";
     default:
@@ -285,41 +279,45 @@ function contractEventActor(event: TypedContractEvent): string {
 
 /** Derive contract ID from a typed contract event. */
 function contractEventContractId(event: TypedContractEvent): string | undefined {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (event as any).contractId || undefined;
 }
 
 /** Derive ledger from a typed contract event. */
 function contractEventLedger(event: TypedContractEvent): number | undefined {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (event as any).ledger || undefined;
 }
 
 /** Build a summary string from a typed contract event. */
 function contractEventSummary(event: TypedContractEvent): string {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const e = event as any;
   switch (event.type) {
     case "registered":
-      return `Employee ${(event as any).employee} registered by ${(event as any).employer}`;
+      return `Employee ${e.employee} registered by ${e.employer}`;
     case "registry_updated":
-      return `Salary updated for employee ${(event as any).employee}`;
+      return `Salary updated for employee ${e.employee}`;
     case "registry_deactivated":
-      return `Registry deactivated for employee ${(event as any).employee}`;
+      return `Registry deactivated for employee ${e.employee}`;
     case "committed":
-      return `Salary commitment made for cycle ${(event as any).cycleId}`;
+      return `Salary commitment made for cycle ${e.cycleId}`;
     case "salary_revealed":
-      return `Salary revealed for cycle ${(event as any).cycleId}`;
+      return `Salary revealed for cycle ${e.cycleId}`;
     case "payment_executed":
-      return `Payment of ${(event as any).amount} ${(event as any).asset} to ${(event as any).recipient}`;
+      return `Payment of ${e.amount} ${e.asset} to ${e.recipient}`;
     case "payment_scheduled":
-      return `Payment scheduled for ${(event as any).recipient}`;
+      return `Payment scheduled for ${e.recipient}`;
     case "payment_cancelled":
-      return `Scheduled payment ${(event as any).paymentId} cancelled`;
+      return `Scheduled payment ${e.paymentId} cancelled`;
     default:
-      return `Contract event: ${(event as any).type}`;
+      return `Contract event: ${e.type}`;
   }
 }
 
 /** Extract details from a typed contract event. */
 function contractEventDetails(event: TypedContractEvent): Record<string, unknown> {
-  const { type, ...rest } = event as unknown as Record<string, unknown>;
+  const { type: _type, ...rest } = event as unknown as Record<string, unknown>;
   return { ...rest };
 }
 
@@ -360,7 +358,7 @@ function webhookToSeverity(eventType: WebhookEventType): AuditEventSeverity {
 
 /** Extract details from a webhook payload. */
 function webhookDetails(payload: Record<string, unknown>): Record<string, unknown> {
-  const { event, timestamp, eventId, ...rest } = payload;
+  const { event: _event, timestamp: _timestamp, eventId: _eventId, ...rest } = payload;
   return { ...rest };
 }
 
@@ -409,9 +407,12 @@ export function normalizeAuditEvent(
   const source = options.source;
   const tags = options.tags ?? [];
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const anyPayload = eventOrPayload as any;
+
   // Determine if this is a typed contract event.
   const isContractEvent =
-    typeof (eventOrPayload as any).type === "string" &&
+    typeof anyPayload.type === "string" &&
     [
       "registered",
       "registry_updated",
@@ -421,10 +422,10 @@ export function normalizeAuditEvent(
       "payment_executed",
       "payment_scheduled",
       "payment_cancelled",
-    ].includes((eventOrPayload as any).type);
+    ].includes(anyPayload.type);
 
   // Determine if this is a webhook payload.
-  const rawEvent = (eventOrPayload as any).event;
+  const rawEvent = anyPayload.event;
   const isWebhookPayload =
     typeof rawEvent === "string" &&
     (rawEvent.startsWith("payroll") ||

@@ -149,33 +149,42 @@ describe("verifyWebhookSignature() — happy path", () => {
 
 describe("verifyWebhookSignature() — envelope validation", () => {
   it("throws ENVELOPE_INVALID for null body", () => {
-    expect(() => verifyWebhookSignature(null as any, TEST_SECRET)).toThrow(
-      WebhookVerificationError
-    );
+    expect(() =>
+      verifyWebhookSignature(null as unknown as SignedWebhookEnvelope, TEST_SECRET)
+    ).toThrow(WebhookVerificationError);
   });
 
   it("throws ENVELOPE_INVALID for non-object body", () => {
-    expect(() => verifyWebhookSignature("string" as any, TEST_SECRET)).toThrow(
-      WebhookVerificationError
-    );
+    expect(() =>
+      verifyWebhookSignature("string" as unknown as SignedWebhookEnvelope, TEST_SECRET)
+    ).toThrow(WebhookVerificationError);
   });
 
   it("throws PAYLOAD_MISSING when payload is missing", () => {
     expect(() =>
-      verifyWebhookSignature({ signature: "sha256=abc", version: "1" } as any, TEST_SECRET)
+      verifyWebhookSignature(
+        { signature: "sha256=abc", version: "1" } as unknown as SignedWebhookEnvelope,
+        TEST_SECRET
+      )
     ).toThrow(WebhookVerificationError);
   });
 
   it("throws SIGNATURE_MISSING when signature is missing", () => {
     expect(() =>
-      verifyWebhookSignature({ payload: makeCompletedPayload(), version: "1" } as any, TEST_SECRET)
+      verifyWebhookSignature(
+        { payload: makeCompletedPayload(), version: "1" } as unknown as SignedWebhookEnvelope,
+        TEST_SECRET
+      )
     ).toThrow(WebhookVerificationError);
   });
 
   it("throws VERSION_MISSING when version is missing", () => {
     expect(() =>
       verifyWebhookSignature(
-        { payload: makeCompletedPayload(), signature: "sha256=abc" } as any,
+        {
+          payload: makeCompletedPayload(),
+          signature: "sha256=abc",
+        } as unknown as SignedWebhookEnvelope,
         TEST_SECRET
       )
     ).toThrow(WebhookVerificationError);
@@ -258,6 +267,7 @@ describe("verifyWebhookSignature() — replay protection", () => {
   it("throws TIMESTAMP_MISSING when payload has no timestamp", () => {
     const payload = {
       ...makeCompletedPayload(),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       timestamp: undefined as any,
     };
     const envelope = makeSignedEnvelope(payload);

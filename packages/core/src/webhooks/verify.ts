@@ -169,6 +169,7 @@ export function verifyWebhookSignature(
     throw new WebhookVerificationError(
       "Webhook signature mismatch: payload may have been tampered with",
       "SIGNATURE_MISMATCH",
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       { eventId: (payload as any).eventId }
     );
   }
@@ -178,6 +179,7 @@ export function verifyWebhookSignature(
   const toleranceMs = options?.toleranceMs ?? 0;
 
   if (maxAgeMs > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const timestamp = (payload as any).timestamp;
     if (!timestamp) {
       throw new WebhookVerificationError(

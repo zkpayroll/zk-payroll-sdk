@@ -34,7 +34,7 @@ export function validateProofConfig(config: ProofGeneratorConfig): void {
     if (/^https?:\/\//i.test(url)) {
       try {
         new URL(url);
-      } catch (e) {
+      } catch {
         throw new ValidationError(
           `Malformed ${fieldName.replace("Url", "").toUpperCase()} URL`,
           fieldName

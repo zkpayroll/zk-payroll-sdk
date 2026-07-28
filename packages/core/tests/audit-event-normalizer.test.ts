@@ -26,7 +26,6 @@ import type {
   PaymentExecutedEvent,
   CommittedEvent,
   SalaryRevealedEvent,
-  RegistryUpdatedEvent,
   RegistryDeactivatedEvent,
   PaymentScheduledEvent,
   PaymentCancelledEvent,
@@ -115,7 +114,7 @@ function makeSalaryRevealedEvent(
   };
 }
 
-function makePaymentScheduledEvent(
+function _makePaymentScheduledEvent(
   overrides: Partial<PaymentScheduledEvent> = {}
 ): PaymentScheduledEvent {
   return {

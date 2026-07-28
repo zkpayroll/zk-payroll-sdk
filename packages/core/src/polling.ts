@@ -67,8 +67,8 @@ export async function pollTransaction(
     // If NOT_FOUND, sleep and try again
     try {
       await sleep(intervalMs, signal);
-    } catch (err: any) {
-      if (err.message === "AbortError") {
+    } catch (err: unknown) {
+      if (err instanceof Error && err.message === "AbortError") {
         throw new Error(`Polling for transaction ${txHash} was cancelled.`);
       }
       throw err;
