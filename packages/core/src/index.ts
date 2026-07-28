@@ -126,3 +126,6 @@ export * from "./inspector";
 
 // ── Transaction Failure Classification ──────────────────────────────────────
 export * from "./classification";
+
+// ── Reconciliation Diff Helper ───────────────────────────────────────────────
+export * from "./reconciliation";
