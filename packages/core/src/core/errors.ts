@@ -80,8 +80,7 @@ export const WalletErrorCode = {
   UNKNOWN_ERROR: "WALLET_UNKNOWN_ERROR",
 } as const;
 
-export type WalletErrorCodeType =
-  (typeof WalletErrorCode)[keyof typeof WalletErrorCode];
+export type WalletErrorCodeType = (typeof WalletErrorCode)[keyof typeof WalletErrorCode];
 
 /**
  * Base class for wallet interaction errors.
@@ -129,8 +128,7 @@ export const ContractErrorCode = {
   UNKNOWN_RPC_ERROR: "UNKNOWN_RPC_ERROR",
 } as const;
 
-export type ContractErrorCodeType =
-  (typeof ContractErrorCode)[keyof typeof ContractErrorCode];
+export type ContractErrorCodeType = (typeof ContractErrorCode)[keyof typeof ContractErrorCode];
 
 export const TimeoutFailureState = {
   RETRYABLE: "RETRYABLE",
@@ -279,15 +277,18 @@ export const DEFAULT_ERROR_MESSAGES: Record<string, string> = {
     "Zero-knowledge proof generation failed. This may be due to invalid inputs or insufficient system resources.",
   VALIDATION_ERROR:
     "The provided parameters failed validation. Please review your inputs and try again.",
-  [WalletErrorCode.NOT_INSTALLED]: "The wallet extension is not installed. Please install it and try again.",
-  [WalletErrorCode.NOT_CONNECTED]: "The wallet is not connected. Please connect your wallet and try again.",
+  [WalletErrorCode.NOT_INSTALLED]:
+    "The wallet extension is not installed. Please install it and try again.",
+  [WalletErrorCode.NOT_CONNECTED]:
+    "The wallet is not connected. Please connect your wallet and try again.",
   [WalletErrorCode.CONNECTION_REJECTED]:
     "The wallet connection request was rejected. Please approve the connection in your wallet and try again.",
   [WalletErrorCode.SIGNING_REJECTED]:
     "The transaction signing request was rejected. Please approve the signature in your wallet and try again.",
   [WalletErrorCode.NETWORK_MISMATCH]:
     "The wallet is on the wrong network. Please switch to the correct network and try again.",
-  [WalletErrorCode.INVALID_XDR]: "The transaction data is invalid. This may indicate a software bug.",
+  [WalletErrorCode.INVALID_XDR]:
+    "The transaction data is invalid. This may indicate a software bug.",
   [WalletErrorCode.UNKNOWN_ERROR]: "An unexpected wallet error occurred. Please try again.",
 };
 
@@ -357,10 +358,7 @@ export function toUserFriendlyError(
 /**
  * Map a raw Soroban RPC error to a typed ContractExecutionError.
  */
-export function mapRpcError(
-  error: unknown,
-  context: ErrorContext = {}
-): ContractExecutionError {
+export function mapRpcError(error: unknown, context: ErrorContext = {}): ContractExecutionError {
   if (error instanceof ContractExecutionError) return error;
 
   const msg = error instanceof Error ? error.message : String(error);

@@ -209,7 +209,7 @@ describe("Browser Worker Compatibility - Proof Generation APIs", () => {
       const req = worker.lastRequest();
 
       if (req.type === "GENERATE_PROOF") {
-        expect((req.witness.amounts as bigint[])).toEqual([100n, 200n, 300n]);
+        expect(req.witness.amounts as bigint[]).toEqual([100n, 200n, 300n]);
         expect((req.witness.amounts as bigint[])[0]).toBe(100n);
       }
 
@@ -282,7 +282,10 @@ describe("Browser Worker Compatibility - Proof Generation APIs", () => {
       const emptyPayload: ProofPayload = {
         proof: {
           pi_a: ["1", "2"],
-          pi_b: [["3", "4"], ["5", "6"]],
+          pi_b: [
+            ["3", "4"],
+            ["5", "6"],
+          ],
           pi_c: ["7", "8"],
           protocol: "groth16",
           curve: "bn128",
@@ -744,7 +747,10 @@ describe("Browser Worker Compatibility - Proof Generation APIs", () => {
       const largePayload: ProofPayload = {
         proof: {
           pi_a: ["1", "2"],
-          pi_b: [["3", "4"], ["5", "6"]],
+          pi_b: [
+            ["3", "4"],
+            ["5", "6"],
+          ],
           pi_c: ["7", "8"],
           protocol: "groth16",
           curve: "bn128",

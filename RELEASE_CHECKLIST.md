@@ -1,18 +1,39 @@
-# Release Checklist for Documentation Alignment
-## Introduction
-This checklist is designed to ensure that documentation stays aligned with the SDK surface during releases.
+# Release & Package Publication Verification Checklist
 
-## Pre-Release Steps
-1. Review key documentation for accuracy and completeness.
-2. Verify examples are up-to-date and work as expected.
-3. Check migration notes for relevance and correctness.
-4. Confirm support matrix aligns with current capabilities.
+## Overview
+This checklist defines the required pre-release and post-release verification steps for publishing the `@zk-payroll/core` SDK package to npm. Following this checklist ensures release repeatability, artifact integrity, and documentation alignment.
 
-## Release Steps
-1. Validate documentation changes against the SDK surface.
-2. Ensure all necessary documentation updates are included in the release.
-3. Review release notes for documentation relevance.
+---
 
-## Post-Release Steps
-1. Verify documentation is correctly published and accessible.
-2. Confirm that all links and references are valid.
+## 1. Pre-Publish Package Verification
+
+### A. Code & Version Quality
+- [ ] Version bump updated in `package.json` following Semantic Versioning (`npm version patch|minor|major`).
+- [ ] Working directory is clean with all changes committed (`git status`).
+- [ ] All unit, browser, and integration tests pass cleanly (`npm test`).
+- [ ] ESLint and Prettier checks pass without errors (`npm run lint` / `npm run format:check`).
+
+### B. Artifact & Build Integrity
+- [ ] TypeScript compilation succeeds with zero errors (`npm run build`).
+- [ ] Package bundle size meets target constraints (`npm run measure-bundle`).
+- [ ] Run `npm pack --dry-run` to inspect target release files and verify no sensitive test files, keys, or scratch scripts are included.
+
+### C. Documentation Alignment
+- [ ] Review `README.md` and API docs in `docs/` for accuracy against new SDK functions.
+- [ ] Verify `docs/SUPPORT_MATRIX.md` matches current Stellar/Soroban SDK dependency versions.
+- [ ] Ensure `CHANGELOG.md` reflects all notable features, bug fixes, and breaking changes.
+
+---
+
+## 2. CI/CD Workflows & Publication
+
+- [ ] **Continuous Integration**: Verify that [.github/workflows/ci.yml](.github/workflows/ci.yml) completes with green checks on the target release commit.
+- [ ] **Package Publishing**: Execute or monitor the [.github/workflows/publish.yml](.github/workflows/publish.yml) workflow for automated npm release.
+
+---
+
+## 3. Post-Publish Verification
+
+- [ ] Confirm `@zk-payroll/core` package is visible on npm registry (`npm info @zk-payroll/core`).
+- [ ] Verify clean installation in a fresh test project (`npm i @zk-payroll/core`).
+- [ ] Verify GitHub Release tag and release notes are published.

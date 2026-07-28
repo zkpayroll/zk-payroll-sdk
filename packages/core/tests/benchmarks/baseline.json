@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-07-25T13:07:27.081Z",
-  "nodeVersion": "v22.22.0",
+  "generatedAt": "2026-07-27T18:48:39.888Z",
+  "nodeVersion": "v24.14.0",
   "platform": "linux/x64",
   "results": [
     {
@@ -41,7 +41,7 @@
       "peakHeapUsedMB": 585.5364761352539,
       "avgArrayBuffersDeltaMB": 0,
       "avgExternalDeltaMB": 0,
-      "avgDurationMs": 0
+      "avgDurationMs": 0.2
     },
     {
       "scenario": "cold_proof_small",
@@ -51,7 +51,7 @@
       "peakHeapUsedMB": 585.8265609741211,
       "avgArrayBuffersDeltaMB": 1.430511474609375,
       "avgExternalDeltaMB": 1.430511474609375,
-      "avgDurationMs": 1.3333333333333333
+      "avgDurationMs": 13.333333333333334
     },
     {
       "scenario": "cold_proof_medium",

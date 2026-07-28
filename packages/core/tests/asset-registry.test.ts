@@ -190,7 +190,10 @@ describe("AssetRegistryClass — register", () => {
 
   it("stores customData without modification", () => {
     registry.register({ ...CUSTOM_TOKEN, customData: { riskTier: "high", apr: 0.05 } });
-    expect(registry.getOrThrow(CUSTOM_TOKEN.id).customData).toEqual({ riskTier: "high", apr: 0.05 });
+    expect(registry.getOrThrow(CUSTOM_TOKEN.id).customData).toEqual({
+      riskTier: "high",
+      apr: 0.05,
+    });
   });
 
   it("stores iconUrl without modification", () => {

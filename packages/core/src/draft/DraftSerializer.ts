@@ -93,7 +93,10 @@ export function importDraft(raw: string, expectedChecksum?: string): DraftImport
   }
 
   if (expectedChecksum !== undefined && simpleChecksum(raw) !== expectedChecksum) {
-    throw new SerializationError("Draft checksum mismatch — data may have been tampered with.", "CHECKSUM_MISMATCH");
+    throw new SerializationError(
+      "Draft checksum mismatch — data may have been tampered with.",
+      "CHECKSUM_MISMATCH"
+    );
   }
 
   const warnings: string[] = [];

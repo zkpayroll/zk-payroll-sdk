@@ -123,7 +123,10 @@ describe("Typed SDK Wallet and RPC Errors (Issue #156)", () => {
     });
 
     it("should pass through existing ContractExecutionError untouched", () => {
-      const existing = new ContractExecutionError("Already typed", ContractErrorCode.CONTRACT_REVERT);
+      const existing = new ContractExecutionError(
+        "Already typed",
+        ContractErrorCode.CONTRACT_REVERT
+      );
       const mapped = mapRpcError(existing);
       expect(mapped).toBe(existing);
     });
@@ -136,9 +139,7 @@ describe("Typed SDK Wallet and RPC Errors (Issue #156)", () => {
 
       const categorize = (err: unknown) => {
         if (err instanceof WalletError) {
-          return err instanceof WalletRejectionError
-            ? "WALLETS_USER_REJECTED"
-            : "WALLET_GENERIC";
+          return err instanceof WalletRejectionError ? "WALLETS_USER_REJECTED" : "WALLET_GENERIC";
         }
         if (err instanceof ContractExecutionError) {
           if (err instanceof RpcTimeoutError) return "RPC_TIMEOUT";

@@ -11,12 +11,17 @@ export interface PollTransactionOptions {
 }
 
 export type TransactionStatusResult =
-  | { status: "SUCCESS"; returnValue?: rpc.Api.GetSuccessfulTransactionResponse["returnValue"]; ledger?: number; txHash: string }
+  | {
+      status: "SUCCESS";
+      returnValue?: rpc.Api.GetSuccessfulTransactionResponse["returnValue"];
+      ledger?: number;
+      txHash: string;
+    }
   | { status: "FAILED"; txHash: string };
 
 /**
  * Polls for transaction status until it succeeds, fails, or times out.
- * 
+ *
  * @param server The Stellar RPC Server instance
  * @param txHash The transaction hash to poll
  * @param options Polling configuration options including timeoutMs and intervalMs
@@ -55,7 +60,7 @@ export async function pollTransaction(
     if (response.status === rpc.Api.GetTransactionStatus.FAILED) {
       return {
         status: "FAILED",
-        txHash
+        txHash,
       };
     }
 

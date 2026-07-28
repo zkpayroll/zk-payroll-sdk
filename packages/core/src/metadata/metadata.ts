@@ -10,10 +10,7 @@ const CONTRACT_ID_RE = /^C[A-Z2-7]{55}$/;
 const STELLAR_SECRET_RE = /^S[A-Z2-7]{55}$/;
 const URL_RE = /^https?:\/\/.+/;
 
-const REQUIRED_FIELDS: (keyof ContractMetadata)[] = [
-  "networkUrl",
-  "networkPassphrase",
-];
+const REQUIRED_FIELDS: (keyof ContractMetadata)[] = ["networkUrl", "networkPassphrase"];
 
 export function getContractMetadata(
   environment: string,
@@ -43,9 +40,7 @@ export function listKnownEnvironments(): { name: string; label: string }[] {
   }));
 }
 
-export function validateContractMetadata(
-  metadata: ContractMetadata
-): MetadataValidationResult {
+export function validateContractMetadata(metadata: ContractMetadata): MetadataValidationResult {
   const errors: MetadataValidationError[] = [];
 
   for (const field of REQUIRED_FIELDS) {
@@ -98,10 +93,7 @@ export function validateContractMetadata(
     }
   }
 
-  if (
-    metadata.adminPublicKey &&
-    !STELLAR_SECRET_RE.test(metadata.adminPublicKey)
-  ) {
+  if (metadata.adminPublicKey && !STELLAR_SECRET_RE.test(metadata.adminPublicKey)) {
     errors.push({
       field: "adminPublicKey",
       message: "Invalid Stellar secret key format",
@@ -115,9 +107,7 @@ export function validateContractMetadata(
   };
 }
 
-export function buildClientConfig(
-  metadata: ContractMetadata
-): {
+export function buildClientConfig(metadata: ContractMetadata): {
   networkUrl: string;
   contractIds: Record<string, string>;
 } {

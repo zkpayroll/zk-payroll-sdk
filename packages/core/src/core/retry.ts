@@ -23,10 +23,7 @@ export interface RetryDecision {
   reason: string;
 }
 
-function decision(
-  category: RetryCategoryType,
-  reason: string
-): RetryDecision {
+function decision(category: RetryCategoryType, reason: string): RetryDecision {
   return {
     category,
     retryable: category === RetryCategory.RETRYABLE,
@@ -34,10 +31,7 @@ function decision(
   };
 }
 
-export function classifyError(
-  error: unknown,
-  _context?: ErrorContext
-): RetryDecision {
+export function classifyError(error: unknown, _context?: ErrorContext): RetryDecision {
   if (error instanceof NetworkError) {
     return classifyNetworkError(error);
   }
@@ -78,10 +72,7 @@ export function classifyError(
     return classifyGenericError(error);
   }
 
-  return decision(
-    RetryCategory.UNKNOWN,
-    "Non-Error thrown value — cannot determine retryability"
-  );
+  return decision(RetryCategory.UNKNOWN, "Non-Error thrown value — cannot determine retryability");
 }
 
 function classifyNetworkError(error: NetworkError): RetryDecision {
@@ -95,17 +86,11 @@ function classifyNetworkError(error: NetworkError): RetryDecision {
   }
 
   if (code >= 500) {
-    return decision(
-      RetryCategory.RETRYABLE,
-      `Server error (HTTP ${code}) — may succeed on retry`
-    );
+    return decision(RetryCategory.RETRYABLE, `Server error (HTTP ${code}) — may succeed on retry`);
   }
 
   if (code === 429) {
-    return decision(
-      RetryCategory.RETRYABLE,
-      "Rate limited (HTTP 429) — retry after backoff"
-    );
+    return decision(RetryCategory.RETRYABLE, "Rate limited (HTTP 429) — retry after backoff");
   }
 
   if (code >= 400) {
@@ -115,10 +100,7 @@ function classifyNetworkError(error: NetworkError): RetryDecision {
     );
   }
 
-  return decision(
-    RetryCategory.UNKNOWN,
-    `Unexpected HTTP status (${code}) — retry with caution`
-  );
+  return decision(RetryCategory.UNKNOWN, `Unexpected HTTP status (${code}) — retry with caution`);
 }
 
 function classifyContractError(error: ContractExecutionError): RetryDecision {
@@ -192,10 +174,7 @@ function classifyGenericError(error: Error): RetryDecision {
   }
 
   if (error.name === "AbortError" || error.name === "TimeoutError") {
-    return decision(
-      RetryCategory.RETRYABLE,
-      "Request aborted or timed out — retryable"
-    );
+    return decision(RetryCategory.RETRYABLE, "Request aborted or timed out — retryable");
   }
 
   return decision(
@@ -210,10 +189,7 @@ export interface RetryOptions {
   backoffFactor?: number;
 }
 
-export async function withRetry<T>(
-  fn: () => Promise<T>,
-  options: RetryOptions = {}
-): Promise<T> {
+export async function withRetry<T>(fn: () => Promise<T>, options: RetryOptions = {}): Promise<T> {
   const attempts = options.attempts ?? 3;
   const delayMs = options.delayMs ?? 100;
   const backoffFactor = options.backoffFactor ?? 2;
@@ -234,4 +210,3 @@ export async function withRetry<T>(
 
   throw lastError;
 }
-

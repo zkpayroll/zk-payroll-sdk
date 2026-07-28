@@ -38,7 +38,7 @@ const NOT_FOUND_RESPONSE = {
 describe("pollTransaction", () => {
   it("returns SUCCESS status on successful transaction", async () => {
     const server = createMockServer([SUCCESS_RESPONSE]);
-    
+
     const result = await pollTransaction(server, "tx_hash_123", {
       intervalMs: 10,
     });
@@ -52,7 +52,7 @@ describe("pollTransaction", () => {
 
   it("returns FAILED status on failed transaction", async () => {
     const server = createMockServer([FAILED_RESPONSE]);
-    
+
     const result = await pollTransaction(server, "tx_hash_fail", {
       intervalMs: 10,
     });
@@ -63,7 +63,7 @@ describe("pollTransaction", () => {
 
   it("polls until transaction is found", async () => {
     const server = createMockServer([NOT_FOUND_RESPONSE, NOT_FOUND_RESPONSE, SUCCESS_RESPONSE]);
-    
+
     const result = await pollTransaction(server, "tx_hash_123", {
       intervalMs: 10,
     });
@@ -74,7 +74,7 @@ describe("pollTransaction", () => {
 
   it("throws ContractExecutionError on timeout", async () => {
     const server = createMockServer([NOT_FOUND_RESPONSE]);
-    
+
     await expect(
       pollTransaction(server, "tx_hash_timeout", {
         timeoutMs: 30, // short timeout
@@ -95,7 +95,7 @@ describe("pollTransaction", () => {
   it("throws Error if cancelled via AbortSignal", async () => {
     const server = createMockServer([NOT_FOUND_RESPONSE]);
     const controller = new AbortController();
-    
+
     const promise = pollTransaction(server, "tx_hash_cancel", {
       intervalMs: 50,
       signal: controller.signal,
@@ -110,7 +110,7 @@ describe("pollTransaction", () => {
     const server = {
       getTransaction: jest.fn().mockRejectedValue(new Error("RPC Network failure")),
     } as unknown as rpc.Server;
-    
+
     await expect(pollTransaction(server, "tx_hash", { intervalMs: 10 })).rejects.toThrow(
       "RPC Network failure"
     );

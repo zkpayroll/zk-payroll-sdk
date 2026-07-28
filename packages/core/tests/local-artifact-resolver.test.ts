@@ -367,7 +367,9 @@ describe("SnarkjsProofGenerator — local artifact resolution", () => {
       zkeyUrl: zkeyPath,
     });
 
-    await expect(generator.generateProof({ test: "missing" })).rejects.toThrow(/Proof generation failed/);
+    await expect(generator.generateProof({ test: "missing" })).rejects.toThrow(
+      /Proof generation failed/
+    );
   });
 
   it("preload works with local artifacts", async () => {

@@ -17,27 +17,21 @@ describe("Contract Metadata Discovery", () => {
       const metadata = getContractMetadata("testnet");
 
       expect(metadata.networkUrl).toBe("https://soroban-testnet.stellar.org");
-      expect(metadata.networkPassphrase).toBe(
-        "Test SDF Network ; September 2015"
-      );
+      expect(metadata.networkPassphrase).toBe("Test SDF Network ; September 2015");
     });
 
     it("returns mainnet metadata", () => {
       const metadata = getContractMetadata("mainnet");
 
       expect(metadata.networkUrl).toBe("https://soroban.stellar.org");
-      expect(metadata.networkPassphrase).toBe(
-        "Public Global Stellar Network ; September 2015"
-      );
+      expect(metadata.networkPassphrase).toBe("Public Global Stellar Network ; September 2015");
     });
 
     it("returns standalone metadata", () => {
       const metadata = getContractMetadata("standalone");
 
       expect(metadata.networkUrl).toBe("http://localhost:8000/soroban/rpc");
-      expect(metadata.networkPassphrase).toBe(
-        "Standalone Network ; February 2017"
-      );
+      expect(metadata.networkPassphrase).toBe("Standalone Network ; February 2017");
     });
 
     it("merges overrides into environment defaults", () => {
@@ -50,15 +44,11 @@ describe("Contract Metadata Discovery", () => {
       expect(metadata.payrollRegistryId).toBe(
         "CA3D5K7UZH7G4FZ5Q6XJ2Y3A4B5C6D7E8F9G0H1J2K3L4M5N6O7P8Q9R0S"
       );
-      expect(metadata.adminPublicKey).toBe(
-        "SAV75E2NK7Q5J2Y3A4B5C6D7E8F9G0H1J2K3L4M5N6O7P8Q9R0S1T"
-      );
+      expect(metadata.adminPublicKey).toBe("SAV75E2NK7Q5J2Y3A4B5C6D7E8F9G0H1J2K3L4M5N6O7P8Q9R0S1T");
     });
 
     it("throws for unknown environment", () => {
-      expect(() => getContractMetadata("unknown")).toThrow(
-        'Unknown environment "unknown"'
-      );
+      expect(() => getContractMetadata("unknown")).toThrow('Unknown environment "unknown"');
     });
   });
 
@@ -114,9 +104,7 @@ describe("Contract Metadata Discovery", () => {
       expect(result.valid).toBe(false);
       expect(result.errors.length).toBeGreaterThanOrEqual(2);
       expect(result.errors.some((e) => e.field === "networkUrl")).toBe(true);
-      expect(result.errors.some((e) => e.field === "networkPassphrase")).toBe(
-        true
-      );
+      expect(result.errors.some((e) => e.field === "networkPassphrase")).toBe(true);
     });
 
     it("rejects invalid network URL", () => {
@@ -136,9 +124,7 @@ describe("Contract Metadata Discovery", () => {
       });
 
       expect(result.valid).toBe(false);
-      expect(result.errors[0].code).toBe(
-        MetadataErrorCode.INVALID_NETWORK_PASSPHRASE
-      );
+      expect(result.errors[0].code).toBe(MetadataErrorCode.INVALID_NETWORK_PASSPHRASE);
     });
 
     it("rejects invalid contract ID format", () => {
@@ -149,9 +135,7 @@ describe("Contract Metadata Discovery", () => {
       });
 
       expect(result.valid).toBe(false);
-      expect(result.errors[0].code).toBe(
-        MetadataErrorCode.INVALID_CONTRACT_ID
-      );
+      expect(result.errors[0].code).toBe(MetadataErrorCode.INVALID_CONTRACT_ID);
     });
 
     it("accepts valid contract ID format", () => {

@@ -32,6 +32,12 @@ export type WorkerRequest =
 export type WorkerResponse =
   | { type: "PROOF_RESULT"; id: string; payload: ProofPayload }
   | { type: "PROOF_ERROR"; id: string; message: string }
-  | { type: "PROGRESS"; id: string; stage?: ProofProgressStage; progress?: number; event?: PayrollProgressEvent }
+  | {
+      type: "PROGRESS";
+      id: string;
+      stage?: ProofProgressStage;
+      progress?: number;
+      event?: PayrollProgressEvent;
+    }
   | { type: "PRELOAD_DONE"; id: string }
   | { type: "CACHE_CLEARED"; id: string };

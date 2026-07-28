@@ -76,9 +76,17 @@ describe("PayrollContractWrapper", () => {
     });
 
     it("forwards idempotency options to invoke", async () => {
-      await wrapper.privatePay(TEST_RECIPIENT, 1000n, "native", MOCK_PROOF, signer, Networks.TESTNET, {
-        idempotencyKey: "req-1",
-      });
+      await wrapper.privatePay(
+        TEST_RECIPIENT,
+        1000n,
+        "native",
+        MOCK_PROOF,
+        signer,
+        Networks.TESTNET,
+        {
+          idempotencyKey: "req-1",
+        }
+      );
 
       expect(wrapper.invokeStub.mock.calls[0][4]).toEqual({ idempotencyKey: "req-1" });
     });

@@ -29,12 +29,12 @@ import {
   PROOF_STRUCT_NORMAL,
   PROOF_STRUCT_MULTI,
   VERIFY_REQUEST_NORMAL,
-} from './fixtures/proof-request-fixtures';
+} from "./fixtures/proof-request-fixtures";
 
 // ── Contract ABI Compatibility ──────────────────────────────────────────────
 
 /** Current Soroban contract ABI version that the SDK targets. */
-const CONTRACT_ABI_VERSION = '0.1.0';
+const CONTRACT_ABI_VERSION = "0.1.0";
 
 /**
  * Expected proof structure from contract ABI.
@@ -79,24 +79,24 @@ function serializeProofForContract(proof: ContractProofStruct): string {
  * Validates that response structure matches SDK expectations.
  */
 function parseProofFromContract(data: unknown): ContractProofStruct {
-  if (!data || typeof data !== 'object') {
-    throw new Error('Invalid proof data from contract');
+  if (!data || typeof data !== "object") {
+    throw new Error("Invalid proof data from contract");
   }
 
   const obj = data as Record<string, unknown>;
 
   // Validate required fields exist
   if (!Array.isArray(obj.pi_a) || obj.pi_a.length !== 2) {
-    throw new Error('Proof missing or invalid pi_a');
+    throw new Error("Proof missing or invalid pi_a");
   }
   if (!Array.isArray(obj.pi_b) || obj.pi_b.length !== 2) {
-    throw new Error('Proof missing or invalid pi_b');
+    throw new Error("Proof missing or invalid pi_b");
   }
   if (!Array.isArray(obj.pi_c) || obj.pi_c.length !== 2) {
-    throw new Error('Proof missing or invalid pi_c');
+    throw new Error("Proof missing or invalid pi_c");
   }
   if (!Array.isArray(obj.publicSignals)) {
-    throw new Error('Proof missing or invalid publicSignals');
+    throw new Error("Proof missing or invalid publicSignals");
   }
 
   return {
@@ -118,24 +118,24 @@ function parseProofFromContract(data: unknown): ContractProofStruct {
 function validateProofWireFormat(proof: ContractProofStruct): void {
   // Validate pi_a
   if (!Array.isArray(proof.pi_a) || proof.pi_a.length !== 2) {
-    throw new Error('pi_a must be a 2-element array');
+    throw new Error("pi_a must be a 2-element array");
   }
   for (const element of proof.pi_a) {
-    if (typeof element !== 'string' || !/^[0-9x]+$/.test(element.replace(/^0x/, ''))) {
+    if (typeof element !== "string" || !/^[0-9x]+$/.test(element.replace(/^0x/, ""))) {
       throw new Error(`pi_a element must be numeric string, got ${element}`);
     }
   }
 
   // Validate pi_b
   if (!Array.isArray(proof.pi_b) || proof.pi_b.length !== 2) {
-    throw new Error('pi_b must be a 2x2 array');
+    throw new Error("pi_b must be a 2x2 array");
   }
   for (const row of proof.pi_b) {
     if (!Array.isArray(row) || row.length !== 2) {
-      throw new Error('pi_b rows must be 2-element arrays');
+      throw new Error("pi_b rows must be 2-element arrays");
     }
     for (const element of row) {
-      if (typeof element !== 'string' || !/^[0-9x]+$/.test(element.replace(/^0x/, ''))) {
+      if (typeof element !== "string" || !/^[0-9x]+$/.test(element.replace(/^0x/, ""))) {
         throw new Error(`pi_b element must be numeric string`);
       }
     }
@@ -143,25 +143,25 @@ function validateProofWireFormat(proof: ContractProofStruct): void {
 
   // Validate pi_c
   if (!Array.isArray(proof.pi_c) || proof.pi_c.length !== 2) {
-    throw new Error('pi_c must be a 2-element array');
+    throw new Error("pi_c must be a 2-element array");
   }
   for (const element of proof.pi_c) {
-    if (typeof element !== 'string' || !/^[0-9x]+$/.test(element.replace(/^0x/, ''))) {
+    if (typeof element !== "string" || !/^[0-9x]+$/.test(element.replace(/^0x/, ""))) {
       throw new Error(`pi_c element must be numeric string`);
     }
   }
 
   // Validate public signals
   if (!Array.isArray(proof.publicSignals)) {
-    throw new Error('publicSignals must be an array');
+    throw new Error("publicSignals must be an array");
   }
 }
 
 // ── Test suite ──────────────────────────────────────────────────────────────
 
-describe('Contract Fixture Compatibility Tests', () => {
-  describe('proof payload parsing', () => {
-    it('parses standard proof payload into contract struct', () => {
+describe("Contract Fixture Compatibility Tests", () => {
+  describe("proof payload parsing", () => {
+    it("parses standard proof payload into contract struct", () => {
       const contractProof = parseProofFromContract(PROOF_STRUCT_NORMAL);
 
       expect(contractProof.pi_a).toHaveLength(2);
@@ -170,23 +170,23 @@ describe('Contract Fixture Compatibility Tests', () => {
       expect(contractProof.publicSignals).toHaveLength(2);
     });
 
-    it('parses multi-signal proof payload', () => {
+    it("parses multi-signal proof payload", () => {
       const contractProof = parseProofFromContract(PROOF_STRUCT_MULTI);
 
       expect(contractProof.publicSignals.length).toBeGreaterThan(2);
       validateProofWireFormat(contractProof);
     });
 
-    it('rejects malformed proof payload', () => {
+    it("rejects malformed proof payload", () => {
       const malformed = { pi_a: [1, 2, 3] }; // Wrong: should be 2-element array
 
       expect(() => {
         parseProofFromContract(malformed);
-      }).toThrow('pi_a');
+      }).toThrow("pi_a");
     });
 
-    it('rejects proof with missing fields', () => {
-      const incomplete = { pi_a: ['1', '2'], pi_b: [['3', '4']], pi_c: ['5', '6'] };
+    it("rejects proof with missing fields", () => {
+      const incomplete = { pi_a: ["1", "2"], pi_b: [["3", "4"]], pi_c: ["5", "6"] };
 
       expect(() => {
         parseProofFromContract(incomplete);
@@ -194,20 +194,20 @@ describe('Contract Fixture Compatibility Tests', () => {
     });
   });
 
-  describe('proof serialization', () => {
-    it('serializes standard proof with correct field ordering', () => {
+  describe("proof serialization", () => {
+    it("serializes standard proof with correct field ordering", () => {
       const serialized = serializeProofForContract(PROOF_STRUCT_NORMAL);
       const parsed = JSON.parse(serialized);
 
       // Verify field order: pi_a, pi_b, pi_c, publicSignals
       const keys = Object.keys(parsed);
-      expect(keys[0]).toBe('pi_a');
-      expect(keys[1]).toBe('pi_b');
-      expect(keys[2]).toBe('pi_c');
-      expect(keys[3]).toBe('publicSignals');
+      expect(keys[0]).toBe("pi_a");
+      expect(keys[1]).toBe("pi_b");
+      expect(keys[2]).toBe("pi_c");
+      expect(keys[3]).toBe("publicSignals");
     });
 
-    it('preserves field element values during serialization round-trip', () => {
+    it("preserves field element values during serialization round-trip", () => {
       const original = PROOF_STRUCT_NORMAL;
       const serialized = serializeProofForContract(original);
       const parsed = parseProofFromContract(JSON.parse(serialized));
@@ -219,66 +219,75 @@ describe('Contract Fixture Compatibility Tests', () => {
       expect(parsed.publicSignals).toEqual(original.publicSignals);
     });
 
-    it('handles edge-case field elements correctly', () => {
+    it("handles edge-case field elements correctly", () => {
       // Edge case: empty strings, zeros, hex prefixes
       const edgeProof: ContractProofStruct = {
-        pi_a: ['0', '1'],
-        pi_b: [['0xdeadbeef', '999999999999'], ['1', '0']],
-        pi_c: ['0x0', '0x1'],
-        publicSignals: ['0', 'x123'],
+        pi_a: ["0", "1"],
+        pi_b: [
+          ["0xdeadbeef", "999999999999"],
+          ["1", "0"],
+        ],
+        pi_c: ["0x0", "0x1"],
+        publicSignals: ["0", "x123"],
       };
 
       const serialized = serializeProofForContract(edgeProof);
       const parsed = parseProofFromContract(JSON.parse(serialized));
 
-      expect(parsed.pi_a[0]).toBe('0');
-      expect(parsed.pi_b[0][0]).toBe('0xdeadbeef');
-      expect(parsed.publicSignals[0]).toBe('0');
+      expect(parsed.pi_a[0]).toBe("0");
+      expect(parsed.pi_b[0][0]).toBe("0xdeadbeef");
+      expect(parsed.publicSignals[0]).toBe("0");
     });
   });
 
-  describe('wire format validation', () => {
-    it('validates standard proof structure', () => {
+  describe("wire format validation", () => {
+    it("validates standard proof structure", () => {
       expect(() => {
         validateProofWireFormat(PROOF_STRUCT_NORMAL);
       }).not.toThrow();
     });
 
-    it('validates multi-signal proof structure', () => {
+    it("validates multi-signal proof structure", () => {
       expect(() => {
         validateProofWireFormat(PROOF_STRUCT_MULTI);
       }).not.toThrow();
     });
 
-    it('rejects proof with non-numeric field elements', () => {
+    it("rejects proof with non-numeric field elements", () => {
       const invalidProof: ContractProofStruct = {
-        pi_a: ['not_a_number', '1'],
-        pi_b: [['0', '0'], ['0', '0']],
-        pi_c: ['0', '0'],
+        pi_a: ["not_a_number", "1"],
+        pi_b: [
+          ["0", "0"],
+          ["0", "0"],
+        ],
+        pi_c: ["0", "0"],
         publicSignals: [],
       };
 
       expect(() => {
         validateProofWireFormat(invalidProof);
-      }).toThrow('numeric string');
+      }).toThrow("numeric string");
     });
 
-    it('rejects proof with wrong array dimensions', () => {
+    it("rejects proof with wrong array dimensions", () => {
       const invalidProof = {
-        pi_a: ['1'],  // Wrong: should be 2-element
-        pi_b: [['0', '0'], ['0', '0']],
-        pi_c: ['0', '0'],
+        pi_a: ["1"], // Wrong: should be 2-element
+        pi_b: [
+          ["0", "0"],
+          ["0", "0"],
+        ],
+        pi_c: ["0", "0"],
         publicSignals: [],
       } as unknown as ContractProofStruct;
 
       expect(() => {
         validateProofWireFormat(invalidProof);
-      }).toThrow('2-element array');
+      }).toThrow("2-element array");
     });
   });
 
-  describe('contract request shaping', () => {
-    it('shapes verify proof request correctly', () => {
+  describe("contract request shaping", () => {
+    it("shapes verify proof request correctly", () => {
       const proof = parseProofFromContract(PROOF_STRUCT_NORMAL);
       const request: ContractVerifyRequest = {
         proof,
@@ -289,7 +298,7 @@ describe('Contract Fixture Compatibility Tests', () => {
       expect(request.publicSignals).toHaveLength(2);
     });
 
-    it('handles batch request aggregation', () => {
+    it("handles batch request aggregation", () => {
       const proof1 = parseProofFromContract(PROOF_STRUCT_NORMAL);
       const proof2 = parseProofFromContract(PROOF_STRUCT_MULTI);
 
@@ -304,25 +313,25 @@ describe('Contract Fixture Compatibility Tests', () => {
     });
   });
 
-  describe('ABI version compatibility', () => {
-    it('identifies current ABI version', () => {
+  describe("ABI version compatibility", () => {
+    it("identifies current ABI version", () => {
       // This test documents the current target ABI version.
       // When contracts introduce breaking changes, update CONTRACT_ABI_VERSION
       // and this test should be updated to reflect the new version.
-      expect(CONTRACT_ABI_VERSION).toBe('0.1.0');
+      expect(CONTRACT_ABI_VERSION).toBe("0.1.0");
     });
 
-    it('validates payload structure matches ABI version', () => {
+    it("validates payload structure matches ABI version", () => {
       // All fixtures should conform to the current ABI version
       const payload = PROOF_PAYLOAD_NORMAL;
 
       expect(payload.proof).toBeDefined();
-      expect(payload.proof.protocol).toBe('groth16');
-      expect(payload.proof.curve).toBe('bn128');
+      expect(payload.proof.protocol).toBe("groth16");
+      expect(payload.proof.curve).toBe("bn128");
       expect(Array.isArray(payload.publicSignals)).toBe(true);
     });
 
-    it('documents breaking changes via ABI version', () => {
+    it("documents breaking changes via ABI version", () => {
       // If a breaking change occurs between SDK and contract versions,
       // increment CONTRACT_ABI_VERSION. This test ensures we document
       // the change explicitly rather than silently breaking compatibility.
@@ -337,17 +346,17 @@ describe('Contract Fixture Compatibility Tests', () => {
     });
   });
 
-  describe('shared fixture assumptions', () => {
-    it('validates fixture types match contract expectations', () => {
+  describe("shared fixture assumptions", () => {
+    it("validates fixture types match contract expectations", () => {
       // These fixtures are shared with the contracts repo.
       // If contract-generated fixtures change, these assumptions may break.
 
-      expect(typeof PROOF_PAYLOAD_NORMAL).toBe('object');
-      expect(typeof PROOF_STRUCT_NORMAL).toBe('object');
-      expect(typeof VERIFY_REQUEST_NORMAL).toBe('object');
+      expect(typeof PROOF_PAYLOAD_NORMAL).toBe("object");
+      expect(typeof PROOF_STRUCT_NORMAL).toBe("object");
+      expect(typeof VERIFY_REQUEST_NORMAL).toBe("object");
     });
 
-    it('proof payload contains all required proof fields', () => {
+    it("proof payload contains all required proof fields", () => {
       const payload = PROOF_PAYLOAD_NORMAL;
 
       expect(payload.proof).toBeDefined();
@@ -357,7 +366,7 @@ describe('Contract Fixture Compatibility Tests', () => {
       expect(payload.publicSignals).toBeDefined();
     });
 
-    it('maintains fixture compatibility across test runs', () => {
+    it("maintains fixture compatibility across test runs", () => {
       // Sanity check: ensure fixtures haven't been mutated during tests
       const proof1 = parseProofFromContract(PROOF_STRUCT_NORMAL);
       const proof2 = parseProofFromContract(PROOF_STRUCT_NORMAL);
@@ -369,8 +378,8 @@ describe('Contract Fixture Compatibility Tests', () => {
     });
   });
 
-  describe('fixture maintenance workflow', () => {
-    it('documents how to regenerate fixtures from contracts repo', () => {
+  describe("fixture maintenance workflow", () => {
+    it("documents how to regenerate fixtures from contracts repo", () => {
       // When the contracts repo updates fixtures, follow this workflow:
       //
       // 1. Clone contracts repo:
@@ -394,7 +403,7 @@ describe('Contract Fixture Compatibility Tests', () => {
       expect(CONTRACT_ABI_VERSION).toBeDefined();
     });
 
-    it('validates that fixtures can be shared safely', () => {
+    it("validates that fixtures can be shared safely", () => {
       // Fixtures should be:
       // 1. Deterministic (same contract state produces same fixtures)
       // 2. Version-agnostic (work with any SDK version that supports ABI version)

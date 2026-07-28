@@ -182,10 +182,7 @@ export function resolvePageSize(requested?: number): number {
  * console.log(page.meta.hasNextPage);
  * ```
  */
-export function paginate<T>(
-  records: T[],
-  options: PaginationOptions = {}
-): PaginatedResult<T> {
+export function paginate<T>(records: T[], options: PaginationOptions = {}): PaginatedResult<T> {
   const pageSize = resolvePageSize(options.pageSize);
   const direction = options.direction ?? "forward";
   const total = records.length;
@@ -213,9 +210,7 @@ export function paginate<T>(
 
   const currentPage = pageSize > 0 ? Math.floor(startIndex / pageSize) + 1 : 1;
 
-  const nextCursor = hasNextPage
-    ? encodeCursor({ index: endIndex, direction })
-    : undefined;
+  const nextCursor = hasNextPage ? encodeCursor({ index: endIndex, direction }) : undefined;
 
   const prevCursor = hasPrevPage
     ? encodeCursor({
@@ -247,22 +242,14 @@ export function paginate<T>(
  * Applies a `PayrollHistoryFilter` to an array of payroll records.
  */
 export function filterPayrollRecords<
-  T extends { amount: bigint; recipient: string; timestamp: number }
+  T extends { amount: bigint; recipient: string; timestamp: number },
 >(records: T[], filter: PayrollHistoryFilter): T[] {
   return records.filter((r) => {
-    if (filter.minAmount !== undefined && r.amount < filter.minAmount)
-      return false;
-    if (filter.maxAmount !== undefined && r.amount > filter.maxAmount)
-      return false;
-    if (filter.recipient !== undefined && r.recipient !== filter.recipient)
-      return false;
-    if (
-      filter.fromTimestamp !== undefined &&
-      r.timestamp < filter.fromTimestamp
-    )
-      return false;
-    if (filter.toTimestamp !== undefined && r.timestamp > filter.toTimestamp)
-      return false;
+    if (filter.minAmount !== undefined && r.amount < filter.minAmount) return false;
+    if (filter.maxAmount !== undefined && r.amount > filter.maxAmount) return false;
+    if (filter.recipient !== undefined && r.recipient !== filter.recipient) return false;
+    if (filter.fromTimestamp !== undefined && r.timestamp < filter.fromTimestamp) return false;
+    if (filter.toTimestamp !== undefined && r.timestamp > filter.toTimestamp) return false;
     return true;
   });
 }
@@ -270,20 +257,12 @@ export function filterPayrollRecords<
 /**
  * Applies an `AuditFilter` to an array of audit records.
  */
-export function filterAuditRecords(
-  records: AuditRecord[],
-  filter: AuditFilter
-): AuditRecord[] {
+export function filterAuditRecords(records: AuditRecord[], filter: AuditFilter): AuditRecord[] {
   return records.filter((r) => {
     if (filter.action !== undefined && r.action !== filter.action) return false;
     if (filter.actor !== undefined && r.actor !== filter.actor) return false;
-    if (
-      filter.fromTimestamp !== undefined &&
-      r.timestamp < filter.fromTimestamp
-    )
-      return false;
-    if (filter.toTimestamp !== undefined && r.timestamp > filter.toTimestamp)
-      return false;
+    if (filter.fromTimestamp !== undefined && r.timestamp < filter.fromTimestamp) return false;
+    if (filter.toTimestamp !== undefined && r.timestamp > filter.toTimestamp) return false;
     return true;
   });
 }
@@ -330,7 +309,7 @@ export async function* paginateIterator<T>(
  * ```
  */
 export function getPayrollHistoryPage<
-  T extends { amount: bigint; recipient: string; timestamp: number }
+  T extends { amount: bigint; recipient: string; timestamp: number },
 >(
   records: T[],
   filter: PayrollHistoryFilter = {},

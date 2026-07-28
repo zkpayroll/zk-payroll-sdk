@@ -137,19 +137,26 @@ export class WorkerProofGenerator implements IProofGenerator {
         for (const cb of pending.progressCallbacks) {
           const rawStage = "event" in msg && msg.event ? msg.event.stage : (msg as any).stage;
           const mappedStage: PayrollProgressStage =
-            rawStage === "loading_zkey" ? "proof_loading_zkey"
-            : rawStage === "loading_wasm" ? "proof_loading_wasm"
-            : rawStage === "generating" ? "proof_generating"
-            : rawStage === "done" ? "proof_done"
-            : (rawStage ?? "proof_generating");
+            rawStage === "loading_zkey"
+              ? "proof_loading_zkey"
+              : rawStage === "loading_wasm"
+                ? "proof_loading_wasm"
+                : rawStage === "generating"
+                  ? "proof_generating"
+                  : rawStage === "done"
+                    ? "proof_done"
+                    : (rawStage ?? "proof_generating");
 
-          const event: PayrollProgressEvent = "event" in msg && msg.event ? msg.event : {
-            operation: "proof",
-            stage: mappedStage,
-            message: "Generating proof",
-            progress: (msg as any).progress,
-            timestamp: new Date().toISOString(),
-          };
+          const event: PayrollProgressEvent =
+            "event" in msg && msg.event
+              ? msg.event
+              : {
+                  operation: "proof",
+                  stage: mappedStage,
+                  message: "Generating proof",
+                  progress: (msg as any).progress,
+                  timestamp: new Date().toISOString(),
+                };
           cb(event);
         }
         break;
@@ -176,7 +183,10 @@ export class WorkerProofGenerator implements IProofGenerator {
 
   // ── Dispatch helper ────────────────────────────────────────────────────────
 
-  private dispatch(req: WorkerRequest, onProgress?: PayrollProgressCallback): Promise<ProofPayload> {
+  private dispatch(
+    req: WorkerRequest,
+    onProgress?: PayrollProgressCallback
+  ): Promise<ProofPayload> {
     return new Promise<ProofPayload>((resolve, reject) => {
       const timeoutMs = this.options.timeoutMs ?? 120_000;
       const timer = setTimeout(() => {

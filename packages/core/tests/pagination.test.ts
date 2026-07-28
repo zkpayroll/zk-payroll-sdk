@@ -243,9 +243,7 @@ describe("filterPayrollRecords", () => {
       fromTimestamp: from,
       toTimestamp: to,
     });
-    expect(result.every((r) => r.timestamp >= from && r.timestamp <= to)).toBe(
-      true
-    );
+    expect(result.every((r) => r.timestamp >= from && r.timestamp <= to)).toBe(true);
   });
 
   it("returns all records when filter is empty", () => {
@@ -262,9 +260,7 @@ describe("filterPayrollRecords", () => {
       recipient: "GABC",
       minAmount: BigInt(500),
     });
-    expect(
-      result.every((r) => r.recipient === "GABC" && r.amount >= BigInt(500))
-    ).toBe(true);
+    expect(result.every((r) => r.recipient === "GABC" && r.amount >= BigInt(500))).toBe(true);
   });
 });
 
@@ -292,9 +288,7 @@ describe("filterAuditRecords", () => {
       fromTimestamp: from,
       toTimestamp: to,
     });
-    expect(result.every((r) => r.timestamp >= from && r.timestamp <= to)).toBe(
-      true
-    );
+    expect(result.every((r) => r.timestamp >= from && r.timestamp <= to)).toBe(true);
   });
 
   it("returns all when filter is empty", () => {
@@ -314,11 +308,7 @@ describe("getPayrollHistoryPage", () => {
   const records = makePayrollRecords(40);
 
   it("returns first page of filtered records", () => {
-    const result = getPayrollHistoryPage(
-      records,
-      { recipient: "GABC" },
-      { pageSize: 5 }
-    );
+    const result = getPayrollHistoryPage(records, { recipient: "GABC" }, { pageSize: 5 });
     expect(result.data.every((r) => r.recipient === "GABC")).toBe(true);
     expect(result.data.length).toBeLessThanOrEqual(5);
   });
@@ -329,11 +319,7 @@ describe("getPayrollHistoryPage", () => {
   });
 
   it("total reflects filtered count not full array", () => {
-    const result = getPayrollHistoryPage(
-      records,
-      { recipient: "GABC" },
-      { pageSize: 100 }
-    );
+    const result = getPayrollHistoryPage(records, { recipient: "GABC" }, { pageSize: 100 });
     expect(result.meta.total).toBe(result.data.length);
   });
 });
@@ -352,11 +338,7 @@ describe("getAuditRecordsPage", () => {
   });
 
   it("filters and paginates together", () => {
-    const result = getAuditRecordsPage(
-      records,
-      { action: "payment" },
-      { pageSize: 5 }
-    );
+    const result = getAuditRecordsPage(records, { action: "payment" }, { pageSize: 5 });
     expect(result.data.every((r) => r.action === "payment")).toBe(true);
   });
 
@@ -388,7 +370,7 @@ describe("paginateIterator", () => {
 
   it("yields a single page for small datasets", async () => {
     const records = makePayrollRecords(5);
-    const collected: (typeof records) = [];
+    const collected: typeof records = [];
 
     for await (const page of paginateIterator(records, { pageSize: 20 })) {
       collected.push(...page.data);

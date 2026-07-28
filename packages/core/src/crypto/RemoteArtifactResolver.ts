@@ -13,7 +13,8 @@
 
 import axios from "axios";
 import { IArtifactResolver, ResolvedArtifacts } from "./IArtifactResolver";
-import { ArtifactFetchError } from "./ArtifactErrors";
+import { ArtifactFetchError, ArtifactHashMismatchError } from "./ArtifactErrors";
+import { sha256Digest } from "./hashUtils";
 import { SdkLogger } from "../logging/SdkLogger";
 
 /**
@@ -28,6 +29,18 @@ export interface RemoteArtifactResolverConfig {
   wasmTimeoutMs?: number;
   /** Timeout in milliseconds for the .zkey download. @default 60000 */
   zkeyTimeoutMs?: number;
+  /**
+   * Expected SHA-256 hex digest of the .wasm file.
+   * When set, the resolver verifies the hash before returning,
+   * throwing {@link ArtifactHashMismatchError} on mismatch.
+   */
+  expectedWasmHash?: string;
+  /**
+   * Expected SHA-256 hex digest of the .zkey file.
+   * When set, the resolver verifies the hash before returning,
+   * throwing {@link ArtifactHashMismatchError} on mismatch.
+   */
+  expectedZkeyHash?: string;
 }
 
 /**
@@ -44,32 +57,36 @@ export interface RemoteArtifactResolverConfig {
  * ```
  */
 export class RemoteArtifactResolver implements IArtifactResolver {
+  private readonly config: RemoteArtifactResolverConfig;
+
   constructor(
-    private readonly config: RemoteArtifactResolverConfig,
+    config: RemoteArtifactResolverConfig,
     private readonly logger?: SdkLogger
-  ) {}
+  ) {
+    this.config = { ...config };
+  }
 
   /**
    * Fetches both circuit artifact files over HTTP.
    *
    * @returns Resolved wasm and zkey binary content.
    * @throws {ArtifactFetchError} If either HTTP request fails.
+   * @throws {ArtifactHashMismatchError} If an expected hash is set and the content doesn't match.
    */
   async resolve(): Promise<ResolvedArtifacts> {
     const [wasm, zkey] = await Promise.all([
-      this.fetchArtifact(
-        this.config.wasmUrl,
-        "wasm",
-        this.config.wasmTimeoutMs ?? 30_000
-      ),
-      this.fetchArtifact(
-        this.config.zkeyUrl,
-        "zkey",
-        this.config.zkeyTimeoutMs ?? 60_000
-      ),
+      this.fetchArtifact(this.config.wasmUrl, "wasm", this.config.wasmTimeoutMs ?? 30_000),
+      this.fetchArtifact(this.config.zkeyUrl, "zkey", this.config.zkeyTimeoutMs ?? 60_000),
     ]);
 
-    return { wasm, zkey: new Uint8Array(zkey) };
+    // Verify SHA-256 hashes if expected values were provided
+    const zkeyBytes = new Uint8Array(zkey);
+    await Promise.all([
+      this.verifyHash(wasm, this.config.wasmUrl, "wasm", this.config.expectedWasmHash),
+      this.verifyHash(zkeyBytes, this.config.zkeyUrl, "zkey", this.config.expectedZkeyHash),
+    ]);
+
+    return { wasm, zkey: zkeyBytes };
   }
 
   /**
@@ -97,5 +114,31 @@ export class RemoteArtifactResolver implements IArtifactResolver {
         error instanceof Error ? error.message : String(error)
       );
     }
+  }
+
+  /**
+   * Verifies the SHA-256 hash of fetched content against an expected value.
+   * No-op if expectedHash is undefined.
+   */
+  private async verifyHash(
+    content: Uint8Array | ArrayBuffer,
+    url: string,
+    artifactType: "wasm" | "zkey",
+    expectedHash?: string
+  ): Promise<void> {
+    if (!expectedHash) {
+      return;
+    }
+
+    const actualHash = await sha256Digest(content);
+
+    if (actualHash !== expectedHash.toLowerCase()) {
+      throw new ArtifactHashMismatchError(url, artifactType, expectedHash, actualHash);
+    }
+
+    this.logger?.info("artifact_hash_verified", {
+      type: artifactType,
+      url,
+    });
   }
 }

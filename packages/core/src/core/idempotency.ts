@@ -102,3 +102,25 @@ export function createPaymentIdempotencyKey(input: PaymentIdempotencyKeyInput): 
 export function normalizeIdempotencyKey(key: string): string {
   return key.trim();
 }
+
+export interface PayrollIdempotencyKeyInput {
+  companyId: string;
+  payrollPeriod: string;
+  commitmentHash: string;
+  asset: string;
+  treasuryContext: string;
+}
+
+/**
+ * Deterministic helper for generating payroll submission idempotency keys.
+ * Incorporates high-priority business context to avoid duplicate batch submissions.
+ */
+export function createPayrollIdempotencyKey(input: PayrollIdempotencyKeyInput): string {
+  const companyId = input.companyId.trim();
+  const payrollPeriod = input.payrollPeriod.trim();
+  const commitmentHash = input.commitmentHash.trim().toLowerCase();
+  const asset = input.asset.trim().toLowerCase();
+  const treasuryContext = input.treasuryContext.trim();
+
+  return `payroll:${companyId}:${payrollPeriod}:${commitmentHash}:${asset}:${treasuryContext}`;
+}

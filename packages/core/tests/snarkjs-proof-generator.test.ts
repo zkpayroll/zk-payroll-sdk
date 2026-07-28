@@ -181,7 +181,9 @@ describe("SnarkjsProofGenerator", () => {
       const witness = { recipient: "GTEST", amount: 1000n };
 
       await expect(generator.generateProof(witness)).rejects.toThrow(PayrollError);
-      await expect(generator.generateProof(witness)).rejects.toThrow(/Failed to fetch zkey artifact/);
+      await expect(generator.generateProof(witness)).rejects.toThrow(
+        /Failed to fetch zkey artifact/
+      );
     });
 
     it("throws PayrollError when snarkjs proof generation fails", async () => {

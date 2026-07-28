@@ -93,6 +93,16 @@ export interface ProofGeneratorConfig {
    * ```
    */
   zkeySource?: import("./IArtifactResolver").ArtifactSource;
+  /**
+   * Expected SHA-256 hex hash of the .wasm artifact.
+   * When set, the hash is verified before proof generation begins.
+   */
+  expectedWasmHash?: string;
+  /**
+   * Expected SHA-256 hex hash of the .zkey artifact.
+   * When set, the hash is verified before proof generation begins.
+   */
+  expectedZkeyHash?: string;
   /** Optional cache TTL in seconds for downloaded artifacts */
   artifactCacheTTL?: number;
   /**

@@ -25,9 +25,7 @@
  * const zkeySource: ArtifactSource = { type: "remote", url: "https://cdn.example.com/payroll.zkey" };
  * ```
  */
-export type ArtifactSource =
-  | { type: "remote"; url: string }
-  | { type: "local"; path: string };
+export type ArtifactSource = { type: "remote"; url: string } | { type: "local"; path: string };
 
 /**
  * The resolved binary content of a pair of circuit artifacts,

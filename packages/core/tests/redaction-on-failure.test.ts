@@ -22,11 +22,7 @@ import { PayrollService } from "../src/payroll";
 import { PayrollContractWrapper } from "../src/adapters/PayrollContractWrapper";
 import { IProofGenerator, ProofPayload } from "../src/crypto/IProofGenerator";
 import { PayrollError } from "../src/errors";
-import {
-  createHookLogger,
-  redactSensitive,
-  LogEvent,
-} from "../src/logging/SdkLogger";
+import { createHookLogger, redactSensitive, LogEvent } from "../src/logging/SdkLogger";
 import {
   redactObject,
   redactDeep,
@@ -256,9 +252,7 @@ describe("Redaction — contract invocation failure paths", () => {
   it("does not log sensitive params when contract.privatePay throws", async () => {
     const { logger, entries } = makeLogger();
     const failingWrapper = {
-      privatePay: jest
-        .fn()
-        .mockRejectedValue(new Error("soroban simulate transaction failed")),
+      privatePay: jest.fn().mockRejectedValue(new Error("soroban simulate transaction failed")),
     };
     const { service } = buildService({ contractWrapper: failingWrapper, logger });
 
@@ -278,9 +272,11 @@ describe("Redaction — contract invocation failure paths", () => {
   it("does not expose private key through logger when contract throws with key-related context", async () => {
     const { logger, entries } = makeLogger();
     const failingWrapper = {
-      privatePay: jest.fn().mockRejectedValue(
-        new Error(`contract revert: invalid signer privateKey=${SENSITIVE_PRIVATE_KEY}`)
-      ),
+      privatePay: jest
+        .fn()
+        .mockRejectedValue(
+          new Error(`contract revert: invalid signer privateKey=${SENSITIVE_PRIVATE_KEY}`)
+        ),
     };
     const { service } = buildService({ contractWrapper: failingWrapper, logger });
 

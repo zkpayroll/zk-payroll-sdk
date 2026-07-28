@@ -44,9 +44,7 @@ export class RunIdentifier {
    * @returns A deterministic request identifier string.
    */
   static generateRequestId(operation: string, params?: Record<string, unknown>): string {
-    const seed = params
-      ? `${operation}:${stableStringify(params)}`
-      : operation;
+    const seed = params ? `${operation}:${stableStringify(params)}` : operation;
     const hash = createHash("sha256").update(seed).digest("hex");
     return `req_${hash}`;
   }

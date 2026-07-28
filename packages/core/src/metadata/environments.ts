@@ -27,5 +27,6 @@ export const KNOWN_ENVIRONMENTS: KnownEnvironment[] = [
   },
 ];
 
-export const ENVIRONMENT_MAP: Record<string, KnownEnvironment> =
-  Object.fromEntries(KNOWN_ENVIRONMENTS.map((env) => [env.name, env]));
+export const ENVIRONMENT_MAP: Record<string, KnownEnvironment> = Object.fromEntries(
+  KNOWN_ENVIRONMENTS.map((env) => [env.name, env])
+);

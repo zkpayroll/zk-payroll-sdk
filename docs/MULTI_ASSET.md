@@ -172,6 +172,86 @@ const reparsed  = parseAmount(formatted, usdc);                 // 123_456_789n
 // raw === reparsed ✓
 ```
 
+## Canonical amount normalization
+
+Before submitting any amount to a contract, batch payload, or commitment hash, normalize
+it into the asset's canonical smallest-unit `bigint`. `normalizeCanonicalAmount` is the
+one-call helper for this: it accepts any of the loose shapes payroll data arrives in
+(`string`, `number`, `bigint`) and either an asset id / symbol string (resolved via
+the registry) or an `AssetMetadata` object directly.
+
+```ts
+import {
+  normalizeCanonicalAmount,
+  tryNormalizeCanonicalAmount,
+  RoundingMode,
+} from "@zk-payroll/core";
+
+// Throwing variant — returns the canonical smallest-unit bigint
+const { amount, assetSymbol, wasRounded } = normalizeCanonicalAmount(
+  "  $1,000.50 XLM  ",
+  "native",
+  { rounding: RoundingMode.HALF_UP },
+);
+// amount      => 10_005_000_000n
+// assetSymbol => "XLM"
+// wasRounded  => false
+```
+
+### Bigint is already canonical
+
+`bigint` inputs are treated as **already-canonical smallest-unit values** (matching
+`formatAmount`'s convention) and round-trip without scaling:
+
+```ts
+normalizeCanonicalAmount(10_005_000_000n, "native").amount;
+// 10_005_000_000n  — no accidental double-scaling
+```
+
+Bounds still apply to bigint inputs, so an out-of-range value raises
+`AmountParseError(BELOW_MINIMUM)` / `(EXCEEDS_MAXIMUM)`.
+
+### Non-throwing variant
+
+Use `tryNormalizeCanonicalAmount` when normalizing a batch of inputs and you want to
+collect every problem instead of stopping at the first:
+
+```ts
+const result = tryNormalizeCanonicalAmount("not-a-number", "USDC");
+if (!result.ok) {
+  console.warn(result.error.code, result.error.message);
+} else {
+  submit(result.value.amount);
+}
+```
+
+Errors from the registry (e.g. an unknown asset id) are **not** caught by
+`tryNormalizeCanonicalAmount` — only `AmountParseError` is wrapped. This keeps
+unrelated surprises visible to callers handling only amount-level failures.
+
+### `NormalizedAmount`
+
+```ts
+interface NormalizedAmount {
+  amount: bigint;      // canonical smallest-unit amount
+  decimals: number;    // asset decimal count
+  assetSymbol: string; // ticker, e.g. "XLM"
+  assetId: string;     // resolved id, e.g. "native"
+  wasRounded: boolean; // true when excess precision was rounded
+  original: string;    // string form of the input (raw for strings, .toString() otherwise)
+}
+```
+
+### `NormalizeAmountOptions`
+
+```ts
+interface NormalizeAmountOptions {
+  bounds?: AmountBounds;          // min/max in smallest units
+  rounding?: RoundingMode;        // defaults to HALF_UP; ignored for bigint inputs
+  registry?: AssetRegistryClass;  // defaults to the shared AssetRegistry singleton
+}
+```
+
 ## Test isolation with a custom registry instance
 
 The shared `AssetRegistry` singleton is mutated globally. When you need a fully

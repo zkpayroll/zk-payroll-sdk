@@ -467,6 +467,45 @@ const corp = AssetRegistry.getOrThrow("CTOKEN_CORP123");
 parseAmount("500.00 CORP", corp); // 3_500_000_000n
 ```
 
+### Canonical amount normalization
+
+Before submitting any amount to a contract, batch builder, or commitment hash, normalize
+it into the asset's canonical smallest-unit `bigint`. `normalizeCanonicalAmount` accepts
+any of the loose shapes payroll data arrives in (`string`, `number`, `bigint`) and either
+an asset id string (resolved via the registry) or an `AssetMetadata` object:
+
+```typescript
+import {
+  normalizeCanonicalAmount,
+  tryNormalizeCanonicalAmount,
+  RoundingMode,
+} from "@zk-payroll/sdk";
+
+// Throwing variant — canonical { amount, decimals, assetSymbol, assetId, wasRounded, original }
+const { amount, assetSymbol, wasRounded } = normalizeCanonicalAmount(
+  "  $1,000.50 XLM  ", // formatted string with currency symbol + whitespace
+  "native",             // asset id resolved via AssetRegistry
+  { rounding: RoundingMode.HALF_UP }
+);
+// amount      => 10_005_000_000n (canonical stroops)
+// assetSymbol => "XLM"
+// wasRounded  => false  (input has 2 decimals, XLM has 7 — no rounding)
+
+// bigint inputs are already canonical (matches formatAmount) — no double-scaling
+normalizeCanonicalAmount(10_005_000_000n, "native").amount; // 10_005_000_000n
+
+// Non-throwing variant — discriminated { ok, value | error }
+const result = tryNormalizeCanonicalAmount(input, "USDC");
+if (!result.ok) {
+  console.warn(result.error.code, result.error.message);
+} else {
+  submit(result.value.amount);
+}
+```
+
+Use `normalizeCanonicalAmount` instead of manually scaling strings, so submissions always
+carry the canonical precision the contract expects.
+
 See the [Multi-Asset Guide](./docs/MULTI_ASSET.md) for the full API reference, isolation
 patterns for tests, and rules for extending the registry in production.
 

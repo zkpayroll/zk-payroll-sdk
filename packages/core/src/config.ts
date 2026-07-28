@@ -1,11 +1,19 @@
 import { ProofGeneratorConfig } from "./crypto/IProofGenerator";
 import { StrKey } from "@stellar/stellar-sdk";
 
+export interface RetryPolicyConfig {
+  maxAttempts?: number;
+  initialDelayMs?: number;
+  maxDelayMs?: number;
+  backoffFactor?: number;
+}
+
 export interface ClientConfig {
   networkUrl: string;
   contractId: string;
   adminKey?: string;
   proofConfig?: ProofGeneratorConfig;
+  retryPolicy?: RetryPolicyConfig;
 }
 
 export class ConfigBuilder {
@@ -13,6 +21,7 @@ export class ConfigBuilder {
   private _contractId?: string;
   private _adminKey?: string;
   private _proofConfig?: ProofGeneratorConfig;
+  private _retryPolicy?: RetryPolicyConfig;
 
   constructor(preset?: Partial<ClientConfig>) {
     if (preset) {
@@ -20,6 +29,7 @@ export class ConfigBuilder {
       this._contractId = preset.contractId;
       this._adminKey = preset.adminKey;
       this._proofConfig = preset.proofConfig;
+      this._retryPolicy = preset.retryPolicy;
     }
   }
 
@@ -40,6 +50,11 @@ export class ConfigBuilder {
 
   public withProofConfig(config: ProofGeneratorConfig): this {
     this._proofConfig = config;
+    return this;
+  }
+
+  public withRetryPolicy(policy: RetryPolicyConfig): this {
+    this._retryPolicy = policy;
     return this;
   }
 
@@ -67,6 +82,15 @@ export class ConfigBuilder {
       if (!this._proofConfig.zkeyUrl) errors.push("proofConfig.zkeyUrl is required.");
     }
 
+    if (this._retryPolicy) {
+      if (this._retryPolicy.maxAttempts !== undefined && this._retryPolicy.maxAttempts < 1) {
+        errors.push("retryPolicy.maxAttempts must be at least 1.");
+      }
+      if (this._retryPolicy.initialDelayMs !== undefined && this._retryPolicy.initialDelayMs < 0) {
+        errors.push("retryPolicy.initialDelayMs cannot be negative.");
+      }
+    }
+
     if (errors.length > 0) {
       throw new Error(`Configuration validation failed:\n- ${errors.join("\n- ")}`);
     }
@@ -76,6 +100,7 @@ export class ConfigBuilder {
       contractId: this._contractId!,
       adminKey: this._adminKey,
       proofConfig: this._proofConfig,
+      retryPolicy: this._retryPolicy,
     };
   }
 }

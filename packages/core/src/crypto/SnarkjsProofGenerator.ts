@@ -10,6 +10,8 @@ import {
   PreloadStatus,
   witnessKey,
 } from "./IProofGenerator";
+import { ArtifactHashMismatchError } from "./ArtifactErrors";
+import { sha256Digest } from "./hashUtils";
 import { SdkLogger } from "../logging/SdkLogger";
 import { Semaphore } from "../core/concurrency";
 import { IdempotencyRegistry } from "../core/idempotency";
@@ -45,6 +47,8 @@ export class SnarkjsProofGenerator implements IPreloadableProofGenerator {
   private preloadStatus: PreloadStatus = { wasmLoaded: false, zkeyLoaded: false };
 
   private readonly config: ProofGeneratorConfig;
+  private readonly expectedWasmHash?: string;
+  private readonly expectedZkeyHash?: string;
   private readonly dedup: IdempotencyRegistry<ProofPayload>;
   private readonly semaphore: Semaphore;
 
@@ -56,10 +60,14 @@ export class SnarkjsProofGenerator implements IPreloadableProofGenerator {
     validateProofConfig(config);
 
     const wasmUrl = config.wasmSource
-      ? (config.wasmSource.type === "local" ? config.wasmSource.path : config.wasmSource.url)
+      ? config.wasmSource.type === "local"
+        ? config.wasmSource.path
+        : config.wasmSource.url
       : config.wasmUrl!;
     const zkeyUrl = config.zkeySource
-      ? (config.zkeySource.type === "local" ? config.zkeySource.path : config.zkeySource.url)
+      ? config.zkeySource.type === "local"
+        ? config.zkeySource.path
+        : config.zkeySource.url
       : config.zkeyUrl!;
 
     this.config = {
@@ -67,6 +75,8 @@ export class SnarkjsProofGenerator implements IPreloadableProofGenerator {
       wasmUrl,
       zkeyUrl,
     };
+    this.expectedWasmHash = config.expectedWasmHash;
+    this.expectedZkeyHash = config.expectedZkeyHash;
     const permits = config.maxConcurrency ?? DEFAULT_MAX_CONCURRENCY;
     this.semaphore = new Semaphore(permits);
     this.dedup = new IdempotencyRegistry<ProofPayload>(0);
@@ -92,9 +102,7 @@ export class SnarkjsProofGenerator implements IPreloadableProofGenerator {
         error: error instanceof Error ? error.message : String(error),
       });
       throw new PayrollError(
-        `Proof generation failed: ${
-          error instanceof Error ? error.message : String(error)
-        }`,
+        `Proof generation failed: ${error instanceof Error ? error.message : String(error)}`,
         500
       );
     }
@@ -201,10 +209,15 @@ export class SnarkjsProofGenerator implements IPreloadableProofGenerator {
         this.wasmCache = ab;
       }
 
+      await this.verifyHash(this.wasmCache, this.config.wasmUrl, "wasm", this.expectedWasmHash);
+
       this.preloadStatus = { ...this.preloadStatus, wasmLoaded: true };
       this.logger?.info("artifact_fetch_complete", { type: "wasm" });
       return this.wasmCache;
     } catch (error) {
+      if (error instanceof ArtifactHashMismatchError) {
+        throw error;
+      }
       throw new PayrollError(
         `Failed to fetch wasm artifact from ${this.config.wasmUrl}: ${
           error instanceof Error ? error.message : String(error)
@@ -247,10 +260,15 @@ export class SnarkjsProofGenerator implements IPreloadableProofGenerator {
         this.zkeyCache = new Uint8Array(buffer);
       }
 
+      await this.verifyHash(this.zkeyCache, this.config.zkeyUrl, "zkey", this.expectedZkeyHash);
+
       this.preloadStatus = { ...this.preloadStatus, zkeyLoaded: true };
       this.logger?.info("artifact_fetch_complete", { type: "zkey" });
       return this.zkeyCache;
     } catch (error) {
+      if (error instanceof ArtifactHashMismatchError) {
+        throw error;
+      }
       throw new PayrollError(
         `Failed to fetch zkey artifact from ${this.config.zkeyUrl}: ${
           error instanceof Error ? error.message : String(error)
@@ -258,6 +276,25 @@ export class SnarkjsProofGenerator implements IPreloadableProofGenerator {
         500
       );
     }
+  }
+
+  private async verifyHash(
+    content: Uint8Array | ArrayBuffer,
+    source: string,
+    artifactType: "wasm" | "zkey",
+    expectedHash?: string
+  ): Promise<void> {
+    if (!expectedHash) {
+      return;
+    }
+
+    const actualHash = await sha256Digest(content);
+
+    if (actualHash !== expectedHash.toLowerCase()) {
+      throw new ArtifactHashMismatchError(source, artifactType, expectedHash, actualHash);
+    }
+
+    this.logger?.info("artifact_hash_verified", { type: artifactType, source });
   }
 
   private formatProofPayload(

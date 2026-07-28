@@ -660,7 +660,9 @@ describe("WorkerProofGenerator — concurrency guards (Issue #65)", () => {
       worker.reply({ type: "PROOF_RESULT", id, payload: mockPayload });
       await p;
 
-      expect(globalProgress).toHaveBeenCalledWith(expect.objectContaining({ stage: expect.stringMatching(/zkey/) }));
+      expect(globalProgress).toHaveBeenCalledWith(
+        expect.objectContaining({ stage: expect.stringMatching(/zkey/) })
+      );
     });
   });
 

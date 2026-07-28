@@ -24,8 +24,8 @@
  * - Identify performance bottlenecks for optimization
  */
 
-import * as fs from 'fs';
-import * as path from 'path';
+import * as fs from "fs";
+import * as path from "path";
 
 // ── Benchmarking utilities ────────────────────────────────────────────────────
 
@@ -87,9 +87,15 @@ function formatPerformanceTable(results: PerformanceResult[]): string {
   const rows: string[] = [];
 
   // Header
-  rows.push('╔═══════════════════════════════════════╦════════╦════════╦════════╦═════════╦════════╦════════╗');
-  rows.push('║ Operation                             ║ Min ms ║ Max ms ║ Avg ms ║ Med ms  ║ p95 ms ║ p99 ms ║');
-  rows.push('╠═══════════════════════════════════════╬════════╬════════╬════════╬═════════╬════════╬════════╣');
+  rows.push(
+    "╔═══════════════════════════════════════╦════════╦════════╦════════╦═════════╦════════╦════════╗"
+  );
+  rows.push(
+    "║ Operation                             ║ Min ms ║ Max ms ║ Avg ms ║ Med ms  ║ p95 ms ║ p99 ms ║"
+  );
+  rows.push(
+    "╠═══════════════════════════════════════╬════════╬════════╬════════╬═════════╬════════╬════════╣"
+  );
 
   for (const result of results) {
     const sorted = [...result.samples].sort((a, b) => a - b);
@@ -105,9 +111,11 @@ function formatPerformanceTable(results: PerformanceResult[]): string {
     rows.push(row);
   }
 
-  rows.push('╚═══════════════════════════════════════╩════════╩════════╩════════╩═════════╩════════╩════════╝');
+  rows.push(
+    "╚═══════════════════════════════════════╩════════╩════════╩════════╩═════════╩════════╩════════╝"
+  );
 
-  return rows.join('\n');
+  return rows.join("\n");
 }
 
 /** Persist baseline results to disk for regression detection. */
@@ -135,8 +143,8 @@ function persistPerformanceBaseline(results: PerformanceResult[]): void {
       }),
     };
 
-    const outPath = path.join(__dirname, 'performance-baseline.json');
-    fs.writeFileSync(outPath, JSON.stringify(baseline, null, 2) + '\n', 'utf8');
+    const outPath = path.join(__dirname, "performance-baseline.json");
+    fs.writeFileSync(outPath, JSON.stringify(baseline, null, 2) + "\n", "utf8");
   } catch {
     // Non-fatal - baseline is always printed to stdout
   }
@@ -149,9 +157,9 @@ function persistPerformanceBaseline(results: PerformanceResult[]): void {
  * Measures time to encode and validate input before proof generation.
  */
 async function simulateProofSetup(): Promise<void> {
-  const recipient = 'GALICETEST123456789012345678901234567890';
+  const recipient = "GALICETEST123456789012345678901234567890";
   const amount = 1_000_000n;
-  const asset = 'native';
+  const asset = "native";
 
   // Encode witness (JSON serialization)
   const witness = {
@@ -170,13 +178,16 @@ async function simulateProofSetup(): Promise<void> {
 async function simulateCacheLookup(): Promise<void> {
   const cachedProof = JSON.stringify({
     proof: {
-      pi_a: ['111111', '222222'],
-      pi_b: [['333333', '444444'], ['555555', '666666']],
-      pi_c: ['777777', '888888'],
-      protocol: 'groth16',
-      curve: 'bn128',
+      pi_a: ["111111", "222222"],
+      pi_b: [
+        ["333333", "444444"],
+        ["555555", "666666"],
+      ],
+      pi_c: ["777777", "888888"],
+      protocol: "groth16",
+      curve: "bn128",
     },
-    publicSignals: ['111111', '222222', '333333'],
+    publicSignals: ["111111", "222222", "333333"],
   });
 
   // Simulate cache retrieval and deserialization
@@ -188,9 +199,9 @@ async function simulateCacheLookup(): Promise<void> {
  * witness encoding + witness key generation + simulated proof compute.
  */
 async function simulateCacheMissWorkflow(): Promise<void> {
-  const recipient = 'GALICETEST123456789012345678901234567890';
+  const recipient = "GALICETEST123456789012345678901234567890";
   const amount = 1_000_000n;
-  const asset = 'native';
+  const asset = "native";
 
   // Step 1: Encode witness
   const witness = {
@@ -203,13 +214,16 @@ async function simulateCacheMissWorkflow(): Promise<void> {
   // Step 2: Simulate proof compute (simplified)
   const proof = {
     proof: {
-      pi_a: ['111111', '222222'],
-      pi_b: [['333333', '444444'], ['555555', '666666']],
-      pi_c: ['777777', '888888'],
-      protocol: 'groth16',
-      curve: 'bn128',
+      pi_a: ["111111", "222222"],
+      pi_b: [
+        ["333333", "444444"],
+        ["555555", "666666"],
+      ],
+      pi_c: ["777777", "888888"],
+      protocol: "groth16",
+      curve: "bn128",
     },
-    publicSignals: ['111111', '222222', '333333'],
+    publicSignals: ["111111", "222222", "333333"],
   };
 
   // Step 3: Serialize and cache
@@ -225,18 +239,21 @@ async function simulateDraftCreation(): Promise<void> {
 
   for (let i = 0; i < 10; i++) {
     const draft = {
-      recipient: `GEMPLOYEE${String(i).padStart(6, '0')}`,
+      recipient: `GEMPLOYEE${String(i).padStart(6, "0")}`,
       amount: (BigInt(i) + 1n) * 100_000n,
-      asset: 'native',
+      asset: "native",
       proofPayload: {
         proof: {
-          pi_a: ['111111', '222222'],
-          pi_b: [['333333', '444444'], ['555555', '666666']],
-          pi_c: ['777777', '888888'],
-          protocol: 'groth16',
-          curve: 'bn128',
+          pi_a: ["111111", "222222"],
+          pi_b: [
+            ["333333", "444444"],
+            ["555555", "666666"],
+          ],
+          pi_c: ["777777", "888888"],
+          protocol: "groth16",
+          curve: "bn128",
         },
-        publicSignals: ['111111', '222222', '333333'],
+        publicSignals: ["111111", "222222", "333333"],
       },
     };
 
@@ -255,18 +272,21 @@ async function simulateSubmissionAggregation(): Promise<void> {
   // Build 20 drafts
   for (let i = 0; i < 20; i++) {
     drafts.push({
-      recipient: `GEMPLOYEE${String(i).padStart(6, '0')}`,
+      recipient: `GEMPLOYEE${String(i).padStart(6, "0")}`,
       amount: (BigInt(i) + 1n) * 100_000n,
-      asset: 'native',
+      asset: "native",
       proofPayload: {
         proof: {
-          pi_a: ['111111', '222222'],
-          pi_b: [['333333', '444444'], ['555555', '666666']],
-          pi_c: ['777777', '888888'],
-          protocol: 'groth16',
-          curve: 'bn128',
+          pi_a: ["111111", "222222"],
+          pi_b: [
+            ["333333", "444444"],
+            ["555555", "666666"],
+          ],
+          pi_c: ["777777", "888888"],
+          protocol: "groth16",
+          curve: "bn128",
         },
-        publicSignals: ['111111', '222222', '333333'],
+        publicSignals: ["111111", "222222", "333333"],
       },
     });
   }
@@ -314,14 +334,14 @@ async function simulateIdempotencyCheck(): Promise<void> {
 
 // ── Test suite ────────────────────────────────────────────────────────────────
 
-describe('Performance benchmarks - proof setup, caching, and submission', () => {
+describe("Performance benchmarks - proof setup, caching, and submission", () => {
   const results: PerformanceResult[] = [];
 
-  describe('proof setup and witness encoding', () => {
-    it('witness encoding - prepare input for proof generation', async () => {
+  describe("proof setup and witness encoding", () => {
+    it("witness encoding - prepare input for proof generation", async () => {
       const result = await measurePerformance(
-        'witness_encoding',
-        'Witness encoding',
+        "witness_encoding",
+        "Witness encoding",
         simulateProofSetup,
         50
       );
@@ -330,11 +350,11 @@ describe('Performance benchmarks - proof setup, caching, and submission', () => 
     });
   });
 
-  describe('cache path latency', () => {
-    it('cache hit - deserialize proof from cache', async () => {
+  describe("cache path latency", () => {
+    it("cache hit - deserialize proof from cache", async () => {
       const result = await measurePerformance(
-        'cache_hit_deserialize',
-        'Cache hit (JSON parse)',
+        "cache_hit_deserialize",
+        "Cache hit (JSON parse)",
         simulateCacheLookup,
         100
       );
@@ -343,10 +363,10 @@ describe('Performance benchmarks - proof setup, caching, and submission', () => 
       expect(sorted[0]).toBeLessThan(10); // Should be very fast
     });
 
-    it('cache miss - full proof workflow', async () => {
+    it("cache miss - full proof workflow", async () => {
       const result = await measurePerformance(
-        'cache_miss_workflow',
-        'Cache miss workflow',
+        "cache_miss_workflow",
+        "Cache miss workflow",
         simulateCacheMissWorkflow,
         50
       );
@@ -356,11 +376,11 @@ describe('Performance benchmarks - proof setup, caching, and submission', () => 
     });
   });
 
-  describe('draft and submission helpers', () => {
-    it('draft creation - prepare 10 payment drafts', async () => {
+  describe("draft and submission helpers", () => {
+    it("draft creation - prepare 10 payment drafts", async () => {
       const result = await measurePerformance(
-        'draft_creation_10',
-        'Draft creation (10 items)',
+        "draft_creation_10",
+        "Draft creation (10 items)",
         simulateDraftCreation,
         20
       );
@@ -369,10 +389,10 @@ describe('Performance benchmarks - proof setup, caching, and submission', () => 
       expect(sorted[0]).toBeLessThan(100); // Should be fast for small batch
     });
 
-    it('submission aggregation - merge 20 drafts', async () => {
+    it("submission aggregation - merge 20 drafts", async () => {
       const result = await measurePerformance(
-        'submission_aggregation_20',
-        'Submission aggregation (20)',
+        "submission_aggregation_20",
+        "Submission aggregation (20)",
         simulateSubmissionAggregation,
         20
       );
@@ -381,10 +401,10 @@ describe('Performance benchmarks - proof setup, caching, and submission', () => 
       expect(sorted[0]).toBeLessThan(50); // Should be O(n) linear
     });
 
-    it('idempotency tracking - 50 submission attempts', async () => {
+    it("idempotency tracking - 50 submission attempts", async () => {
       const result = await measurePerformance(
-        'idempotency_tracking_50',
-        'Idempotency tracking (50)',
+        "idempotency_tracking_50",
+        "Idempotency tracking (50)",
         simulateIdempotencyCheck,
         20
       );
@@ -394,22 +414,25 @@ describe('Performance benchmarks - proof setup, caching, and submission', () => 
     });
   });
 
-  describe('cache reuse effectiveness', () => {
-    it('repeated cache hits - 100 lookups', async () => {
+  describe("cache reuse effectiveness", () => {
+    it("repeated cache hits - 100 lookups", async () => {
       const cachedProof = JSON.stringify({
         proof: {
-          pi_a: ['111111', '222222'],
-          pi_b: [['333333', '444444'], ['555555', '666666']],
-          pi_c: ['777777', '888888'],
-          protocol: 'groth16',
-          curve: 'bn128',
+          pi_a: ["111111", "222222"],
+          pi_b: [
+            ["333333", "444444"],
+            ["555555", "666666"],
+          ],
+          pi_c: ["777777", "888888"],
+          protocol: "groth16",
+          curve: "bn128",
         },
-        publicSignals: ['111111', '222222', '333333'],
+        publicSignals: ["111111", "222222", "333333"],
       });
 
       const result = await measurePerformance(
-        'repeated_cache_hits_100',
-        'Repeated cache hits (100)',
+        "repeated_cache_hits_100",
+        "Repeated cache hits (100)",
         () => {
           for (let i = 0; i < 100; i++) {
             JSON.parse(cachedProof);
@@ -428,7 +451,7 @@ describe('Performance benchmarks - proof setup, caching, and submission', () => 
 
   afterAll(() => {
     const table = formatPerformanceTable(results);
-    console.log('\n' + table + '\n');
+    console.log("\n" + table + "\n");
     persistPerformanceBaseline(results);
   });
 });

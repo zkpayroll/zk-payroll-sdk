@@ -22,6 +22,8 @@ export const ArtifactErrorCode = {
   ARTIFACT_CORRUPT: "ARTIFACT_CORRUPT",
   /** An HTTP request for a remote artifact failed. */
   ARTIFACT_FETCH_FAILED: "ARTIFACT_FETCH_FAILED",
+  /** The artifact content does not match the expected SHA-256 hash. */
+  ARTIFACT_HASH_MISMATCH: "ARTIFACT_HASH_MISMATCH",
 } as const;
 
 export type ArtifactErrorCode = (typeof ArtifactErrorCode)[keyof typeof ArtifactErrorCode];
@@ -94,5 +96,28 @@ export class ArtifactFetchError extends ZkPayrollError {
       { url, artifactType }
     );
     this.name = "ArtifactFetchError";
+  }
+}
+
+/**
+ * Thrown when a circuit artifact's SHA-256 hash does not match the expected value.
+ * This prevents proof generation or transaction assembly with tampered or
+ * incorrect artifacts.
+ */
+export class ArtifactHashMismatchError extends ZkPayrollError {
+  constructor(
+    artifactPath: string,
+    artifactType: "wasm" | "zkey",
+    expected: string,
+    actual: string
+  ) {
+    super(
+      `SHA-256 hash mismatch for ${artifactType} artifact at "${artifactPath}": ` +
+        `expected ${expected} but got ${actual}. ` +
+        `The artifact may be corrupted, tampered with, or from an unexpected version.`,
+      ArtifactErrorCode.ARTIFACT_HASH_MISMATCH,
+      { path: artifactPath, artifactType, expected, actual }
+    );
+    this.name = "ArtifactHashMismatchError";
   }
 }

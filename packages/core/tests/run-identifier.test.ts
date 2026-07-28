@@ -97,14 +97,8 @@ describe("RunIdentifier", () => {
     });
 
     it("should produce different IDs for different runs with the same operation", () => {
-      const corr1 = RunIdentifier.generateCorrelationId(
-        RunIdentifier.generate(),
-        "private_pay"
-      );
-      const corr2 = RunIdentifier.generateCorrelationId(
-        RunIdentifier.generate(),
-        "private_pay"
-      );
+      const corr1 = RunIdentifier.generateCorrelationId(RunIdentifier.generate(), "private_pay");
+      const corr2 = RunIdentifier.generateCorrelationId(RunIdentifier.generate(), "private_pay");
       expect(corr1).not.toBe(corr2);
     });
 

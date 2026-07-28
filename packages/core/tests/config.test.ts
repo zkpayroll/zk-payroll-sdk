@@ -75,4 +75,32 @@ describe("ConfigBuilder and ConfigPresets", () => {
       expect(config.networkUrl).toBe("https://soroban-rpc.mainnet.stellar.org");
     });
   });
+
+  describe("RetryPolicyConfig", () => {
+    it("should allow configuring custom retry policy", () => {
+      const config = new ConfigBuilder()
+        .withNetworkUrl("https://soroban-testnet.stellar.org")
+        .withContractId("CAKZGMMMJOHMSZ5V3DYKCUDNTIWBG57MAMFJDSVICNWUNVXLX6EZN3NC")
+        .withRetryPolicy({
+          maxAttempts: 5,
+          initialDelayMs: 250,
+          maxDelayMs: 5000,
+          backoffFactor: 2,
+        })
+        .build();
+
+      expect(config.retryPolicy).toBeDefined();
+      expect(config.retryPolicy?.maxAttempts).toBe(5);
+      expect(config.retryPolicy?.initialDelayMs).toBe(250);
+    });
+
+    it("should fail validation if maxAttempts is less than 1", () => {
+      const builder = new ConfigBuilder()
+        .withNetworkUrl("https://soroban-testnet.stellar.org")
+        .withContractId("CAKZGMMMJOHMSZ5V3DYKCUDNTIWBG57MAMFJDSVICNWUNVXLX6EZN3NC")
+        .withRetryPolicy({ maxAttempts: 0 });
+
+      expect(() => builder.build()).toThrow("retryPolicy.maxAttempts must be at least 1.");
+    });
+  });
 });

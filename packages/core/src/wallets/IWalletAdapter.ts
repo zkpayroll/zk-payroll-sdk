@@ -125,4 +125,3 @@ export interface IWalletAdapter {
 
 import { WalletError, WalletErrorCode, WalletRejectionError } from "../errors";
 export { WalletError, WalletErrorCode, WalletRejectionError };
-

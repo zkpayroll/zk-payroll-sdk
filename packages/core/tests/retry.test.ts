@@ -1,8 +1,4 @@
-import {
-  classifyError,
-  RetryCategory,
-  RetryDecision,
-} from "../src/core/retry";
+import { classifyError, RetryCategory, RetryDecision } from "../src/core/retry";
 import {
   ZkPayrollError,
   NetworkError,
@@ -68,10 +64,7 @@ describe("classifyError", () => {
 
   describe("ContractExecutionError", () => {
     it("classifies SIMULATION_FAILED as RETRYABLE", () => {
-      const error = new ContractExecutionError(
-        "sim failed",
-        ContractErrorCode.SIMULATION_FAILED
-      );
+      const error = new ContractExecutionError("sim failed", ContractErrorCode.SIMULATION_FAILED);
       expectRetryable(classifyError(error));
     });
 
@@ -84,18 +77,12 @@ describe("classifyError", () => {
     });
 
     it("classifies TRANSACTION_TIMEOUT as RETRYABLE", () => {
-      const error = new ContractExecutionError(
-        "timed out",
-        ContractErrorCode.TRANSACTION_TIMEOUT
-      );
+      const error = new ContractExecutionError("timed out", ContractErrorCode.TRANSACTION_TIMEOUT);
       expectRetryable(classifyError(error));
     });
 
     it("classifies INSUFFICIENT_FEE as NON_RETRYABLE", () => {
-      const error = new ContractExecutionError(
-        "fee too low",
-        ContractErrorCode.INSUFFICIENT_FEE
-      );
+      const error = new ContractExecutionError("fee too low", ContractErrorCode.INSUFFICIENT_FEE);
       expectNonRetryable(classifyError(error));
     });
 

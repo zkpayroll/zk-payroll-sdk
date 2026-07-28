@@ -34,5 +34,4 @@ export const MetadataErrorCode = {
   MISSING_REQUIRED_FIELD: "MISSING_REQUIRED_FIELD",
 } as const;
 
-export type MetadataErrorCodeType =
-  (typeof MetadataErrorCode)[keyof typeof MetadataErrorCode];
+export type MetadataErrorCodeType = (typeof MetadataErrorCode)[keyof typeof MetadataErrorCode];

@@ -142,3 +142,49 @@ export const VERIFY_REQUEST_EDGE: VerifyProofRequest = {
   publicInputs: [],
   verificationKeyId: 0,
 };
+
+// ── Deterministic witness / public-signal fixtures ──────────────────────────
+// These let tests compare stable `publicSignals`/`publicInputs` content
+// against fixtures without re-running the snarkjs mock.
+
+/** Fixed witness inputs (recipient + amount + nullifier + secret). */
+export const FIXTURE_PROOF_WITNESS_ALICE = {
+  recipient: "GALICE1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+  amount: 1000n,
+  nullifier: 123456789n,
+  secret: 987654321n,
+} as const;
+
+/** Expected public signals derived from the above witness. */
+export const FIXTURE_PROOF_PUBLIC_SIGNALS_ALICE: string[] = [
+  "GALICE1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+  "1000",
+  "123456789",
+  "987654321",
+];
+
+// ── Named scenario bundles: input + expected output, paired for assertions ──
+
+/**
+ * Single round-trip scenario for the canonical Groth16 proof flow. Useful
+ * for table-driven tests that validate proof payloads end-to-end.
+ */
+export const SCENARIO_PROOF_ROUND_TRIP = {
+  name: "groth16-round-trip",
+  payload: PROOF_PAYLOAD_NORMAL,
+  struct: PROOF_STRUCT_NORMAL,
+  request: VERIFY_REQUEST_NORMAL,
+  witness: FIXTURE_PROOF_WITNESS_ALICE,
+  publicSignals: FIXTURE_PROOF_PUBLIC_SIGNALS_ALICE,
+} as const;
+
+/**
+ * Multi-public-signal scenario — exercises payroll circuits that commit to
+ * more than one value (recipient hash, amount hash, cycle id, salt, ...).
+ */
+export const SCENARIO_PROOF_MULTI_COMMITMENT = {
+  name: "multi-commitment-circuit",
+  payload: PROOF_PAYLOAD_MULTI,
+  struct: PROOF_STRUCT_MULTI,
+  request: VERIFY_REQUEST_MULTI,
+} as const;
