@@ -343,6 +343,7 @@ describe("Memory benchmarks — proof generation and artifact caching", () => {
     const table = formatTable(baseline);
 
     // Print for contributors and CI logs
+    // eslint-disable-next-line no-console
     console.log("\n" + table + "\n");
 
     // Persist to disk for future comparison

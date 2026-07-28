@@ -156,10 +156,7 @@ export class ArchiveFilterBuilder {
    */
   withMinAmount(amount: bigint): this {
     if (amount < 0n) {
-      throw new ValidationError(
-        `minAmount must be non-negative; received ${amount}`,
-        "minAmount"
-      );
+      throw new ValidationError(`minAmount must be non-negative; received ${amount}`, "minAmount");
     }
     this._minAmount = amount;
     return this;

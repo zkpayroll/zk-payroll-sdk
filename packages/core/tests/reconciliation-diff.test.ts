@@ -14,7 +14,9 @@ const ALICE = "GALICE1234567890abcdef";
 const BOB = "GBOB1234567890abcdef";
 const CHARLIE = "GCHARLIE1234567890abcd";
 
-function observed(partial: Partial<ObservedPaymentState> & Pick<ObservedPaymentState, "recipient" | "onChainStatus">): ObservedPaymentState {
+function observed(
+  partial: Partial<ObservedPaymentState> & Pick<ObservedPaymentState, "recipient" | "onChainStatus">
+): ObservedPaymentState {
   return { observedAt: Date.now(), ...partial };
 }
 
@@ -52,7 +54,9 @@ describe("generateReconciliationDiff", () => {
       [successOutcome(ALICE, 1000n, "native", "0xhash1")],
       500
     );
-    const observedState = [observed({ recipient: ALICE, asset: "native", onChainStatus: "not_found" })];
+    const observedState = [
+      observed({ recipient: ALICE, asset: "native", onChainStatus: "not_found" }),
+    ];
 
     const result = generateReconciliationDiff(expected, observedState);
 
@@ -64,7 +68,9 @@ describe("generateReconciliationDiff", () => {
       [successOutcome(ALICE, 1000n, "native", "0xhash1")],
       500
     );
-    const observedState = [observed({ recipient: ALICE, asset: "native", onChainStatus: "failed" })];
+    const observedState = [
+      observed({ recipient: ALICE, asset: "native", onChainStatus: "failed" }),
+    ];
 
     const result = generateReconciliationDiff(expected, observedState);
 
@@ -77,7 +83,9 @@ describe("generateReconciliationDiff", () => {
       [failedOutcome(ALICE, 1000n, "native", "timeout")],
       500
     );
-    const observedState = [observed({ recipient: ALICE, asset: "native", onChainStatus: "confirmed" })];
+    const observedState = [
+      observed({ recipient: ALICE, asset: "native", onChainStatus: "confirmed" }),
+    ];
 
     const result = generateReconciliationDiff(expected, observedState);
 
@@ -101,7 +109,9 @@ describe("generateReconciliationDiff", () => {
 
   it("classifies a pending outcome as 'still_pending' regardless of observed state", () => {
     const expected = createExecutionSummary([pendingOutcome(ALICE, 1000n, "native")], 500);
-    const observedState = [observed({ recipient: ALICE, asset: "native", onChainStatus: "confirmed" })];
+    const observedState = [
+      observed({ recipient: ALICE, asset: "native", onChainStatus: "confirmed" }),
+    ];
 
     const result = generateReconciliationDiff(expected, observedState);
 

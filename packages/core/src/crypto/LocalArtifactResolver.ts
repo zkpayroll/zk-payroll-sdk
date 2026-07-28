@@ -43,7 +43,12 @@
 import * as fs from "fs";
 import * as path from "path";
 import { IArtifactResolver, ResolvedArtifacts } from "./IArtifactResolver";
-import { ArtifactNotFoundError, ArtifactAccessError, ArtifactCorruptError } from "./ArtifactErrors";
+import {
+  ArtifactNotFoundError,
+  ArtifactAccessError,
+  ArtifactCorruptError,
+  ArtifactHashMismatchError,
+} from "./ArtifactErrors";
 import { sha256Digest } from "./hashUtils";
 import { SdkLogger } from "../logging/SdkLogger";
 

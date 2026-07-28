@@ -46,14 +46,6 @@ function symbolScVal(name: string): xdr.ScVal {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function makeRawEvent(overrides: Partial<RawContractEvent>): RawContractEvent {
-  return {
-    topics: [],
-    data: xdr.ScVal.scvVoid(),
-    ...overrides,
-  };
-}
-
 // ═══════════════════════════════════════════════════════════════════════════════
 // RegisteredEvent
 // ═══════════════════════════════════════════════════════════════════════════════

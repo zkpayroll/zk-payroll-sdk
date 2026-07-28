@@ -36,9 +36,7 @@ function makeRequest(overrides: Partial<ViewKeyRequest> = {}): ViewKeyRequest {
 }
 
 function makeViewKey(overrides: Partial<ViewKey> = {}): ViewKey {
-  const future = new Date(
-    Date.now() + 365 * 24 * 60 * 60 * 1000
-  ).toISOString();
+  const future = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString();
   return {
     id: "vk_001",
     keyId: "vk_audit_abc123",
@@ -59,8 +57,7 @@ function makeViewKey(overrides: Partial<ViewKey> = {}): ViewKey {
 
 describe("createViewKeyRequest", () => {
   it("returns a fully populated ViewKeyResponse", () => {
-    const grantedBy =
-      "GDQP2KPQGKIHYJGXNUIYOMHARUARCA7DJT5FO2FFOOKY3B2WSQHG4W37";
+    const grantedBy = "GDQP2KPQGKIHYJGXNUIYOMHARUARCA7DJT5FO2FFOOKY3B2WSQHG4W37";
     const response = createViewKeyRequest(makeRequest(), grantedBy);
 
     expect(response.id).toMatch(/^vk_/);
@@ -76,10 +73,7 @@ describe("createViewKeyRequest", () => {
 
   it("uses the provided expiresAt when supplied", () => {
     const customExpiry = "2030-01-01T00:00:00.000Z";
-    const response = createViewKeyRequest(
-      makeRequest({ expiresAt: customExpiry }),
-      "GADMIN"
-    );
+    const response = createViewKeyRequest(makeRequest({ expiresAt: customExpiry }), "GADMIN");
     expect(response.expiresAt).toBe(customExpiry);
   });
 
@@ -111,10 +105,7 @@ describe("createViewKeyRequest", () => {
   });
 
   it("supports full-audit scope", () => {
-    const response = createViewKeyRequest(
-      makeRequest({ scope: "full-audit" }),
-      "GADMIN"
-    );
+    const response = createViewKeyRequest(makeRequest({ scope: "full-audit" }), "GADMIN");
     expect(response.scope).toBe("full-audit");
   });
 });
@@ -145,30 +136,22 @@ describe("validateViewKeyRequest", () => {
   });
 
   it("errors when scope is invalid", () => {
-    const errors = validateViewKeyRequest(
-      makeRequest({ scope: "superuser" as never })
-    );
+    const errors = validateViewKeyRequest(makeRequest({ scope: "superuser" as never }));
     expect(errors.some((e) => e.includes("scope"))).toBe(true);
   });
 
   it("errors when expiresAt is not a valid date string", () => {
-    const errors = validateViewKeyRequest(
-      makeRequest({ expiresAt: "not-a-date" })
-    );
+    const errors = validateViewKeyRequest(makeRequest({ expiresAt: "not-a-date" }));
     expect(errors.some((e) => e.includes("expiresAt"))).toBe(true);
   });
 
   it("errors when expiresAt is in the past", () => {
-    const errors = validateViewKeyRequest(
-      makeRequest({ expiresAt: "2000-01-01T00:00:00.000Z" })
-    );
+    const errors = validateViewKeyRequest(makeRequest({ expiresAt: "2000-01-01T00:00:00.000Z" }));
     expect(errors.some((e) => e.includes("expiresAt"))).toBe(true);
   });
 
   it("accepts a future expiresAt date", () => {
-    const errors = validateViewKeyRequest(
-      makeRequest({ expiresAt: "2099-01-01T00:00:00.000Z" })
-    );
+    const errors = validateViewKeyRequest(makeRequest({ expiresAt: "2099-01-01T00:00:00.000Z" }));
     expect(errors).toEqual([]);
   });
 
@@ -192,9 +175,7 @@ describe("revokeViewKey", () => {
     expect(result.id).toBe(key.id);
     expect(result.success).toBe(true);
     expect(result.revokedAt).toBeTruthy();
-    expect(new Date(result.revokedAt).getTime()).toBeLessThanOrEqual(
-      Date.now()
-    );
+    expect(new Date(result.revokedAt).getTime()).toBeLessThanOrEqual(Date.now());
   });
 
   it("throws when the key is already inactive", () => {

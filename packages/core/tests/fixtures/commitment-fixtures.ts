@@ -1,5 +1,9 @@
 import { BatchCommitItem, CommitmentEntry, CommitRequest } from "../../src/clients/types";
-import { SalaryCommitment, PayrollPeriodMetadata, SimulationEmployeeRecord } from "../../src/simulation/types";
+import {
+  SalaryCommitment,
+  PayrollPeriodMetadata,
+  SimulationEmployeeRecord,
+} from "../../src/simulation/types";
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // ── Determinism notes ──────────────────────────────────────────────────────
@@ -233,8 +237,7 @@ export const SALARY_COMMITMENTS_PAYROLL: SalaryCommitment[] = [
   },
   {
     employeeId: SIMULATION_EMPLOYEE_CAROL.id,
-    commitmentHash:
-      "00112233445566778899aabbccddeeff112233445566778899aabbccddeeff00",
+    commitmentHash: "00112233445566778899aabbccddeeff112233445566778899aabbccddeeff00",
     asset: SIMULATION_EMPLOYEE_CAROL.asset,
   },
 ];

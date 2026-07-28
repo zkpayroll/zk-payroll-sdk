@@ -5,7 +5,12 @@
 import { buildArchiveSummaryReport } from "../src/archived/summary";
 import { ArchiveFilterBuilder } from "../src/archived/ArchiveFilterBuilder";
 import { ValidationError } from "../src/core/errors";
-import { createExecutionSummary, successOutcome, failedOutcome, pendingOutcome } from "../src/summary/PayrollExecutionSummary";
+import {
+  createExecutionSummary,
+  successOutcome,
+  failedOutcome,
+  pendingOutcome,
+} from "../src/summary/PayrollExecutionSummary";
 import type { ArchivedRecord } from "../src/archived/types";
 
 // ---------------------------------------------------------------------------
@@ -49,9 +54,7 @@ describe("buildArchiveSummaryReport", () => {
 
   describe("period strings from query", () => {
     it("copies periodStart and periodEnd verbatim", () => {
-      const query = new ArchiveFilterBuilder()
-        .forPeriod("2024-01-01", "2024-12-31")
-        .build();
+      const query = new ArchiveFilterBuilder().forPeriod("2024-01-01", "2024-12-31").build();
       const report = buildArchiveSummaryReport([], query);
       expect(report.periodStart).toBe("2024-01-01");
       expect(report.periodEnd).toBe("2024-12-31");
@@ -81,10 +84,7 @@ describe("buildArchiveSummaryReport", () => {
 
   describe("assetBreakdown", () => {
     it("records missing asset are bucketed under 'unknown'", () => {
-      const records = [
-        makeRecord({ asset: undefined }),
-        makeRecord({ asset: "" }),
-      ];
+      const records = [makeRecord({ asset: undefined }), makeRecord({ asset: "" })];
       const report = buildArchiveSummaryReport(records, emptyQuery());
       expect(report.assetBreakdown["unknown"]).toBeDefined();
       expect(report.assetBreakdown["unknown"].totalCount).toBe(2);
@@ -112,26 +112,19 @@ describe("buildArchiveSummaryReport", () => {
         makeRecord({ asset: undefined }),
       ];
       const report = buildArchiveSummaryReport(records, emptyQuery());
-      const sum = Object.values(report.assetBreakdown).reduce(
-        (acc, e) => acc + e.totalCount,
-        0
-      );
+      const sum = Object.values(report.assetBreakdown).reduce((acc, e) => acc + e.totalCount, 0);
       expect(sum).toBe(report.totalCount);
     });
   });
 
   describe("ValidationError for inverted period", () => {
     it("throws when periodStart > periodEnd", () => {
-      const query = new ArchiveFilterBuilder()
-        .forPeriod("2024-12-31", "2024-01-01")
-        .build();
+      const query = new ArchiveFilterBuilder().forPeriod("2024-12-31", "2024-01-01").build();
       expect(() => buildArchiveSummaryReport([], query)).toThrow(ValidationError);
     });
 
     it("thrown error has field 'periodStart'", () => {
-      const query = new ArchiveFilterBuilder()
-        .forPeriod("2024-12-31", "2024-01-01")
-        .build();
+      const query = new ArchiveFilterBuilder().forPeriod("2024-12-31", "2024-01-01").build();
       try {
         buildArchiveSummaryReport([], query);
       } catch (e) {
@@ -140,9 +133,7 @@ describe("buildArchiveSummaryReport", () => {
     });
 
     it("thrown error message contains periodStart and periodEnd", () => {
-      const query = new ArchiveFilterBuilder()
-        .forPeriod("2024-12-31", "2024-01-01")
-        .build();
+      const query = new ArchiveFilterBuilder().forPeriod("2024-12-31", "2024-01-01").build();
       try {
         buildArchiveSummaryReport([], query);
       } catch (e) {
@@ -165,10 +156,10 @@ describe("buildArchiveSummaryReport", () => {
 
   describe("report shape — privacy", () => {
     it("does not have recipient or amount fields", () => {
-      const report = buildArchiveSummaryReport(
-        [makeRecord()],
-        emptyQuery()
-      ) as unknown as Record<string, unknown>;
+      const report = buildArchiveSummaryReport([makeRecord()], emptyQuery()) as unknown as Record<
+        string,
+        unknown
+      >;
       expect(report["recipient"]).toBeUndefined();
       expect(report["amount"]).toBeUndefined();
       expect(report["recipients"]).toBeUndefined();
@@ -259,9 +250,7 @@ describe("buildArchiveSummaryReport — assetBreakdown partition invariant prope
   it("records with undefined asset are bucketed under 'unknown'", () => {
     for (let i = 0; i < SAMPLES; i++) {
       const count = Math.floor(Math.random() * 20) + 1;
-      const records = Array.from({ length: count }, () =>
-        makeRecord({ asset: undefined })
-      );
+      const records = Array.from({ length: count }, () => makeRecord({ asset: undefined }));
 
       const report = buildArchiveSummaryReport(records, emptyQuery());
       expect(report.assetBreakdown["unknown"]?.totalCount).toBe(count);

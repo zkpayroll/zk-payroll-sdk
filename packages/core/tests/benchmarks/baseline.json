@@ -1,24 +1,24 @@
 {
-  "generatedAt": "2026-07-28T17:31:40.887Z",
-  "nodeVersion": "v22.14.0",
-  "platform": "win32/x64",
+  "generatedAt": "2026-07-28T20:46:41.520Z",
+  "nodeVersion": "v24.14.0",
+  "platform": "linux/x64",
   "results": [
     {
       "scenario": "cold_artifact_small",
       "description": "Cold: 500 KB wasm + 1 MB zkey",
       "runs": 3,
-      "avgHeapDeltaMB": 0.0037078857421875,
-      "peakHeapUsedMB": 349.28807830810547,
+      "avgHeapDeltaMB": 0.0037256876627604165,
+      "peakHeapUsedMB": 412.7231140136719,
       "avgArrayBuffersDeltaMB": 1.430511474609375,
       "avgExternalDeltaMB": 1.430524190266927,
-      "avgDurationMs": 1.3333333333333333
+      "avgDurationMs": 0
     },
     {
       "scenario": "cold_artifact_medium",
       "description": "Cold: 2 MB wasm + 5 MB zkey",
       "runs": 3,
-      "avgHeapDeltaMB": 0.0021082560221354165,
-      "peakHeapUsedMB": 349.5175247192383,
+      "avgHeapDeltaMB": 0.005022684733072917,
+      "peakHeapUsedMB": 412.99324798583984,
       "avgArrayBuffersDeltaMB": 6.67572021484375,
       "avgExternalDeltaMB": 6.67572021484375,
       "avgDurationMs": 0
@@ -27,18 +27,18 @@
       "scenario": "cold_artifact_large",
       "description": "Cold: 3 MB wasm + 10 MB zkey",
       "runs": 3,
-      "avgHeapDeltaMB": 0.008575439453125,
-      "peakHeapUsedMB": 344.72264862060547,
-      "avgArrayBuffersDeltaMB": -10.808308919270834,
-      "avgExternalDeltaMB": -10.808308919270834,
-      "avgDurationMs": 9
+      "avgHeapDeltaMB": 0.0019251505533854167,
+      "peakHeapUsedMB": 413.12647247314453,
+      "avgArrayBuffersDeltaMB": 12.39776611328125,
+      "avgExternalDeltaMB": 12.39776611328125,
+      "avgDurationMs": 3
     },
     {
       "scenario": "warm_artifact_small",
       "description": "Warm: Map lookup only, no new buffers",
       "runs": 5,
-      "avgHeapDeltaMB": 0.00133514404296875,
-      "peakHeapUsedMB": 344.84522247314453,
+      "avgHeapDeltaMB": 0.00131988525390625,
+      "peakHeapUsedMB": 413.2669677734375,
       "avgArrayBuffersDeltaMB": 0,
       "avgExternalDeltaMB": 0,
       "avgDurationMs": 0
@@ -47,18 +47,18 @@
       "scenario": "cold_proof_small",
       "description": "Cold proof: artifact load + witness encode + proof cache write",
       "runs": 3,
-      "avgHeapDeltaMB": 0.0034815470377604165,
-      "peakHeapUsedMB": 345.10768127441406,
+      "avgHeapDeltaMB": 0.0034942626953125,
+      "peakHeapUsedMB": 413.5571060180664,
       "avgArrayBuffersDeltaMB": 1.430511474609375,
       "avgExternalDeltaMB": 1.430511474609375,
-      "avgDurationMs": 1.6666666666666667
+      "avgDurationMs": 1
     },
     {
       "scenario": "cold_proof_medium",
       "description": "Cold proof: medium artifacts (2 MB wasm + 5 MB zkey)",
       "runs": 3,
-      "avgHeapDeltaMB": 0.003448486328125,
-      "peakHeapUsedMB": 344.8404846191406,
+      "avgHeapDeltaMB": 0.0034637451171875,
+      "peakHeapUsedMB": 413.7682800292969,
       "avgArrayBuffersDeltaMB": 6.67572021484375,
       "avgExternalDeltaMB": 6.67572021484375,
       "avgDurationMs": 0.3333333333333333
@@ -68,7 +68,7 @@
       "description": "Warm proof: JSON.parse of cached proof, no buffer allocation",
       "runs": 5,
       "avgHeapDeltaMB": 0.00211334228515625,
-      "peakHeapUsedMB": 344.96858978271484,
+      "peakHeapUsedMB": 413.91312408447266,
       "avgArrayBuffersDeltaMB": 0,
       "avgExternalDeltaMB": 0,
       "avgDurationMs": 0
@@ -77,41 +77,41 @@
       "scenario": "concurrent_cold_2",
       "description": "2 concurrent cold proof generations (small artifacts)",
       "runs": 3,
-      "avgHeapDeltaMB": 0.00823974609375,
-      "peakHeapUsedMB": 344.8215026855469,
+      "avgHeapDeltaMB": 0.008270263671875,
+      "peakHeapUsedMB": 414.2988510131836,
       "avgArrayBuffersDeltaMB": 2.86102294921875,
       "avgExternalDeltaMB": 2.86102294921875,
-      "avgDurationMs": 3
+      "avgDurationMs": 2
     },
     {
       "scenario": "concurrent_cold_5",
       "description": "5 concurrent cold proof generations (small artifacts)",
       "runs": 3,
-      "avgHeapDeltaMB": -0.057169596354166664,
-      "peakHeapUsedMB": 344.9823989868164,
-      "avgArrayBuffersDeltaMB": -3.814697265625,
-      "avgExternalDeltaMB": -3.814697265625,
-      "avgDurationMs": 8.666666666666666
+      "avgHeapDeltaMB": 0.01749420166015625,
+      "peakHeapUsedMB": 414.4965133666992,
+      "avgArrayBuffersDeltaMB": 7.152557373046875,
+      "avgExternalDeltaMB": 7.152557373046875,
+      "avgDurationMs": 3.6666666666666665
     },
     {
       "scenario": "batch_20_warm_artifacts",
       "description": "20 proofs, warm artifact cache, unique witnesses",
       "runs": 3,
       "avgHeapDeltaMB": 0.026763916015625,
-      "peakHeapUsedMB": 344.99939727783203,
+      "peakHeapUsedMB": 414.72965240478516,
       "avgArrayBuffersDeltaMB": 1.430511474609375,
       "avgExternalDeltaMB": 1.430511474609375,
-      "avgDurationMs": 3
+      "avgDurationMs": 1.3333333333333333
     },
     {
       "scenario": "batch_100_warm_artifacts",
       "description": "100 proofs, warm artifact cache, unique witnesses",
       "runs": 2,
-      "avgHeapDeltaMB": 0.12606430053710938,
-      "peakHeapUsedMB": 345.55992126464844,
+      "avgHeapDeltaMB": 0.12609481811523438,
+      "peakHeapUsedMB": 415.30489349365234,
       "avgArrayBuffersDeltaMB": 1.430511474609375,
       "avgExternalDeltaMB": 1.430511474609375,
-      "avgDurationMs": 8
+      "avgDurationMs": 3
     }
   ]
 }

@@ -35,25 +35,30 @@ import { ZkPayrollError } from "./core/errors";
  * @deprecated Use `ZkPayrollError` instead.
  */
 export class PayrollError extends ZkPayrollError {
-  constructor(message: string, code: any, context: Record<string, any> = {}, cause?: unknown) {
+  constructor(
+    message: string,
+    code: unknown,
+    context: Record<string, unknown> = {},
+    cause?: unknown
+  ) {
     let sanitizedCode = code;
     if (typeof code === "number" && code >= 1000) {
       sanitizedCode = String(code);
     }
     super(message, String(sanitizedCode), context, cause);
     this.name = "PayrollError";
-    (this as unknown as { code: any }).code = sanitizedCode;
+    (this as unknown as { code: unknown }).code = sanitizedCode;
   }
 }
 
 export class SerializationError extends ZkPayrollError {
   constructor(
     message: string,
-    code: any = "SERIALIZATION_FAILED",
-    context: Record<string, any> = {},
+    code: unknown = "SERIALIZATION_FAILED",
+    context: Record<string, unknown> = {},
     cause?: unknown
   ) {
-    super(message, code, context, cause);
+    super(message, String(code), context, cause);
     this.name = "SerializationError";
   }
 }

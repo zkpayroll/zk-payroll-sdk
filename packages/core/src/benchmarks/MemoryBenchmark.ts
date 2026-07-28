@@ -120,7 +120,7 @@ export async function measureMemory(
     peakHeap = Math.max(peakHeap, after.heapUsedMB);
   }
 
-  const avg = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
+  const avg = (arr: number[]): number => arr.reduce((a, b) => a + b, 0) / arr.length;
 
   return {
     scenario,
@@ -179,7 +179,7 @@ export function formatTable(baseline: BenchmarkBaseline): string {
 
   const widths = headers.map((h, i) => Math.max(h.length, ...rows.map((row) => row[i].length)));
 
-  const cell = (s: string, w: number) => ` ${s.padEnd(w)} `;
+  const cell = (s: string, w: number): string => ` ${s.padEnd(w)} `;
   const divider = widths.map((w) => "-".repeat(w + 2)).join("+");
   const headerRow = headers.map((h, i) => cell(h, widths[i])).join("|");
   const dataRows = rows.map((row) => row.map((c, i) => cell(c, widths[i])).join("|"));
