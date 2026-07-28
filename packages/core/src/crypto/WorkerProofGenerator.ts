@@ -135,9 +135,7 @@ export class WorkerProofGenerator implements IProofGenerator {
 
       case "PROGRESS":
         for (const cb of pending.progressCallbacks) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const rawStage =
-            "event" in msg && msg.event ? msg.event.stage : (msg as any).stage;
+          const rawStage = "event" in msg && msg.event ? msg.event.stage : (msg as any).stage; // eslint-disable-line @typescript-eslint/no-explicit-any
           const mappedStage: PayrollProgressStage =
             rawStage === "loading_zkey"
               ? "proof_loading_zkey"
