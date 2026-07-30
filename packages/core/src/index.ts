@@ -124,6 +124,9 @@ export * from "./sanity";
 // ── Proof Readiness Checker ─────────────────────────────────────────────────
 export * from "./proof-readiness";
 
+// ── Integration Health Report ───────────────────────────────────────────────
+export * from "./health";
+
 // ── Transaction Simulation ──────────────────────────────────────────────────
 export * from "./simulation";
 
