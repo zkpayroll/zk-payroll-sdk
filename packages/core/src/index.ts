@@ -181,3 +181,6 @@ export * from "./indexer";
 
 // Proof Artifact Lifecycle
 export * from "./artifacts";
+
+// Payroll Setup Checklist Generator
+export * from "./setup";

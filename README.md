@@ -93,6 +93,7 @@ await service.processPayment({
 - **Caching**: Built-in caching for proofs and circuit artifacts.
 - **Error Handling**: Robust error typing and management.
 - **Mock Testing Environment**: Comprehensive testing utilities for unit tests without a live network.
+- **Setup Checklist Generator**: Generates a pre-payroll integration checklist covering config, network, contracts, treasury, proofs, wallet, and test fixtures.
 
 ## Browser and Backend Usage
 
@@ -466,6 +467,33 @@ Each `DiagnosticEntry` contains:
 - `message: string` - Actionable diagnostic message explaining the result.
 - `error?: Error` - The caught error object, if any.
 - `details?: Record<string, unknown>` - Extra context (e.g. network passphrases or RPC response details).
+
+## Payroll Setup Checklist
+
+Before running payroll, use `generateSetupChecklist` to generate an integration checklist covering **config, network, contracts, treasury, proofs, wallet, and test fixtures**:
+
+```typescript
+import { generateSetupChecklist } from "@zk-payroll/sdk";
+
+const checklist = generateSetupChecklist(config, {
+  expectedNetworkPassphrase: "Test SDF Network ; September 2015",
+  rpcReachable: true,             // result of validateEnvironment(config)
+  networkPassphrase: "Test SDF Network ; September 2015",
+  contractDeployed: true,         // result of validateEnvironment(config)
+  treasury: { treasuryAddress: "G...", funded: true },
+  wallet: { name: "Freighter", isAvailable: true, isConnected: true, network: "testnet" },
+  testFixturesAvailable: true,
+});
+
+if (!checklist.isReady) {
+  for (const blocker of checklist.blockers) {
+    console.error(`[${blocker.category}] ${blocker.message} → ${blocker.remediation}`);
+  }
+}
+```
+
+Each check returns `pass`, `warn`, or `fail` with an actionable `remediation`.
+See the [Setup Checklist Guide](docs/SETUP_CHECKLIST.md) for full details.
 
 ## Multi-Asset Support
 
