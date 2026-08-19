@@ -15,7 +15,8 @@
     "lint:fix": "npm run lint:fix -w packages/core",
     "format": "npm run format -w packages/core",
     "typecheck": "npm run typecheck -w packages/core",
-    "docs:build": "npm run docs:build -w packages/core"
+    "docs:build": "npm run docs:build -w packages/core",
+    "validate:changelog": "tsx scripts/validate-changelog.ts"
   },
   "dependencies": {
     "@stellar/stellar-sdk": "^14.5.0",
@@ -24,6 +25,7 @@
     "stellar-sdk": "^11.0.0"
   },
   "devDependencies": {
-    "turbo": "^2.0.0"
+    "turbo": "^2.0.0",
+    "tsx": "^4.0.0"
   }
 }
