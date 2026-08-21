@@ -10,6 +10,8 @@ import { redactError } from "./redaction/RedactionEngine";
 import { IdempotencyRegistry, createPaymentIdempotencyKey } from "./core/idempotency";
 import { createPayrollProgressEvent } from "./progress";
 import { assertValidPayrollWitness } from "./crypto/proofInputSanitizer";
+import { iterateBatches } from "./batch/paginate";
+import type { BatchPayload } from "./batch/BatchPayloadBuilder";
 
 export interface Transaction {
   amount: bigint;
@@ -205,16 +207,22 @@ export class PayrollService {
   /**
    * Process a batch of private payroll payments.
    * Validates all batch payment entries first; rejects invalid payloads before submission.
+   *
+   * When `batchSize` is provided, validated entries are processed incrementally
+   * in deterministic, order-preserving batches via the batch pagination helper.
+   * Results are returned in the original entry order either way.
    */
-  async processBatchPayments(entries: unknown[]): Promise<PaymentResult[]> {
+  async processBatchPayments(entries: unknown[], batchSize?: number): Promise<PaymentResult[]> {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { PayrollValidation } = require("./core/validation");
-    const payload = PayrollValidation.assertValidBatchPayload(entries);
+    const payload: BatchPayload = PayrollValidation.assertValidBatchPayload(entries);
 
     const results: PaymentResult[] = [];
-    for (const entry of payload.entries) {
-      const res = await this.processPayment(entry);
-      results.push(res);
+    for (const batch of iterateBatches(payload.entries, batchSize)) {
+      for (const entry of batch.items) {
+        const res = await this.processPayment(entry);
+        results.push(res);
+      }
     }
     return results;
   }
