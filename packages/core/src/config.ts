@@ -21,6 +21,8 @@ export interface ClientConfig {
   networkUrl: string;
   rpcUrl?: string;
   network?: string;
+  offline?: boolean;
+  mock?: boolean;
   contractId: string;
   contractIds?: Record<string, string>;
   adminKey?: string;
@@ -74,27 +76,34 @@ export function validateConfig(
 
   // 1. Validate RPC URL / networkUrl
   const effectiveUrl = config.rpcUrl || config.networkUrl;
+
+if (!config.offline && !config.mock) {
   if (!effectiveUrl || effectiveUrl.trim() === "") {
     errors.push({
       field: "networkUrl",
-      message: "networkUrl (or rpcUrl) is required.",
+      message:
+         "networkUrl (or rpcUrl) is required.",
     });
-  } else {
-    try {
-      const parsedUrl = new URL(effectiveUrl);
-      if (!["http:", "https:", "ws:", "wss:"].includes(parsedUrl.protocol)) {
-        errors.push({
-          field: "networkUrl",
-          message: `networkUrl must use http, https, ws, or wss protocol: ${effectiveUrl}`,
-        });
-      }
-    } catch {
+  }
+}
+
+if (effectiveUrl && effectiveUrl.trim() !== "") {
+  try {
+    const parsedUrl = new URL(effectiveUrl);
+
+    if (!["http:", "https:", "ws:", "wss:"].includes(parsedUrl.protocol)) {
       errors.push({
         field: "networkUrl",
-        message: `networkUrl is malformed: ${effectiveUrl}`,
+        message: `networkUrl must use http, https, ws, or wss protocol: ${effectiveUrl}`,
       });
     }
+  } catch {
+    errors.push({
+      field: "networkUrl",
+      message: `networkUrl is malformed: ${effectiveUrl}`,
+    });
   }
+}
 
   // 2. Validate network name/passphrase if specified
   if (
@@ -117,7 +126,7 @@ export function validateConfig(
     Object.keys(config.contractIds).length > 0,
   );
 
-  if (!hasContractId && !hasContractIds) {
+  if (!hasContractId && !hasContractIds && !config.offline && !config.mock) {
     errors.push({
       field: "contractId",
       message: "contractId (or contractIds) is required.",
@@ -274,6 +283,8 @@ export function assertValidConfig(
     networkUrl: effectiveUrl,
     rpcUrl: config!.rpcUrl || effectiveUrl,
     network: config!.network,
+    offline: config! .offline,
+     mock: config!.mock,
     contractId:
       config!.contractId ||
       (config!.contractIds ? Object.values(config!.contractIds)[0] : ""),
@@ -289,6 +300,8 @@ export class ConfigBuilder {
   private _networkUrl?: string;
   private _rpcUrl?: string;
   private _network?: string;
+  private _offline?: boolean;
+  private _mock?: boolean;
   private _contractId?: string;
   private _contractIds?: Record<string, string>;
   private _adminKey?: string;
@@ -301,6 +314,8 @@ export class ConfigBuilder {
       this._networkUrl = preset.networkUrl;
       this._rpcUrl = preset.rpcUrl;
       this._network = preset.network;
+      this._offline = preset.offline;
+      this._mock = preset.mock;
       this._contractId = preset.contractId;
       this._contractIds = preset.contractIds;
       this._adminKey = preset.adminKey;
@@ -308,6 +323,14 @@ export class ConfigBuilder {
       this._retryPolicy = preset.retryPolicy;
       this._featureFlags = preset.featureFlags;
     }
+  }
+public offline(enabled = true): this {
+    this._offline = enabled;
+    return this;
+  }
+  public mock(enabled = true): this {
+    this._mock = enabled;
+    return this;
   }
 
   public withNetworkUrl(url: string): this {
@@ -364,21 +387,37 @@ export class ConfigBuilder {
   }
 
   private toConfigObject(): Partial<ClientConfig> {
-    return {
-      networkUrl: this._networkUrl,
-      rpcUrl: this._rpcUrl,
-      network: this._network,
-      contractId: this._contractId,
-      contractIds: this._contractIds,
-      adminKey: this._adminKey,
-      proofConfig: this._proofConfig,
-      retryPolicy: this._retryPolicy,
-      featureFlags: this._featureFlags,
-    };
-  }
+  return {
+    networkUrl: this._networkUrl,
+    rpcUrl: this._rpcUrl,
+    network: this._network,
+    contractId: this._contractId,
+    contractIds: this._contractIds,
+    adminKey: this._adminKey,
+    proofConfig: this._proofConfig,
+    retryPolicy: this._retryPolicy,
+    featureFlags: this._featureFlags,
+    offline: this._offline,
+    mock: this._mock,
+  };
+}
 }
 
 export const ConfigPresets = {
+  offline(): ConfigBuilder {
+    return new ConfigBuilder({
+      network: "offline",
+      offline: true,
+    });
+  },
+
+  mock(): ConfigBuilder {
+    return new ConfigBuilder({
+      network: "mock",
+      mock: true,
+    });
+  },
+
   local(): ConfigBuilder {
     return new ConfigBuilder({
       networkUrl: "http://localhost:8000",
@@ -386,6 +425,7 @@ export const ConfigPresets = {
       network: "localnet",
     });
   },
+
   testnet(): ConfigBuilder {
     return new ConfigBuilder({
       networkUrl: "https://soroban-testnet.stellar.org",
@@ -393,6 +433,7 @@ export const ConfigPresets = {
       network: "testnet",
     });
   },
+
   production(): ConfigBuilder {
     return new ConfigBuilder({
       networkUrl: "https://soroban-rpc.mainnet.stellar.org",

@@ -290,3 +290,39 @@ describe("ConfigBuilder, validateConfig, and ConfigPresets", () => {
     });
   });
 });
+
+describe("Offline and mock configuration", () => {
+  it("should build an offline config without networkUrl or contractId", () => {
+    const config = ConfigPresets.offline().build();
+
+    expect(config.offline).toBe(true);
+    expect(config.network).toBe("offline");
+    expect(config.networkUrl).toBeUndefined();
+    expect(config.contractId).toBe("");
+  });
+
+  it("should build a mock config without networkUrl or contractId", () => {
+    const config = ConfigPresets.mock().build();
+
+    expect(config.mock).toBe(true);
+    expect(config.network).toBe("mock");
+    expect(config.networkUrl).toBeUndefined();
+    expect(config.contractId).toBe("");
+  });
+
+  it("should allow a ConfigBuilder to explicitly enable offline mode", () => {
+    const config = new ConfigBuilder()
+      .offline()
+      .build();
+
+    expect(config.offline).toBe(true);
+  });
+
+  it("should allow a ConfigBuilder to explicitly enable mock mode", () => {
+    const config = new ConfigBuilder()
+      .mock()
+      .build();
+
+    expect(config.mock).toBe(true);
+  });
+});
