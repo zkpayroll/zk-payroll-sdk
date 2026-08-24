@@ -139,6 +139,15 @@ export * from "./archived";
 // ── Redaction Utilities ─────────────────────────────────────────────────────
 export * from "./redaction";
 
+// ── Privacy Utilities ───────────────────────────────────────────────────────
+export * from "./privacy";
+
+// ── Capability Management ───────────────────────────────────────────────────
+export * from "./capabilities";
+
+// ── Contract Upgrade Analysis ───────────────────────────────────────────────
+export * from "./upgrades";
+
 // ── Multi-Asset Metadata ────────────────────────────────────────────────────
 export * from "./assets";
 
