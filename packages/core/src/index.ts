@@ -235,3 +235,12 @@ export * from "./disputes";
 
 // ── Offline Payroll Draft Validation ────────────────────────────────────────
 export * from "./validation";
+<<<<<<< Updated upstream
+=======
+
+// ── Archive Lifecycle & Filtering ───────────────────────────────────────────
+export * from "./archive";
+
+// ── Quorum Session Management ───────────────────────────────────────────────
+export * from "./sessions";
+>>>>>>> Stashed changes

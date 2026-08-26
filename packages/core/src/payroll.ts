@@ -22,6 +22,26 @@ import type {
   CreatePayrollReceiptParams,
 } from "./receipts/types";
 
+<<<<<<< Updated upstream
+=======
+import {
+  filterActiveRuns,
+  filterArchivedRuns,
+  filterDisputedRuns,
+  filterFinalizedRuns,
+  filterHeldRuns,
+  PayrollRunItem,
+} from "./archive";
+
+import { QuorumSessionManager } from "./sessions/QuorumSessionManager";
+import type {
+  CreateSessionParams,
+  SessionSubmissionPackage,
+  SessionSummary,
+  SignerSession,
+} from "./sessions/types";
+
+>>>>>>> Stashed changes
 export interface Transaction {
   amount: bigint;
   [key: string]: unknown;
@@ -230,6 +250,52 @@ export class PayrollService {
     return results;
   }
 
+<<<<<<< Updated upstream
+=======
+  /** Filter archived, disputed, and held runs out of active operational views. */
+  filterActivePayrollRuns<T extends PayrollRunItem>(runs: T[]): T[] {
+    return filterActiveRuns(runs);
+  }
+
+  /** Filter safely archived runs (excluding disputed or held runs). */
+  filterArchivedPayrollRuns<T extends PayrollRunItem>(runs: T[]): T[] {
+    return filterArchivedRuns(runs);
+  }
+
+  /** Filter disputed payroll runs. */
+  filterDisputedPayrollRuns<T extends PayrollRunItem>(runs: T[]): T[] {
+    return filterDisputedRuns(runs);
+  }
+
+  /** Filter finalized payroll runs free of disputes or holds. */
+  filterFinalizedPayrollRuns<T extends PayrollRunItem>(runs: T[]): T[] {
+    return filterFinalizedRuns(runs);
+  }
+
+  /** Filter held payroll runs. */
+  filterHeldPayrollRuns<T extends PayrollRunItem>(runs: T[]): T[] {
+    return filterHeldRuns(runs);
+  }
+
+  /** Quorum session manager instance for multi-signer workflows. */
+  readonly sessionManager = new QuorumSessionManager();
+
+  /** Create a multi-signer authorization session for payroll approvals. */
+  createSigningSession(params: CreateSessionParams): SignerSession {
+    return this.sessionManager.createSession(params);
+  }
+
+  /** Get UI-friendly summary of a signing session. */
+  getSessionSummary(sessionId: string): SessionSummary {
+    return this.sessionManager.getSummary(sessionId);
+  }
+
+  /** Prepare submission package for contract execution once threshold is met. */
+  prepareQuorumSubmission(sessionId: string): SessionSubmissionPackage {
+    return this.sessionManager.prepareSubmissionPackage(sessionId);
+  }
+
+>>>>>>> Stashed changes
   private validatePaymentParams(params: PaymentParams): void {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { PayrollValidation } = require("./core/validation");
