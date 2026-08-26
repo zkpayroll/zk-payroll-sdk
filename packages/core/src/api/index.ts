@@ -22,11 +22,13 @@ export {
   isKnownEnvironment,
   listKnownEnvironments,
   validateContractMetadata,
+  resolveNetworkProfile,
   buildClientConfig,
   KNOWN_ENVIRONMENTS,
 } from "../metadata";
 export type {
-  ContractMetadata,
+  NetworkProfile,
+  NetworkProfileInput,
   KnownEnvironment,
   MetadataValidationResult,
   MetadataValidationError,

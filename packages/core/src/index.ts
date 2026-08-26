@@ -235,3 +235,6 @@ export * from "./disputes";
 
 // ── Offline Payroll Draft Validation ────────────────────────────────────────
 export * from "./validation";
+
+// ── Network Environment Profile Resolver ────────────────────────────────────
+export * from "./metadata";
