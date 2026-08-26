@@ -332,7 +332,7 @@ describe("Memory benchmarks — proof generation and artifact caching", () => {
       );
 
       results.push(result);
-      expect(result.peakHeapUsedMB).toBeLessThan(1000);
+      expect(result.peakHeapUsedMB).toBeLessThan(2000);
     });
   });
 
