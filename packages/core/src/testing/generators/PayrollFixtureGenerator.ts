@@ -49,9 +49,7 @@ export class PayrollFixtureGenerator {
   }
 
   generateEmployees(count: number): Employee[] {
-    return Array.from({ length: count }, (_, i) =>
-      this.generateEmployee(`emp_${i}`)
-    );
+    return Array.from({ length: count }, (_, i) => this.generateEmployee(`emp_${i}`));
   }
 
   generatePaymentPeriod(id: string, startDate: number): PaymentPeriod {
@@ -63,20 +61,13 @@ export class PayrollFixtureGenerator {
     };
   }
 
-  generatePaymentPeriods(
-    count: number,
-    baseDate: number
-  ): PaymentPeriod[] {
+  generatePaymentPeriods(count: number, baseDate: number): PaymentPeriod[] {
     return Array.from({ length: count }, (_, i) =>
       this.generatePaymentPeriod(`period_${i}`, baseDate + i * 2592000000)
     );
   }
 
-  generateBatch(
-    id: string,
-    employees: Employee[],
-    periods: PaymentPeriod[]
-  ): PayrollBatch {
+  generateBatch(id: string, employees: Employee[], periods: PaymentPeriod[]): PayrollBatch {
     const totalAmount = employees.reduce((sum, emp) => sum + emp.salary, 0n);
     return {
       id,
@@ -98,9 +89,7 @@ export class PayrollFixtureGenerator {
     if (preset.scenario === "successful") {
       batches = [this.generateBatch("batch_0", employees, periods)];
     } else if (preset.scenario === "failing") {
-      batches = [
-        this.generateBatch("batch_0", employees.slice(0, 5), periods),
-      ];
+      batches = [this.generateBatch("batch_0", employees.slice(0, 5), periods)];
     } else if (preset.scenario === "underfunded") {
       const reducedEmployees = employees.map((emp) => ({
         ...emp,
@@ -129,13 +118,7 @@ export class PayrollFixtureGenerator {
   }
 
   private selectDepartment(): string {
-    const departments = [
-      "Engineering",
-      "Finance",
-      "Operations",
-      "Sales",
-      "HR",
-    ];
+    const departments = ["Engineering", "Finance", "Operations", "Sales", "HR"];
     return departments[this.rng.nextInt(0, departments.length - 1)];
   }
 

@@ -22,8 +22,6 @@ import type {
   CreatePayrollReceiptParams,
 } from "./receipts/types";
 
-<<<<<<< Updated upstream
-=======
 import {
   filterActiveRuns,
   filterArchivedRuns,
@@ -40,8 +38,6 @@ import type {
   SessionSummary,
   SignerSession,
 } from "./sessions/types";
-
->>>>>>> Stashed changes
 export interface Transaction {
   amount: bigint;
   [key: string]: unknown;
@@ -250,8 +246,6 @@ export class PayrollService {
     return results;
   }
 
-<<<<<<< Updated upstream
-=======
   /** Filter archived, disputed, and held runs out of active operational views. */
   filterActivePayrollRuns<T extends PayrollRunItem>(runs: T[]): T[] {
     return filterActiveRuns(runs);
@@ -294,8 +288,6 @@ export class PayrollService {
   prepareQuorumSubmission(sessionId: string): SessionSubmissionPackage {
     return this.sessionManager.prepareSubmissionPackage(sessionId);
   }
-
->>>>>>> Stashed changes
   private validatePaymentParams(params: PaymentParams): void {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { PayrollValidation } = require("./core/validation");

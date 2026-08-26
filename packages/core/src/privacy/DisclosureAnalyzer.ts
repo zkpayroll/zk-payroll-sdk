@@ -1,9 +1,4 @@
-import {
-  DisclosureLevel,
-  DisclosureAnalysis,
-  PrivacyPolicy,
-  PrivacyPolicyRule,
-} from "./types";
+import { DisclosureLevel, DisclosureAnalysis, PrivacyPolicy, PrivacyPolicyRule } from "./types";
 
 const DEFAULT_SENSITIVE_FIELDS = new Map<string, DisclosureLevel>([
   ["recipient", "high"],
@@ -42,13 +37,13 @@ export class DisclosureAnalyzer {
   }
 
   private buildDefaultPolicy(): PrivacyPolicy {
-    const rules: PrivacyPolicyRule[] = Array.from(
-      DEFAULT_SENSITIVE_FIELDS.entries()
-    ).map(([field, sensitivity]) => ({
-      field,
-      allowed: true,
-      sensitivity,
-    }));
+    const rules: PrivacyPolicyRule[] = Array.from(DEFAULT_SENSITIVE_FIELDS.entries()).map(
+      ([field, sensitivity]) => ({
+        field,
+        allowed: true,
+        sensitivity,
+      })
+    );
 
     return {
       rules,
@@ -81,9 +76,7 @@ export class DisclosureAnalyzer {
     }
 
     const presentSensitiveFields = fieldsPresent.filter(
-      (f) =>
-        DEFAULT_SENSITIVE_FIELDS.has(f) &&
-        DEFAULT_SENSITIVE_FIELDS.get(f) === "high"
+      (f) => DEFAULT_SENSITIVE_FIELDS.has(f) && DEFAULT_SENSITIVE_FIELDS.get(f) === "high"
     );
 
     for (const [field1, field2] of RISKY_COMBINATIONS) {
@@ -118,9 +111,7 @@ export class DisclosureAnalyzer {
     const reasons: string[] = [];
 
     if (analysis.blockedFields.length > 0) {
-      reasons.push(
-        `Forbidden fields present: ${analysis.blockedFields.join(", ")}`
-      );
+      reasons.push(`Forbidden fields present: ${analysis.blockedFields.join(", ")}`);
     }
 
     const levelOrder: DisclosureLevel[] = ["low", "medium", "high"];
@@ -128,9 +119,7 @@ export class DisclosureAnalyzer {
     const maxIdx = levelOrder.indexOf(maxAllowedLevel);
 
     if (currentIdx > maxIdx) {
-      reasons.push(
-        `Disclosure level ${analysis.level} exceeds maximum allowed ${maxAllowedLevel}`
-      );
+      reasons.push(`Disclosure level ${analysis.level} exceeds maximum allowed ${maxAllowedLevel}`);
     }
 
     return {

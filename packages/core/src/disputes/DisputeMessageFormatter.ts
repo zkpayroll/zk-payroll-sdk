@@ -294,7 +294,10 @@ export class DisputeMessageFormatter {
     return undefined;
   }
 
-  private static doesDisputeBlockPayroll(severity: DisputeSeverity, status: DisputeStatus): boolean {
+  private static doesDisputeBlockPayroll(
+    severity: DisputeSeverity,
+    status: DisputeStatus
+  ): boolean {
     // Resolved and closed disputes don't block
     if (status === "resolved" || status === "closed") {
       return false;

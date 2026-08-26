@@ -226,7 +226,8 @@ export const ValidationPresets = {
     checkDuplicates: true,
     validateRedaction: true,
     validateApprovals: true,
-    minAmount: 1n, // Disallow zero amounts
+    minAmount: 10000000n, // Disallow zero and below-minimum amounts
+    maxAmount: 100000000000n,
     maxRecordsPerDraft: 10000,
     allowMissingApprovals: false,
   } as ValidationConfig,

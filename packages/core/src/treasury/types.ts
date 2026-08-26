@@ -82,12 +82,7 @@ export interface ReservationEvent {
 
   /** Type of event: describes the state transition. */
   eventType:
-    | "reserved"
-    | "released"
-    | "finalized"
-    | "expired"
-    | "cancelled"
-    | "duplicate_release_attempt";
+    "reserved" | "released" | "finalized" | "expired" | "cancelled" | "duplicate_release_attempt";
 
   /** Employer address involved in this event. */
   employer: string;

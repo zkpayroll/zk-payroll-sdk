@@ -22,7 +22,10 @@ export type {
 export type {
   EncryptionProvider,
   EnvironmentType,
+} from "./EncryptionProvider";
+export type {
   DraftMetadata,
   EncryptedDraftPackage,
   RedactedDraftPreview,
-} from "./EncryptionProvider";
+  SensitiveFieldConfig,
+} from "./EncryptedDraftSerializer";

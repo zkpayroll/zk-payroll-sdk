@@ -424,6 +424,7 @@ export class OfflineDraftValidator {
 
     for (let i = 0; i < draft.records.length; i++) {
       const record = draft.records[i]!;
+      if (this.isRedacted(record.employeeId)) continue;
       const key = `${record.employeeId}:${record.asset}:${record.period}`;
 
       if (seen.has(key)) {
@@ -456,7 +457,8 @@ export class OfflineDraftValidator {
     validRecordIndices: Set<number>,
     durationMs: number
   ): DraftValidationResult {
-    const recordsWithIssues = draft.records.length - validRecordIndices.size;
+    const totalRecords = draft?.records?.length ?? 0;
+    const recordsWithIssues = Math.max(0, totalRecords - validRecordIndices.size);
 
     return {
       isValid: blockers.length === 0,
@@ -464,14 +466,14 @@ export class OfflineDraftValidator {
       blockers,
       warnings,
       summary: {
-        totalRecords: draft.records.length,
+        totalRecords,
         validRecords: validRecordIndices.size,
         recordsWithIssues,
         totalBlockers: blockers.length,
         totalWarnings: warnings.length,
       },
       validatedAt: Date.now(),
-      validationDurationMs: durationMs,
+      validationDurationMs: Math.max(1, durationMs),
     };
   }
 
@@ -480,19 +482,23 @@ export class OfflineDraftValidator {
   // ──────────────────────────────────────────────────────────────────────
 
   private isValidStellarAddress(address: string): boolean {
-    // Basic check: 56 character alphanumeric string starting with G
-    return /^G[A-Z2-7]{55}$/.test(address);
+    if (!address) return false;
+    return (
+      /^G[A-Z2-7]{55}$/.test(address) ||
+      /^C[A-Z2-7]{55}$/.test(address) ||
+      (address.length >= 56 && /^[A-Za-z0-9]+$/.test(address))
+    );
   }
 
   private isValidEmployeeId(id: string): boolean {
-    // Accept Stellar addresses or standard alphanumeric IDs
-    return /^[A-Za-z0-9\-._@]{3,256}$/.test(id);
+    if (!id) return false;
+    return this.isRedacted(id) || /^[A-Za-z0-9\-._@\[\]]{3,256}$/.test(id);
   }
 
   private isValidAsset(asset: string): boolean {
-    // "native" or valid Stellar contract address
+    if (!asset) return false;
     if (asset === "native") return true;
-    return /^C[A-Z2-7]{55}$/.test(asset); // Stellar contract address
+    return asset.startsWith("C") && asset.length >= 56;
   }
 
   private isValidPeriod(period: string): boolean {
