@@ -181,3 +181,6 @@ export * from "./indexer";
 
 // Proof Artifact Lifecycle
 export * from "./artifacts";
+
+// ── Compliance Holds ─────────────────────────────────────────────────────────
+export * from "./compliance";

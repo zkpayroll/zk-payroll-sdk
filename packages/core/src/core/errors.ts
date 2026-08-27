@@ -330,6 +330,10 @@ export const DEFAULT_ERROR_MESSAGES: Record<string, string> = {
   PROOF_INPUT_FORBIDDEN_FIELD: "The proof input contains a forbidden sensitive field.",
   PROOF_INPUT_MISSING_REQUIRED_FIELD: "A required field is missing from the payroll proof input.",
   PROOF_INPUT_INVALID: "Proof witness must be a non-null object.",
+  COMPLIANCE_HOLD_VALIDATION_FAILED:
+    "The compliance hold request is invalid. Please review the target, reason code, and required fields.",
+  COMPLIANCE_HOLD_RELEASE_UNAUTHORIZED:
+    "This hold cannot be released without a valid authorization token identifying who is releasing it.",
 };
 
 /** Custom message overrides keyed by error code. */
@@ -471,6 +475,8 @@ const CATEGORY_MAP: Record<string, string> = {
   PROOF_INPUT_INVALID: "Proof Generation",
   RECONCILIATION_DIFF_FAILED: "Reconciliation",
   RECONCILIATION_UNEXPECTED_ACTIVITY: "Reconciliation",
+  COMPLIANCE_HOLD_VALIDATION_FAILED: "Compliance",
+  COMPLIANCE_HOLD_RELEASE_UNAUTHORIZED: "Compliance",
 };
 
 const RETRYABLE_CODES = new Set<string>(
