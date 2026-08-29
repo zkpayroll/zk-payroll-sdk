@@ -92,10 +92,7 @@ export class PrivacySafeTelemetryAdapter implements TelemetryAdapter {
   }
 
   private redactEvent(event: TelemetryEvent): TelemetryEvent {
-    const { redacted: redactedProps } = redactDeep(
-      event.properties,
-      this.redactionOptions
-    );
+    const { redacted: redactedProps } = redactDeep(event.properties, this.redactionOptions);
 
     const redactedContext = event.context
       ? redactDeep(event.context, this.redactionOptions).redacted
@@ -112,8 +109,7 @@ export class PrivacySafeTelemetryAdapter implements TelemetryAdapter {
   private queueEvent(event: TelemetryEvent): void {
     this.eventQueue.push(event);
     if (this.eventQueue.length >= this.maxQueueSize) {
-      this.flush().catch(() => {
-      });
+      this.flush().catch(() => {});
     }
   }
 

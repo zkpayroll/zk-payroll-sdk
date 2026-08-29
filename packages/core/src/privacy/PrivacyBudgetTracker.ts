@@ -15,12 +15,7 @@ export class PrivacyBudgetTracker implements PrivacyBudget {
     "ssn",
   ]);
 
-  private mediumSensitivityFields = new Set([
-    "department",
-    "jobTitle",
-    "manager",
-    "notes",
-  ]);
+  private mediumSensitivityFields = new Set(["department", "jobTitle", "manager", "notes"]);
 
   constructor(maxAllowedDisclosure: DisclosureLevel = "medium") {
     this.maxAllowedDisclosure = maxAllowedDisclosure;
@@ -40,9 +35,7 @@ export class PrivacyBudgetTracker implements PrivacyBudget {
 
   private checkBudget(): void {
     if (this.maxAllowedDisclosure === "low") {
-      const hasAnyHigh = Array.from(this.fieldsUsed).some((f) =>
-        this.highSensitivityFields.has(f)
-      );
+      const hasAnyHigh = Array.from(this.fieldsUsed).some((f) => this.highSensitivityFields.has(f));
       const hasAnyMedium = Array.from(this.fieldsUsed).some((f) =>
         this.mediumSensitivityFields.has(f)
       );
@@ -50,9 +43,7 @@ export class PrivacyBudgetTracker implements PrivacyBudget {
         this.combinationsExceeded = true;
       }
     } else if (this.maxAllowedDisclosure === "medium") {
-      const hasAnyHigh = Array.from(this.fieldsUsed).some((f) =>
-        this.highSensitivityFields.has(f)
-      );
+      const hasAnyHigh = Array.from(this.fieldsUsed).some((f) => this.highSensitivityFields.has(f));
       if (hasAnyHigh) {
         this.combinationsExceeded = true;
       }
@@ -70,14 +61,10 @@ export class PrivacyBudgetTracker implements PrivacyBudget {
 
     if (this.maxAllowedDisclosure === "low") {
       return Array.from(this.fieldsUsed).filter(
-        (f) =>
-          !this.highSensitivityFields.has(f) &&
-          !this.mediumSensitivityFields.has(f)
+        (f) => !this.highSensitivityFields.has(f) && !this.mediumSensitivityFields.has(f)
       );
     } else if (this.maxAllowedDisclosure === "medium") {
-      return Array.from(this.fieldsUsed).filter(
-        (f) => !this.highSensitivityFields.has(f)
-      );
+      return Array.from(this.fieldsUsed).filter((f) => !this.highSensitivityFields.has(f));
     }
 
     return Array.from(this.fieldsUsed);
@@ -85,10 +72,7 @@ export class PrivacyBudgetTracker implements PrivacyBudget {
 
   getRemainingBudget(): string[] {
     const allFields = Array.from(
-      new Set([
-        ...this.highSensitivityFields,
-        ...this.mediumSensitivityFields,
-      ])
+      new Set([...this.highSensitivityFields, ...this.mediumSensitivityFields])
     );
     return allFields.filter((f) => !this.fieldsUsed.has(f));
   }

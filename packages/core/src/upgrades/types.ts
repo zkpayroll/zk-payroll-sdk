@@ -1,7 +1,4 @@
-export type CompatibilityStatus =
-  | "compatible"
-  | "warning"
-  | "breaking";
+export type CompatibilityStatus = "compatible" | "warning" | "breaking";
 
 export interface ContractMetadata {
   version: string;

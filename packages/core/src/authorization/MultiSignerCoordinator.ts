@@ -69,7 +69,11 @@ export class MultiSignerCoordinator {
     signer.address = signerAddress;
   }
 
-  async recordSignature(requestId: string, signature: SignaturePayload, signerAddress: string): Promise<void> {
+  async recordSignature(
+    requestId: string,
+    signature: SignaturePayload,
+    signerAddress: string
+  ): Promise<void> {
     const request = this.requests.get(requestId);
     if (!request) {
       throw new Error(`Authorization request ${requestId} not found`);
@@ -79,7 +83,9 @@ export class MultiSignerCoordinator {
       throw new Error(`Authorization request ${requestId} has expired`);
     }
 
-    const signer = request.signers.find((s) => s.address === signerAddress && s.role === signature.signerRole);
+    const signer = request.signers.find(
+      (s) => s.address === signerAddress && s.role === signature.signerRole
+    );
     if (!signer) {
       throw new Error(`Signer ${signerAddress} with role ${signature.signerRole} not found`);
     }
@@ -89,7 +95,10 @@ export class MultiSignerCoordinator {
     }
 
     const historyKey = `${requestId}:${signerAddress}`;
-    if (this.signerHistory.has(historyKey) && this.signerHistory.get(historyKey)?.has(signature.nonce)) {
+    if (
+      this.signerHistory.has(historyKey) &&
+      this.signerHistory.get(historyKey)?.has(signature.nonce)
+    ) {
       throw new Error(`Duplicate signature detected for nonce ${signature.nonce}`);
     }
 
@@ -170,10 +179,7 @@ export class MultiSignerCoordinator {
     };
   }
 
-  createPayloadForSigning(
-    requestId: string,
-    signerRole: SignerRole
-  ): SignaturePayload {
+  createPayloadForSigning(requestId: string, signerRole: SignerRole): SignaturePayload {
     const request = this.requests.get(requestId);
     if (!request) {
       throw new Error(`Authorization request ${requestId} not found`);
@@ -207,7 +213,9 @@ export class MultiSignerCoordinator {
 
     switch (policy.type) {
       case "unanimous":
-        return signedSigners.length === request.signers.filter((s) => s.state !== "rejected").length;
+        return (
+          signedSigners.length === request.signers.filter((s) => s.state !== "rejected").length
+        );
 
       case "threshold":
         if (!policy.threshold) return false;

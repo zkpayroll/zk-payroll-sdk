@@ -42,6 +42,8 @@ export type { ErrorCategoryType, ErrorCodeEntry } from "./core/error-codes";
 
 export { IneligibleEmployeeError, BatchEligibilityError } from "./eligibility/errors";
 
+export { ProofReferenceParsingError } from "./proofs/errors";
+
 // ── Backward-compatible aliases ─────────────────────────────────────────────
 import { ZkPayrollError } from "./core/errors";
 
@@ -79,10 +81,10 @@ export class SerializationError extends ZkPayrollError {
 
 /** Error codes for PayrollService validation/orchestration failures */
 export const PayrollServiceErrorCode = {
-  PROOF_GENERATION_FAILED: 2001,
-  INVALID_RECIPIENT: 2002,
-  INVALID_AMOUNT: 2003,
-  INVALID_ASSET: 2004,
+  PROOF_GENERATION_FAILED: "2001",
+  INVALID_RECIPIENT: "2002",
+  INVALID_AMOUNT: "2003",
+  INVALID_ASSET: "2004",
 } as const;
 
 export type PayrollServiceErrorCode =

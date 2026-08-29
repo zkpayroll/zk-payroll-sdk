@@ -30,7 +30,9 @@ export class BrowserEncryptionProvider implements EncryptionProvider {
 
     const encoder = new TextEncoder();
     const plaintext = encoder.encode(data);
-    const iv = window.crypto.getRandomValues(new Uint8Array(BrowserEncryptionProvider.IV_LENGTH / 8));
+    const iv = window.crypto.getRandomValues(
+      new Uint8Array(BrowserEncryptionProvider.IV_LENGTH / 8)
+    );
 
     const ciphertext = await window.crypto.subtle.encrypt(
       { name: BrowserEncryptionProvider.ALGORITHM, iv },
@@ -68,7 +70,9 @@ export class BrowserEncryptionProvider implements EncryptionProvider {
   }
 
   canEncrypt(): boolean {
-    return this.key !== null && typeof window !== "undefined" && typeof window.crypto !== "undefined";
+    return (
+      this.key !== null && typeof window !== "undefined" && typeof window.crypto !== "undefined"
+    );
   }
 }
 

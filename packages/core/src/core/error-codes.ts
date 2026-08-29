@@ -17,6 +17,7 @@ export const ErrorCategory = {
   SIMULATION: "simulation",
   IDEMPOTENCY: "idempotency",
   AUDIT: "audit",
+  ELIGIBILITY: "eligibility",
 } as const;
 
 export type ErrorCategoryType = (typeof ErrorCategory)[keyof typeof ErrorCategory];
@@ -319,6 +320,22 @@ export const ERROR_CODE_REGISTRY: Record<string, ErrorCodeEntry> = {
     retryable: false,
     suggestedMessage:
       "The audit access request failed validation. Please review the requester details, scope, expiration, reason, and target payroll period.",
+  },
+
+  // ── Eligibility ──────────────────────────────────────────────────────────
+  INELIGIBLE_EMPLOYEE_RECORD: {
+    category: ErrorCategory.ELIGIBILITY,
+    meaning: "One or more employee records failed eligibility validation checks.",
+    retryable: false,
+    suggestedMessage:
+      "Employee record is ineligible for payroll processing. Check employee status and requirements.",
+  },
+  BATCH_ELIGIBILITY_FAILED: {
+    category: ErrorCategory.ELIGIBILITY,
+    meaning: "Batch employee eligibility validation failed.",
+    retryable: false,
+    suggestedMessage:
+      "Batch eligibility check failed. Review individual employee eligibility statuses.",
   },
 };
 

@@ -1,0 +1,708 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Redaction Snapshots — errors and logs keeps operational error context intact after shallow redaction: error context object 1`] = `
+{
+  "fieldsRedacted": [
+    "recipient",
+    "amount",
+    "apiKey",
+  ],
+  "redacted": {
+    "amount": "[redacted]",
+    "apiKey": "[redacted]",
+    "contractId": "CBULKPAYROLLCONTRACTID000000000000000000000000000000snap00",
+    "network": "testnet",
+    "recipient": "[redacted]",
+    "transactionId": "tx_snap_error_0001",
+  },
+}
+`;
+
+exports[`Redaction Snapshots — errors and logs produces an audit-safe error log entry: error log entry / redacted 1`] = `
+{
+  "context": {
+    "amount": "[redacted]",
+    "apiKey": "[redacted]",
+    "contractId": "CBULKPAYROLLCONTRACTID000000000000000000000000000000snap00",
+    "network": "testnet",
+    "recipient": "[redacted]",
+    "transactionId": "tx_snap_error_0001",
+  },
+  "event": "settlement_failed",
+  "level": "error",
+  "msg": "Contract reverted: recipient=[REDACTED] amount=[REDACTED]",
+  "txHash": "8be14a90c7d25361ffa0927be4c11d5860fa39ce72b0441d95ac6e08bf31d270",
+}
+`;
+
+exports[`Redaction Snapshots — errors and logs sanitizes inline sensitive values in error messages: inline error messages 1`] = `
+[
+  {
+    "category": "Unknown",
+    "code": "UNKNOWN_RPC_ERROR",
+    "context": {},
+    "message": "Payment failed: recipient=[redacted] is invalid",
+    "retryable": true,
+  },
+  {
+    "category": "Unknown",
+    "code": "UNKNOWN_RPC_ERROR",
+    "context": {},
+    "message": "Overflow: amount=[redacted] exceeds max",
+    "retryable": true,
+  },
+  {
+    "category": "Unknown",
+    "code": "UNKNOWN_RPC_ERROR",
+    "context": {},
+    "message": "Auth rejected: apiKey=[redacted] not authorized",
+    "retryable": true,
+  },
+  {
+    "category": "Unknown",
+    "code": "UNKNOWN_RPC_ERROR",
+    "context": {},
+    "message": "Simulation failed after witness=[redacted] load",
+    "retryable": true,
+  },
+  {
+    "category": "Unknown",
+    "code": "UNKNOWN_RPC_ERROR",
+    "context": {},
+    "message": "Wallet unlock failed: mnemonic=[redacted] provided twice",
+    "retryable": true,
+  },
+]
+`;
+
+exports[`Redaction Snapshots — failure receipts drops payroll-only sensitive keys in remove mode on failure receipts: failed receipt / remove mode 1`] = `
+{
+  "currency": "USDC",
+  "issuedAt": "2026-08-21T14:03:30Z",
+  "metadata": {
+    "diagnostics": [
+      {
+        "status": "ok",
+        "step": "witness_load",
+      },
+      {
+        "detail": "constraint unsatisfied",
+        "status": "error",
+        "step": "prove",
+      },
+    ],
+    "failureStage": "proof_generation",
+    "retryCount": 2,
+  },
+  "metadataDigest": "290a2f0b857389a462a8f4260c8656e8cea86a7dc60b1b76d81fd311434579a4",
+  "payrollId": "pr_snap_run_2026_08",
+  "receiptId": "rcpt_snap_failure_0002",
+  "recipientCount": 1,
+  "redacted": true,
+  "settlementStatus": "failed",
+  "transactionReference": {
+    "contractId": "CBULKPAYROLLCONTRACTID000000000000000000000000000000snap00",
+    "ledger": 1234570,
+    "network": "testnet",
+    "submittedAt": "2026-08-21T14:02:00Z",
+    "txHash": "8be14a90c7d25361ffa0927be4c11d5860fa39ce72b0441d95ac6e08bf31d270",
+  },
+  "viewKeyId": "vk_snap_compliance_01",
+}
+`;
+
+exports[`Redaction Snapshots — failure receipts redacts a failed-settlement receipt with the payroll preset: failed receipt / payroll preset 1`] = `
+{
+  "currency": "USDC",
+  "issuedAt": "2026-08-21T14:03:30Z",
+  "metadata": {
+    "commitmentHash": "[REDACTED]",
+    "diagnostics": [
+      {
+        "status": "ok",
+        "step": "witness_load",
+        "witness": "[REDACTED]",
+      },
+      {
+        "detail": "constraint unsatisfied",
+        "status": "error",
+        "step": "prove",
+      },
+    ],
+    "employee": "[REDACTED]",
+    "employer": "[REDACTED]",
+    "failureStage": "proof_generation",
+    "nullifier": "[REDACTED]",
+    "retryCount": 2,
+    "salaryAmount": "[REDACTED]",
+  },
+  "metadataDigest": "290a2f0b857389a462a8f4260c8656e8cea86a7dc60b1b76d81fd311434579a4",
+  "payrollId": "pr_snap_run_2026_08",
+  "receiptId": "rcpt_snap_failure_0002",
+  "recipientCount": 1,
+  "redacted": true,
+  "settlementStatus": "failed",
+  "totalAmount": "[REDACTED]",
+  "transactionReference": {
+    "contractId": "CBULKPAYROLLCONTRACTID000000000000000000000000000000snap00",
+    "ledger": 1234570,
+    "network": "testnet",
+    "submittedAt": "2026-08-21T14:02:00Z",
+    "txHash": "8be14a90c7d25361ffa0927be4c11d5860fa39ce72b0441d95ac6e08bf31d270",
+  },
+  "viewKeyId": "vk_snap_compliance_01",
+}
+`;
+
+exports[`Redaction Snapshots — failure receipts snapshots verification results for failed and malformed receipts: verification result / failed receipt 1`] = `
+{
+  "isValid": false,
+  "issueCodes": [
+    "RECEIPT_UNSETTLED",
+  ],
+  "receipt": {
+    "currency": "USDC",
+    "issuedAt": "2026-08-21T14:03:30Z",
+    "metadata": {
+      "commitmentHash": "[REDACTED]",
+      "diagnostics": [
+        {
+          "status": "ok",
+          "step": "witness_load",
+          "witness": "[REDACTED]",
+        },
+        {
+          "detail": "constraint unsatisfied",
+          "status": "error",
+          "step": "prove",
+        },
+      ],
+      "employee": "[REDACTED]",
+      "employer": "[REDACTED]",
+      "failureStage": "proof_generation",
+      "nullifier": "[REDACTED]",
+      "retryCount": 2,
+      "salaryAmount": "[REDACTED]",
+    },
+    "metadataDigest": "290a2f0b857389a462a8f4260c8656e8cea86a7dc60b1b76d81fd311434579a4",
+    "payrollId": "pr_snap_run_2026_08",
+    "receiptId": "rcpt_snap_failure_0002",
+    "recipientCount": 1,
+    "redacted": true,
+    "settlementStatus": "failed",
+    "totalAmount": "[REDACTED]",
+    "transactionReference": {
+      "contractId": "CBULKPAYROLLCONTRACTID000000000000000000000000000000snap00",
+      "ledger": 1234570,
+      "network": "testnet",
+      "submittedAt": "2026-08-21T14:02:00Z",
+      "txHash": "8be14a90c7d25361ffa0927be4c11d5860fa39ce72b0441d95ac6e08bf31d270",
+    },
+    "viewKeyId": "vk_snap_compliance_01",
+  },
+  "settlementStatus": "failed",
+  "verifiedFields": {
+    "freshness": true,
+    "metadataDigest": true,
+    "payrollId": true,
+    "settlementStatus": false,
+    "transactionReference": true,
+  },
+}
+`;
+
+exports[`Redaction Snapshots — failure receipts snapshots verification results for failed and malformed receipts: verification result / malformed receipt 1`] = `
+{
+  "isValid": false,
+  "issueCodes": [
+    "RECEIPT_INVALID_SHAPE",
+  ],
+  "receipt": {
+    "issuedAt": 0,
+    "metadataDigest": "not-a-real-digest",
+    "payrollId": "unknown",
+    "receiptId": "rcpt_snap_malformed_0003",
+    "redacted": true,
+    "settlementStatus": "unknown",
+    "transactionReference": "unknown",
+  },
+  "settlementStatus": "unknown",
+  "verifiedFields": {
+    "metadataDigest": false,
+    "payrollId": false,
+    "settlementStatus": false,
+    "transactionReference": false,
+  },
+}
+`;
+
+exports[`Redaction Snapshots — nested objects and arrays catches payroll-only keys only when they are configured: failure metadata trees 1`] = `
+{
+  "withDefaults": {
+    "fieldsRedacted": [
+      "witness",
+    ],
+    "redacted": {
+      "commitmentHash": "commitment_hash_snap_3f9c1e77aa02bb45",
+      "diagnostics": [
+        {
+          "status": "ok",
+          "step": "witness_load",
+          "witness": "[redacted]",
+        },
+        {
+          "detail": "constraint unsatisfied",
+          "status": "error",
+          "step": "prove",
+        },
+      ],
+      "employee": "GEMPLOYEE00000000000000000000000000000000000000000000000000SNAP0",
+      "employer": "GEMPLOYER0000000000000000000000000000000000000000000000000SNAP0",
+      "failureStage": "proof_generation",
+      "nullifier": "nullifier_snap_81bd4f20ce97a512",
+      "retryCount": 2,
+      "salaryAmount": "120000",
+    },
+  },
+  "withPreset": {
+    "fieldsRedacted": [
+      "salaryAmount",
+      "employer",
+      "employee",
+      "commitmentHash",
+      "nullifier",
+      "witness",
+    ],
+    "redacted": {
+      "commitmentHash": "[redacted]",
+      "diagnostics": [
+        {
+          "status": "ok",
+          "step": "witness_load",
+          "witness": "[redacted]",
+        },
+        {
+          "detail": "constraint unsatisfied",
+          "status": "error",
+          "step": "prove",
+        },
+      ],
+      "employee": "[redacted]",
+      "employer": "[redacted]",
+      "failureStage": "proof_generation",
+      "nullifier": "[redacted]",
+      "retryCount": 2,
+      "salaryAmount": "[redacted]",
+    },
+  },
+}
+`;
+
+exports[`Redaction Snapshots — nested objects and arrays deep-redacts arrays of objects in receipt metadata: success metadata tree / default 1`] = `
+{
+  "fieldsRedacted": [
+    "secret",
+    "recipient",
+    "amount",
+    "privateKey",
+    "apiKey",
+  ],
+  "redacted": {
+    "credentials": {
+      "apiKey": "[redacted]",
+      "privateKey": "[redacted]",
+      "vaultPath": "kv/payroll/testnet/signer",
+    },
+    "department": "Engineering",
+    "disbursement": {
+      "amount": "[redacted]",
+      "batchId": "batch_snap_001",
+      "currency": "XLM",
+      "recipient": "[redacted]",
+    },
+    "lineItems": [
+      {
+        "amount": "[redacted]",
+        "employeeRef": "emp_snap_001",
+        "recipient": "[redacted]",
+        "role": "engineer",
+        "salaryBand": "L5",
+      },
+      {
+        "amount": "[redacted]",
+        "employeeRef": "emp_snap_002",
+        "recipient": "[redacted]",
+        "role": "designer",
+        "salaryBand": "L3",
+      },
+    ],
+    "recipientCount": 2,
+    "runDate": "2026-08-20",
+    "runLabel": "August 2026 payroll cycle",
+    "secret": "[redacted]",
+    "secretRefNote": "rotation scheduled",
+  },
+}
+`;
+
+exports[`Redaction Snapshots — nested objects and arrays deep-redacts sensitive keys at every depth: nested tree / default 1`] = `
+{
+  "fieldsRedacted": [
+    "recipient",
+    "amount",
+    "seed",
+    "authorization",
+    "refresh_token",
+    "signingKey",
+  ],
+  "redacted": {
+    "auth": {
+      "authorization": "[redacted]",
+      "nested": {
+        "deeper": {
+          "signingKey": "[redacted]",
+        },
+      },
+      "refresh_token": "[redacted]",
+    },
+    "recipients": [
+      {
+        "amount": "[redacted]",
+        "payments": [
+          {
+            "memo": "september",
+            "seed": "[redacted]",
+          },
+        ],
+        "recipient": "[redacted]",
+      },
+      {
+        "amount": "[redacted]",
+        "payments": [],
+        "recipient": "[redacted]",
+      },
+    ],
+    "run": {
+      "id": "run_snap_deep",
+      "network": "testnet",
+    },
+    "tags": [
+      "net-90",
+      "ops",
+    ],
+  },
+}
+`;
+
+exports[`Redaction Snapshots — success receipts drops sensitive keys entirely in remove mode: settled receipt / remove mode 1`] = `
+{
+  "complianceHash": "compliance_hash_snap_5e4d3c2b1a00",
+  "currency": "XLM",
+  "issuedAt": "2026-08-20T09:15:08Z",
+  "metadata": {
+    "credentials": {
+      "vaultPath": "kv/payroll/testnet/signer",
+    },
+    "department": "Engineering",
+    "disbursement": {
+      "batchId": "batch_snap_001",
+      "currency": "XLM",
+    },
+    "lineItems": [
+      {
+        "employeeRef": "emp_snap_001",
+        "role": "engineer",
+        "salaryBand": "L5",
+      },
+      {
+        "employeeRef": "emp_snap_002",
+        "role": "designer",
+        "salaryBand": "L3",
+      },
+    ],
+    "recipientCount": 2,
+    "runDate": "2026-08-20",
+    "runLabel": "August 2026 payroll cycle",
+    "secretRefNote": "rotation scheduled",
+  },
+  "metadataDigest": "84b44419c3214720eb58ba0cc778602cf2f82b1bfb1816f212b972f9840f20d3",
+  "payrollId": "pr_snap_run_2026_08",
+  "receiptId": "rcpt_snap_success_0001",
+  "recipientCount": 2,
+  "redacted": true,
+  "settledAt": "2026-08-20T09:16:00Z",
+  "settlementStatus": "settled",
+  "signature": "sig_snap_success_base64placeholder==",
+  "signerPublicKey": "GSIGNERSNAPPUBLICKEY000000000000000000000000000000000000sn0",
+  "transactionReference": {
+    "confirmedAt": "2026-08-20T09:15:07Z",
+    "contractId": "CBULKPAYROLLCONTRACTID000000000000000000000000000000snap00",
+    "ledger": 1234567,
+    "network": "testnet",
+    "submittedAt": "2026-08-20T09:15:00Z",
+    "txHash": "2f1c9be47d0a83ff55e21cc709ba66de41a2d58893cf10b7ee54a19d83027fc4",
+  },
+  "viewKeyId": "vk_snap_compliance_01",
+}
+`;
+
+exports[`Redaction Snapshots — success receipts masks values while preserving shapes: settled receipt / mask mode 1`] = `
+{
+  "complianceHash": "compliance_hash_snap_5e4d3c2b1a00",
+  "currency": "XLM",
+  "issuedAt": "2026-08-20T09:15:08Z",
+  "metadata": {
+    "credentials": {
+      "apiKey": "sk*************************************60",
+      "privateKey": "SA******************************************************ap",
+      "vaultPath": "kv/payroll/testnet/signer",
+    },
+    "department": "Engineering",
+    "disbursement": {
+      "amount": "12****00",
+      "batchId": "batch_snap_001",
+      "currency": "XLM",
+      "recipient": "GA*************************************************************01",
+    },
+    "lineItems": [
+      {
+        "amount": "75***00",
+        "employeeRef": "emp_snap_001",
+        "recipient": "GA*************************************************************01",
+        "role": "engineer",
+        "salaryBand": "L5",
+      },
+      {
+        "amount": "50***00",
+        "employeeRef": "emp_snap_002",
+        "recipient": "GA*************************************************************02",
+        "role": "designer",
+        "salaryBand": "L3",
+      },
+    ],
+    "recipientCount": 2,
+    "runDate": "2026-08-20",
+    "runLabel": "August 2026 payroll cycle",
+    "secret": "SA*******************************************************p0",
+    "secretRefNote": "rotation scheduled",
+  },
+  "metadataDigest": "84b44419c3214720eb58ba0cc778602cf2f82b1bfb1816f212b972f9840f20d3",
+  "payrollId": "pr_snap_run_2026_08",
+  "receiptId": "rcpt_snap_success_0001",
+  "recipientCount": 2,
+  "redacted": true,
+  "settledAt": "2026-08-20T09:16:00Z",
+  "settlementStatus": "settled",
+  "signature": "sig_snap_success_base64placeholder==",
+  "signerPublicKey": "GSIGNERSNAPPUBLICKEY000000000000000000000000000000000000sn0",
+  "totalAmount": "12****00",
+  "transactionReference": {
+    "confirmedAt": "2026-08-20T09:15:07Z",
+    "contractId": "CBULKPAYROLLCONTRACTID000000000000000000000000000000snap00",
+    "ledger": 1234567,
+    "network": "testnet",
+    "submittedAt": "2026-08-20T09:15:00Z",
+    "txHash": "2f1c9be47d0a83ff55e21cc709ba66de41a2d58893cf10b7ee54a19d83027fc4",
+  },
+  "viewKeyId": "vk_snap_compliance_01",
+}
+`;
+
+exports[`Redaction Snapshots — success receipts redacts a settled receipt with default engine options: settled receipt / default redaction 1`] = `
+{
+  "complianceHash": "compliance_hash_snap_5e4d3c2b1a00",
+  "currency": "XLM",
+  "issuedAt": "2026-08-20T09:15:08Z",
+  "metadata": {
+    "credentials": {
+      "apiKey": "[REDACTED]",
+      "privateKey": "[REDACTED]",
+      "vaultPath": "kv/payroll/testnet/signer",
+    },
+    "department": "Engineering",
+    "disbursement": {
+      "amount": "[REDACTED]",
+      "batchId": "batch_snap_001",
+      "currency": "XLM",
+      "recipient": "[REDACTED]",
+    },
+    "lineItems": [
+      {
+        "amount": "[REDACTED]",
+        "employeeRef": "emp_snap_001",
+        "recipient": "[REDACTED]",
+        "role": "engineer",
+        "salaryBand": "L5",
+      },
+      {
+        "amount": "[REDACTED]",
+        "employeeRef": "emp_snap_002",
+        "recipient": "[REDACTED]",
+        "role": "designer",
+        "salaryBand": "L3",
+      },
+    ],
+    "recipientCount": 2,
+    "runDate": "2026-08-20",
+    "runLabel": "August 2026 payroll cycle",
+    "secret": "[REDACTED]",
+    "secretRefNote": "rotation scheduled",
+  },
+  "metadataDigest": "84b44419c3214720eb58ba0cc778602cf2f82b1bfb1816f212b972f9840f20d3",
+  "payrollId": "pr_snap_run_2026_08",
+  "receiptId": "rcpt_snap_success_0001",
+  "recipientCount": 2,
+  "redacted": true,
+  "settledAt": "2026-08-20T09:16:00Z",
+  "settlementStatus": "settled",
+  "signature": "sig_snap_success_base64placeholder==",
+  "signerPublicKey": "GSIGNERSNAPPUBLICKEY000000000000000000000000000000000000sn0",
+  "totalAmount": "12500000",
+  "transactionReference": {
+    "confirmedAt": "2026-08-20T09:15:07Z",
+    "contractId": "CBULKPAYROLLCONTRACTID000000000000000000000000000000snap00",
+    "ledger": 1234567,
+    "network": "testnet",
+    "submittedAt": "2026-08-20T09:15:00Z",
+    "txHash": "2f1c9be47d0a83ff55e21cc709ba66de41a2d58893cf10b7ee54a19d83027fc4",
+  },
+  "viewKeyId": "vk_snap_compliance_01",
+}
+`;
+
+exports[`Redaction Snapshots — success receipts snapshots a fully redacted settled receipt with the payroll preset: settled receipt / payroll preset 1`] = `
+{
+  "complianceHash": "compliance_hash_snap_5e4d3c2b1a00",
+  "currency": "XLM",
+  "issuedAt": "2026-08-20T09:15:08Z",
+  "metadata": {
+    "credentials": {
+      "apiKey": "[REDACTED]",
+      "privateKey": "[REDACTED]",
+      "vaultPath": "kv/payroll/testnet/signer",
+    },
+    "department": "Engineering",
+    "disbursement": {
+      "amount": "[REDACTED]",
+      "batchId": "batch_snap_001",
+      "currency": "XLM",
+      "recipient": "[REDACTED]",
+    },
+    "lineItems": [
+      {
+        "amount": "[REDACTED]",
+        "employeeRef": "emp_snap_001",
+        "recipient": "[REDACTED]",
+        "role": "engineer",
+        "salaryBand": "L5",
+      },
+      {
+        "amount": "[REDACTED]",
+        "employeeRef": "emp_snap_002",
+        "recipient": "[REDACTED]",
+        "role": "designer",
+        "salaryBand": "L3",
+      },
+    ],
+    "recipientCount": 2,
+    "runDate": "2026-08-20",
+    "runLabel": "August 2026 payroll cycle",
+    "secret": "[REDACTED]",
+    "secretRefNote": "rotation scheduled",
+  },
+  "metadataDigest": "84b44419c3214720eb58ba0cc778602cf2f82b1bfb1816f212b972f9840f20d3",
+  "payrollId": "pr_snap_run_2026_08",
+  "receiptId": "rcpt_snap_success_0001",
+  "recipientCount": 2,
+  "redacted": true,
+  "settledAt": "2026-08-20T09:16:00Z",
+  "settlementStatus": "settled",
+  "signature": "sig_snap_success_base64placeholder==",
+  "signerPublicKey": "GSIGNERSNAPPUBLICKEY000000000000000000000000000000000000sn0",
+  "totalAmount": "[REDACTED]",
+  "transactionReference": {
+    "confirmedAt": "2026-08-20T09:15:07Z",
+    "contractId": "CBULKPAYROLLCONTRACTID000000000000000000000000000000snap00",
+    "ledger": 1234567,
+    "network": "testnet",
+    "submittedAt": "2026-08-20T09:15:00Z",
+    "txHash": "2f1c9be47d0a83ff55e21cc709ba66de41a2d58893cf10b7ee54a19d83027fc4",
+  },
+  "viewKeyId": "vk_snap_compliance_01",
+}
+`;
+
+exports[`Redaction Snapshots — success receipts snapshots the sanitized receipt returned by verifyPayrollReceipt: verification result / settled receipt 1`] = `
+{
+  "isValid": true,
+  "issueCodes": [],
+  "receipt": {
+    "complianceHash": "compliance_hash_snap_5e4d3c2b1a00",
+    "currency": "XLM",
+    "issuedAt": "2026-08-20T09:15:08Z",
+    "metadata": {
+      "credentials": {
+        "apiKey": "[REDACTED]",
+        "privateKey": "[REDACTED]",
+        "vaultPath": "kv/payroll/testnet/signer",
+      },
+      "department": "Engineering",
+      "disbursement": {
+        "amount": "[REDACTED]",
+        "batchId": "batch_snap_001",
+        "currency": "XLM",
+        "recipient": "[REDACTED]",
+      },
+      "lineItems": [
+        {
+          "amount": "[REDACTED]",
+          "employeeRef": "emp_snap_001",
+          "recipient": "[REDACTED]",
+          "role": "engineer",
+          "salaryBand": "L5",
+        },
+        {
+          "amount": "[REDACTED]",
+          "employeeRef": "emp_snap_002",
+          "recipient": "[REDACTED]",
+          "role": "designer",
+          "salaryBand": "L3",
+        },
+      ],
+      "recipientCount": 2,
+      "runDate": "2026-08-20",
+      "runLabel": "August 2026 payroll cycle",
+      "secret": "[REDACTED]",
+      "secretRefNote": "rotation scheduled",
+    },
+    "metadataDigest": "84b44419c3214720eb58ba0cc778602cf2f82b1bfb1816f212b972f9840f20d3",
+    "payrollId": "pr_snap_run_2026_08",
+    "receiptId": "rcpt_snap_success_0001",
+    "recipientCount": 2,
+    "redacted": true,
+    "settledAt": "2026-08-20T09:16:00Z",
+    "settlementStatus": "settled",
+    "signature": "sig_snap_success_base64placeholder==",
+    "signerPublicKey": "GSIGNERSNAPPUBLICKEY000000000000000000000000000000000000sn0",
+    "totalAmount": "[REDACTED]",
+    "transactionReference": {
+      "confirmedAt": "2026-08-20T09:15:07Z",
+      "contractId": "CBULKPAYROLLCONTRACTID000000000000000000000000000000snap00",
+      "ledger": 1234567,
+      "network": "testnet",
+      "submittedAt": "2026-08-20T09:15:00Z",
+      "txHash": "2f1c9be47d0a83ff55e21cc709ba66de41a2d58893cf10b7ee54a19d83027fc4",
+    },
+    "viewKeyId": "vk_snap_compliance_01",
+  },
+  "settlementStatus": "settled",
+  "verifiedFields": {
+    "freshness": true,
+    "metadataDigest": true,
+    "payrollId": true,
+    "settlementStatus": true,
+    "signature": true,
+    "transactionReference": true,
+  },
+}
+`;

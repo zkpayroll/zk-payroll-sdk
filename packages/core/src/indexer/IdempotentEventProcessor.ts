@@ -31,7 +31,10 @@ export class IdempotentEventProcessor {
 
   async processEvent(event: EventData): Promise<EventProcessingResult> {
     try {
-      const replayResult = await this.options.replayDetector.detectReplay(event.id, event.batchRoot);
+      const replayResult = await this.options.replayDetector.detectReplay(
+        event.id,
+        event.batchRoot
+      );
 
       if (replayResult.isReplayed) {
         return {

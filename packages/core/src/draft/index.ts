@@ -19,10 +19,10 @@ export type {
   PayrollDraft,
   PayrollDraftEntry,
 } from "./types";
+export type { EncryptionProvider, EnvironmentType } from "./EncryptionProvider";
 export type {
-  EncryptionProvider,
-  EnvironmentType,
   DraftMetadata,
   EncryptedDraftPackage,
   RedactedDraftPreview,
-} from "./EncryptionProvider";
+  SensitiveFieldConfig,
+} from "./EncryptedDraftSerializer";

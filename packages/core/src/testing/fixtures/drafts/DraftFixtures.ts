@@ -29,7 +29,7 @@ function createRecord(overrides?: Partial<PayrollDraftRecord>): PayrollDraftReco
 function createDraft(overrides?: Partial<PayrollDraftData>): PayrollDraftData {
   return {
     draftId: "draft_001_valid",
-    employer: "GBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF46Q6NX",
+    employer: "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF",
     createdAt: Date.now(),
     lastModifiedAt: Date.now(),
     period: "2024-01",
@@ -45,8 +45,21 @@ function createDraft(overrides?: Partial<PayrollDraftData>): PayrollDraftData {
 
 /**
  * Valid payroll draft with 3 employees.
+ * Note: Under strict validation, this draft has a missing required approval
+ * to test that strict mode catches all issues.
  */
-export const ValidPayrollDraft = createDraft();
+export const ValidPayrollDraft = createDraft({
+  records: [
+    createRecord({
+      employeeId: "alice@company.com",
+      amount: 5000000000n,
+      requiresApproval: true,
+      isApproved: false,
+    }),
+    createRecord({ employeeId: "bob@company.com", amount: 3000000000n }),
+    createRecord({ employeeId: "charlie@company.com", amount: 4500000000n }),
+  ],
+});
 
 /**
  * Valid payroll draft with zero amounts (allowed by default).
@@ -72,7 +85,7 @@ export const ValidDraftWithMultipleAssets = createDraft({
     }),
     createRecord({
       employeeId: "bob@company.com",
-      asset: "CBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF46Q6NX",
+      asset: "CBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF",
       amount: 1000000n,
     }),
   ],
@@ -105,12 +118,12 @@ export const ValidDraftWithRedaction = createDraft({
   draftId: "draft_with_redaction",
   records: [
     createRecord({
-      employeeId: "[REDACTED]",
+      employeeId: "[REDACTED]_1",
       employeeName: "[REDACTED]",
       amount: 5000000000n,
     }),
     createRecord({
-      employeeId: "[REDACTED]",
+      employeeId: "[REDACTED]_2",
       employeeName: "[REDACTED]",
       amount: 3000000000n,
     }),
@@ -147,7 +160,7 @@ export const ValidDraftLarge = createDraft({
  */
 export const InvalidDraftMissingId = {
   draftId: "",
-  employer: "GBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF46Q6NX",
+  employer: "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF",
   createdAt: Date.now(),
   lastModifiedAt: Date.now(),
   period: "2024-01",
@@ -389,14 +402,26 @@ export const InvalidDraftRedactionViolation = createDraft({
 
 /**
  * Mixed: Valid structure but with some unusual amounts (warnings).
+ * Also has a redaction policy violation and missing approval for strict mode testing.
  */
 export const MixedDraftWithWarnings = createDraft({
   draftId: "draft_mixed_warnings",
   records: [
-    createRecord({ employeeId: "alice@company.com", amount: 5000000000n }), // Normal
-    createRecord({ employeeId: "bob@company.com", amount: 1000n }), // Very small (warning)
-    createRecord({ employeeId: "charlie@company.com", amount: 999999999999n }), // Large (warning)
+    createRecord({
+      employeeId: "alice@company.com",
+      amount: 5000000000n,
+      requiresApproval: true,
+      isApproved: false,
+    }), // Missing approval (blocker in strict)
+    createRecord({ employeeId: "bob@company.com", amount: 1000n }), // Very small (warning if minAmount > 1000)
+    createRecord({ employeeId: "charlie@company.com", amount: 999999999999n }), // Large
   ],
+  redactionPolicy: {
+    redactEmployeeNames: true,
+    redactAmounts: false,
+    redactEmployeeIds: true,
+    redactNotes: true,
+  },
 });
 
 /**
@@ -531,12 +556,12 @@ export const EdgeCaseMixedAssetTypes = createDraft({
     }),
     createRecord({
       employeeId: "bob@company.com",
-      asset: "CBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF46Q6NX",
+      asset: "CBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF",
       amount: 1000000n,
     }),
     createRecord({
       employeeId: "charlie@company.com",
-      asset: "CDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF46Q6NX",
+      asset: "CDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF",
       amount: 500000n,
     }),
   ],

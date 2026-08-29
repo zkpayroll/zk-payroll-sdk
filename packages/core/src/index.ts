@@ -119,6 +119,47 @@ export type {
   PaymentCancelledEvent,
 } from "./event-parser";
 
+// ── Funding Reservation Event Decoder ────────────────────────────────────────
+export {
+  parseFundingReservationCreatedEvent,
+  parseFundingReservationCreatedEvents,
+} from "./events/reservations";
+export type { FundingReservationCreatedEvent, ReservationAssetAmount } from "./events/types";
+export { ReservationEventParsingError } from "./events/types";
+
+// ── Pause Status ──────────────────────────────────────────────────────────────
+export { normalizePauseStatus, PAUSE_CATEGORIES } from "./pause/status";
+export type { PauseCategory, PauseStatus, RawPauseStatusResponse } from "./pause/status";
+
+// ── Proof Reference Parser ───────────────────────────────────────────────────
+export {
+  parseProofReference,
+  tryParseProofReference,
+  formatProofReference,
+  PROOF_REFERENCE_SEPARATOR,
+  MAX_PROOF_REFERENCE_LENGTH,
+} from "./proofs/reference";
+export type { ParsedProofReference } from "./proofs/reference";
+export { ProofReferenceParsingError } from "./proofs/errors";
+
+// ── Admin/Lifecycle Event Decoders ───────────────────────────────────────────
+export {
+  decodeEmployerOnboardingEvent,
+  decodeEmployerOnboardingEvents,
+  isEmployerOnboardingEvent,
+} from "./events/employerOnboarding";
+export type { EmployerOnboardedEvent } from "./events/employerOnboarding";
+export {
+  parseOperatorRemovalEvent,
+  parseOperatorRemovalEvents,
+  isOperatorRemovalEvent,
+} from "./events/operatorRemoval";
+export type { OperatorRemovedEvent } from "./events/operatorRemoval";
+export { EventDecodingError } from "./events/types";
+
+// ── Admin UI Helpers ─────────────────────────────────────────────────────────
+export * from "./admin";
+
 // ── Typed Contract Clients ───────────────────────────────────────────────────
 export * from "./clients";
 
@@ -148,6 +189,10 @@ export * from "./assets";
 
 // ── Transaction Status Mapping ──────────────────────────────────────────────
 export * from "./transactions";
+// ── Payroll Status Label Helpers ────────────────────────────────────────────
+export * from "./status";
+// ── Payroll Period Summary ──────────────────────────────────────────────────
+export * from "./payroll";
 // ── Payload Normalization ───────────────────────────────────────────────────
 export * from "./normalization";
 
@@ -195,11 +240,21 @@ export * from "./classification";
 // Contract State Indexer
 export * from "./indexer";
 
+// ── Payroll Signing Payload Inspector ───────────────────────────────────────
+export * from "./signing";
+
+// ── Error Code Documentation Generation ─────────────────────────────────────
+export * from "./error-docs";
+
 // Proof Artifact Lifecycle
 export * from "./artifacts";
 
 // Multi-Signer Authorization
 export * from "./authorization";
+
+// ── Local Payload Validation ─────────────────────────────────────────────────
+export { PayrollValidation } from "./core/validation";
+export type { ValidationResult } from "./core/validation";
 
 // ── Payroll Receipts & Verification ─────────────────────────────────────────
 export * from "./receipts";
@@ -209,10 +264,6 @@ export * from "./setup";
 
 // Network Request Timing Metadata
 export * from "./network";
-
-// ── Payroll Receipts & Verification ─────────────────────────────────────────
-export * from "./receipts";
-export { ReceiptVerificationCode as VerificationCode } from "./receipts";
 
 // ── Employee Eligibility & Reason Codes ─────────────────────────────────────
 export * from "./eligibility";

@@ -1,4 +1,5 @@
-export type SignerRole = "payroll_admin" | "treasury_operator" | "compliance_reviewer" | "emergency_approver";
+export type SignerRole =
+  "payroll_admin" | "treasury_operator" | "compliance_reviewer" | "emergency_approver";
 
 export type SignerState = "pending" | "signed" | "rejected" | "expired" | "revoked";
 

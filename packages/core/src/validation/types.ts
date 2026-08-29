@@ -226,7 +226,8 @@ export const ValidationPresets = {
     checkDuplicates: true,
     validateRedaction: true,
     validateApprovals: true,
-    minAmount: 1n, // Disallow zero amounts
+    minAmount: 10000000n,
+    maxAmount: 100000000000n,
     maxRecordsPerDraft: 10000,
     allowMissingApprovals: false,
   } as ValidationConfig,
@@ -307,6 +308,10 @@ export const ValidationErrorCodes = {
   TOO_MANY_RECORDS: "ERR_TOO_MANY_RECORDS",
   MISSING_DRAFT_ID: "ERR_MISSING_DRAFT_ID",
   MISSING_EMPLOYER: "ERR_MISSING_EMPLOYER",
+
+  // Batch issues
+  EMPTY_BATCH: "ERR_EMPTY_BATCH",
+  ZERO_TOTAL_BATCH: "ERR_ZERO_TOTAL_BATCH",
 
   // Other issues
   INTERNAL_VALIDATION_ERROR: "ERR_INTERNAL_VALIDATION_ERROR",

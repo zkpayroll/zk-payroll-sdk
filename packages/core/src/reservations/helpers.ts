@@ -225,9 +225,7 @@ export function createFinalizeRequest(
  * @param events — Array of ReservationEvent objects
  * @returns Chronologically ordered timeline with state transitions
  */
-export function buildReservationTimeline(
-  events: ReservationEvent[]
-): Array<{
+export function buildReservationTimeline(events: ReservationEvent[]): Array<{
   eventId: string;
   eventType: string;
   timestamp: number;
@@ -279,10 +277,13 @@ export function detectReservationIssues(
   const issues: Array<{ issue: string; severity: "warning" | "error"; eventIds: string[] }> = [];
 
   // Count events by type
-  const eventCounts = events.reduce((acc, event) => {
-    acc[event.eventType] = (acc[event.eventType] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
+  const eventCounts = events.reduce(
+    (acc, event) => {
+      acc[event.eventType] = (acc[event.eventType] || 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>
+  );
 
   // Check for multiple releases (duplicate release attempts)
   if ((eventCounts.released ?? 0) > 1) {

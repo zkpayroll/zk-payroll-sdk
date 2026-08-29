@@ -1,8 +1,4 @@
-import {
-  CapabilityFeature,
-  CapabilitySet,
-  CapabilityValidation,
-} from "./types";
+import { CapabilityFeature, CapabilitySet, CapabilityValidation } from "./types";
 
 export class CapabilityManager {
   private capabilities: Map<string, CapabilityFeature> = new Map();
@@ -32,9 +28,7 @@ export class CapabilityManager {
     };
   }
 
-  validateCapabilities(
-    availableFeatures: string[]
-  ): CapabilityValidation {
+  validateCapabilities(availableFeatures: string[]): CapabilityValidation {
     const availableSet = new Set(availableFeatures);
     const missingFeatures: string[] = [];
     const incompatibleFeatures: string[] = [];

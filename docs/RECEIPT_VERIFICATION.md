@@ -124,3 +124,29 @@ const exportSafeReceipt = redactReceiptForExport(receipt);
 console.log(exportSafeReceipt.metadata);
 // { recipient: "[REDACTED]", privateKey: "[REDACTED]", ... }
 ```
+
+### Redaction policy
+
+- **Matching is by key name, exact and case-sensitive.** `employee` is
+  redacted while `employeeRef` is kept; `TotalAmount` is kept while `amount`
+  matches.
+- **Engine defaults** cover the baseline vocabulary: `recipient`, `amount`,
+  `witness`, `privateKey`, `adminKey`, `secret`, `password`, `token`,
+  `mnemonic`, `seed`, `authorization`, `apiKey`, `accessToken`,
+  `refreshToken`, `signingKey` (plus snake_case variants).
+- **Payroll-only fields are NOT in the defaults.** Compensation, party
+  identity, and ZK-linkage fields (`salary`, `salaryAmount`, `employer`,
+  `employee`, `commitmentHash`, `nullifier`, `totalAmount`) MUST be passed via
+  `additionalFields` — see the payroll preset used by the snapshot tests.
+- **Modes**: `placeholder` (default, replaces values with `[REDACTED]`),
+  `mask` (keeps first/last two characters), and `remove` (drops the key).
+  `redactReceiptForExport()` always sets `receipt.redacted = true`.
+- **Operational fields survive redaction**: receipt/payroll IDs, transaction
+  hashes, ledger numbers, networks, settlement statuses, and non-sensitive
+  metadata context stay intact so exports remain debuggable.
+
+The executable specification for this policy lives in
+`packages/core/tests/redaction-snapshots/` (see its README for the full
+policy table). Any change to redaction output must update those stored
+snapshots deliberately — a snapshot diff that reveals previously-redacted
+values must never be merged.

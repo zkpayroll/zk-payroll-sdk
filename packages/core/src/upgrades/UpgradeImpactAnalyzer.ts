@@ -36,10 +36,7 @@ export class UpgradeImpactAnalyzer {
     return report;
   }
 
-  private computeImpact(
-    current: ContractMetadata,
-    target: ContractMetadata
-  ): UpgradeImpact {
+  private computeImpact(current: ContractMetadata, target: ContractMetadata): UpgradeImpact {
     const breakingChanges: string[] = [];
     const warnings: string[] = [];
     const migrationsRequired: string[] = [];
@@ -86,10 +83,7 @@ export class UpgradeImpactAnalyzer {
     };
   }
 
-  private isSchemaCompatible(
-    currentSchema: unknown,
-    targetSchema: unknown
-  ): boolean {
+  private isSchemaCompatible(currentSchema: unknown, targetSchema: unknown): boolean {
     if (typeof currentSchema !== "object" || typeof targetSchema !== "object") {
       return currentSchema === targetSchema;
     }
@@ -106,14 +100,8 @@ export class UpgradeImpactAnalyzer {
     return true;
   }
 
-  private isEventSchemaCompatible(
-    currentSchema: unknown,
-    targetSchema: unknown
-  ): boolean {
-    if (
-      typeof currentSchema !== "object" ||
-      typeof targetSchema !== "object"
-    ) {
+  private isEventSchemaCompatible(currentSchema: unknown, targetSchema: unknown): boolean {
+    if (typeof currentSchema !== "object" || typeof targetSchema !== "object") {
       return currentSchema === targetSchema;
     }
 
@@ -140,10 +128,7 @@ export class UpgradeImpactAnalyzer {
     if (impact.status === "breaking") {
       return `Breaking changes detected: ${impact.breakingChanges.join("; ")}. Upgrade cannot proceed without migration.`;
     } else if (impact.status === "warning") {
-      const issues =
-        impact.warnings.length > 0
-          ? impact.warnings
-          : impact.migrationsRequired;
+      const issues = impact.warnings.length > 0 ? impact.warnings : impact.migrationsRequired;
       return `Upgrade has warnings: ${issues.join("; ")}. Review before proceeding.`;
     }
     return "Upgrade is fully compatible. Payroll operations can proceed without interruption.";

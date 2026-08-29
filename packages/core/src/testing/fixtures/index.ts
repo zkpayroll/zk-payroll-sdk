@@ -1,8 +1,4 @@
-import {
-  PayrollFixtureGenerator,
-  FixturePreset,
-  PayrollScenario,
-} from "../generators";
+import { PayrollFixtureGenerator, FixturePreset, PayrollScenario } from "../generators";
 
 export function createSmallSuccessfulFixture(): PayrollScenario {
   const generator = new PayrollFixtureGenerator({ value: 42 });
