@@ -2,91 +2,23 @@
  * ZK Payroll SDK — Main entry point.
  *
  * Architecture layers:
+ *   api/      — Public-facing classes and interfaces
+ *   core/     — Business logic (ZK proofs, payroll, caching)
  *   adapters/ — Low-level blockchain/Soroban wrappers
- *   crypto/   — ZK proof generation
- *   cache/    — Caching providers
- *   testing/  — Mock utilities
  */
 
+// ── API Layer ───────────────────────────────────────────────────────────────
+export * from "./api";
+
+// ── Core Layer ──────────────────────────────────────────────────────────────
+export * from "./core";
+
+// ── Backward-compat error aliases (not in the core layer) ───────────────────
+export { PayrollError, PayrollServiceErrorCode, handleApiError } from "./errors";
+
 // ── Adapters Layer ──────────────────────────────────────────────────────────
-export { PayrollService } from "./payroll";
-export { PayrollContract } from "./contract";
-export { ZKProofGenerator } from "./crypto/proofs";
-export { SnarkjsProofGenerator } from "./crypto/SnarkjsProofGenerator";
-export { WorkerProofGenerator } from "./crypto/WorkerProofGenerator";
-export type { WorkerLike, WorkerProofOptions } from "./crypto/WorkerProofGenerator";
-export type { WorkerRequest, WorkerResponse, ProofProgressStage } from "./crypto/WorkerMessages";
-export {
-  ZkPayrollError,
-  NetworkError,
-  ProofGenerationError,
-  ContractExecutionError,
-  RpcTimeoutError,
-  InvalidResponseError,
-  ValidationError,
-  ContractErrorCode,
-  WalletError,
-  WalletRejectionError,
-  WalletErrorCode,
-  ReconciliationErrorCode,
-  toUserFriendlyError,
-  formatRedactedError,
-  DEFAULT_ERROR_MESSAGES,
-  mapRpcError,
-  PayrollError,
-  ErrorCategory,
-  ERROR_CODE_REGISTRY,
-  getErrorCategory,
-  isRetryableErrorCode,
-  getSuggestedMessage,
-  getErrorCodesByCategory,
-} from "./errors";
-export type {
-  ErrorContext,
-  ContractErrorCodeType,
-  WalletErrorCodeType,
-  ReconciliationErrorCodeType,
-  UserFriendlyError,
-  FormattedError,
-  ErrorMessageOverrides,
-  ErrorCategoryType,
-  ErrorCodeEntry,
-} from "./errors";
-export type {
-  ClientConfig,
-  RetryPolicyConfig,
-  FeatureFlagsConfig,
-  ConfigValidationErrorDetail,
-  ConfigValidationResult,
-  ConfigMigrationWarning,
-  ConfigMigrationResult,
-} from "./config";
-export {
-  DEFAULT_CONFIG,
-  ConfigPresets,
-  ConfigBuilder,
-  validateConfig,
-  assertValidConfig,
-  migrateConfig,
-  detectDeprecatedConfigFields,
-} from "./config";
-export * from "./cache";
-export * from "./types";
-export * from "./progress";
-export {
-  IdempotencyRegistry,
-  createPaymentIdempotencyKey,
-  createPayrollIdempotencyKey,
-} from "./core/idempotency";
-export type { PayrollIdempotencyKeyInput, PaymentIdempotencyKeyInput } from "./core/idempotency";
-export { Semaphore } from "./core/concurrency";
-export * from "./crypto/IProofGenerator";
-export { resolveProofConfig, resolveProofConfigFromEnv } from "./crypto/ProofConfigResolver";
-export type { ProofConfigResolverOptions } from "./crypto/ProofConfigResolver";
 export * from "./adapters";
 
-// ── Wallet Adapters ─────────────────────────────────────────────────────────
-export * from "./wallets";
 // ── Logging ─────────────────────────────────────────────────────────────────
 export * from "./logging";
 
@@ -99,66 +31,23 @@ export * from "./testing";
 // ── Events ──────────────────────────────────────────────────────────────────
 export { TransactionWatcher } from "./events";
 export type { ConfirmationOptions, ConfirmationResult } from "./events";
-export * from "./polling";
 
-// ── Pagination Helpers ───────────────────────────────────────────────────────
-export * from "./pagination";
+// ── Assets ────────────────────────────────────────────────────────────────────
+export * from "./assets";
 
-// ── Event Stream Parser ──────────────────────────────────────────────────────
-export { parseContractEvent, parseContractEvents, EventParsingError } from "./event-parser";
-export type {
-  RawContractEvent,
-  TypedContractEvent,
-  RegisteredEvent,
-  RegistryUpdatedEvent,
-  RegistryDeactivatedEvent,
-  CommittedEvent,
-  SalaryRevealedEvent,
-  PaymentExecutedEvent,
-  PaymentScheduledEvent,
-  PaymentCancelledEvent,
-} from "./event-parser";
-
-// ── Funding Reservation Event Decoder ────────────────────────────────────────
+// ── Proofs ────────────────────────────────────────────────────────────────────
 export {
-  parseFundingReservationCreatedEvent,
-  parseFundingReservationCreatedEvents,
-} from "./events/reservations";
-export type { FundingReservationCreatedEvent, ReservationAssetAmount } from "./events/types";
-export { ReservationEventParsingError } from "./events/types";
-
-// ── Pause Status ──────────────────────────────────────────────────────────────
-export { normalizePauseStatus, PAUSE_CATEGORIES } from "./pause/status";
-export type { PauseCategory, PauseStatus, RawPauseStatusResponse } from "./pause/status";
-
-// ── Proof Reference Parser ───────────────────────────────────────────────────
-export {
-  parseProofReference,
-  tryParseProofReference,
-  formatProofReference,
-  PROOF_REFERENCE_SEPARATOR,
-  MAX_PROOF_REFERENCE_LENGTH,
-} from "./proofs/reference";
-export type { ParsedProofReference } from "./proofs/reference";
-export { ProofReferenceParsingError } from "./proofs/errors";
-
-// ── Admin/Lifecycle Event Decoders ───────────────────────────────────────────
-export {
-  decodeEmployerOnboardingEvent,
-  decodeEmployerOnboardingEvents,
-  isEmployerOnboardingEvent,
-} from "./events/employerOnboarding";
-export type { EmployerOnboardedEvent } from "./events/employerOnboarding";
-export {
-  parseOperatorRemovalEvent,
-  parseOperatorRemovalEvents,
-  isOperatorRemovalEvent,
-} from "./events/operatorRemoval";
-export type { OperatorRemovedEvent } from "./events/operatorRemoval";
-export { EventDecodingError } from "./events/types";
-
-// ── Admin UI Helpers ─────────────────────────────────────────────────────────
-export * from "./admin";
+  MissingProofError,
+  isMissingProofError,
+  isProofError,
+  getMissingProofRemediation,
+  getProofRemediation,
+  getMissingProofErrorRemediation,
+  formatMissingProofError,
+  formatProofError,
+  MISSING_PROOF_REMEDIATION,
+  GENERIC_PROOF_REMEDIATION,
+} from "./proofs/errors";
 
 // ── Typed Contract Clients ───────────────────────────────────────────────────
 export * from "./clients";
