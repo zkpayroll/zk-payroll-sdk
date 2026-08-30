@@ -27,7 +27,7 @@ const EVENT_NAME = "funding_reservation_created";
  * a funding_reservation_created event.
  */
 export function parseFundingReservationCreatedEvent(
-  event: RawContractEvent,
+  event: RawContractEvent
 ): FundingReservationCreatedEvent {
   if (!event.topics || event.topics.length === 0) {
     throw new ReservationEventParsingError("Event has no topics", { event });
@@ -37,7 +37,7 @@ export function parseFundingReservationCreatedEvent(
   if (eventName !== EVENT_NAME) {
     throw new ReservationEventParsingError(
       `Expected event "${EVENT_NAME}", got "${eventName || "<unrecognized>"}"`,
-      { event },
+      { event }
     );
   }
 
@@ -45,7 +45,7 @@ export function parseFundingReservationCreatedEvent(
   if (!employer) {
     throw new ReservationEventParsingError(
       "Missing or invalid employer topic in funding_reservation_created event",
-      { event },
+      { event }
     );
   }
 
@@ -55,7 +55,7 @@ export function parseFundingReservationCreatedEvent(
   if (!reservationId) {
     throw new ReservationEventParsingError(
       "Missing reservation_id in funding_reservation_created event data",
-      { event },
+      { event }
     );
   }
 
@@ -63,7 +63,7 @@ export function parseFundingReservationCreatedEvent(
   if (assets.length === 0) {
     throw new ReservationEventParsingError(
       "funding_reservation_created event has no reserved assets",
-      { event },
+      { event }
     );
   }
 
@@ -84,7 +84,7 @@ export function parseFundingReservationCreatedEvent(
  * funding_reservation_created events still throw, since a corrupt event of
  * the type we're looking for is a data-integrity problem, not noise. */
 export function parseFundingReservationCreatedEvents(
-  events: RawContractEvent[],
+  events: RawContractEvent[]
 ): FundingReservationCreatedEvent[] {
   const results: FundingReservationCreatedEvent[] = [];
   for (const event of events) {
@@ -178,7 +178,7 @@ function decodeDataMap(scVal: xdr.ScVal): Record<string, xdr.ScVal> {
 /** Decode the `assets` vector — each entry is a map of {asset, amount}. */
 function decodeAssets(
   scVal: xdr.ScVal | undefined,
-  event: RawContractEvent,
+  event: RawContractEvent
 ): ReservationAssetAmount[] {
   if (!scVal) return [];
   let vec: xdr.ScVal[] | null;
@@ -187,7 +187,7 @@ function decodeAssets(
   } catch {
     throw new ReservationEventParsingError(
       "funding_reservation_created event's assets field is not a vector",
-      { event },
+      { event }
     );
   }
   if (!vec) return [];
@@ -199,7 +199,7 @@ function decodeAssets(
     if (!asset) {
       throw new ReservationEventParsingError(
         "An asset entry in funding_reservation_created is missing its asset identifier",
-        { event },
+        { event }
       );
     }
     return { asset, amount };

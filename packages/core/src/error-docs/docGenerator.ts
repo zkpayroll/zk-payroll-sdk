@@ -13,10 +13,7 @@
  * `ERROR_CODE_REGISTRY` entry (would otherwise ship silently
  * undocumented).
  */
-import {
-  ERROR_CODE_REGISTRY,
-  type ErrorCodeEntry,
-} from "../core/error-codes";
+import { ERROR_CODE_REGISTRY, type ErrorCodeEntry } from "../core/error-codes";
 import { ContractErrorCode, ReconciliationErrorCode, WalletErrorCode } from "../core/errors";
 
 /** All error codes declared by the SDK's `*ErrorCode` const objects, by source. */

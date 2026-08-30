@@ -42,7 +42,7 @@ export function parseProofReference(reference: string): ParsedProofReference {
   if (reference.length > MAX_PROOF_REFERENCE_LENGTH) {
     throw new ProofReferenceParsingError(
       `Proof reference exceeds maximum length of ${MAX_PROOF_REFERENCE_LENGTH} characters`,
-      { reference, length: reference.length },
+      { reference, length: reference.length }
     );
   }
 
@@ -50,7 +50,7 @@ export function parseProofReference(reference: string): ParsedProofReference {
   if (parts.length !== 2) {
     throw new ProofReferenceParsingError(
       `Proof reference must have the form "<circuitId>${PROOF_REFERENCE_SEPARATOR}<proofHash>"`,
-      { reference },
+      { reference }
     );
   }
 
@@ -59,14 +59,14 @@ export function parseProofReference(reference: string): ParsedProofReference {
   if (!CIRCUIT_ID_PATTERN.test(circuitId)) {
     throw new ProofReferenceParsingError(
       `Invalid circuit id "${circuitId}": must be lowercase alphanumeric with hyphens, max 64 characters`,
-      { reference, circuitId },
+      { reference, circuitId }
     );
   }
 
   if (!PROOF_HASH_PATTERN.test(proofHash)) {
     throw new ProofReferenceParsingError(
       `Invalid proof hash "${proofHash}": must be a 64-character lowercase hex string`,
-      { reference, proofHash },
+      { reference, proofHash }
     );
   }
 

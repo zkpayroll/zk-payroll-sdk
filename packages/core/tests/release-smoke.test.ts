@@ -24,13 +24,9 @@ describe("checkBuildArtifacts", () => {
   });
 
   it("fails when require() throws", () => {
-    const result = checkBuildArtifacts(
-      "/fake/dist/index.js",
-      "/fake/dist/index.d.ts",
-      () => {
-        throw new Error("Cannot find module");
-      }
-    );
+    const result = checkBuildArtifacts("/fake/dist/index.js", "/fake/dist/index.d.ts", () => {
+      throw new Error("Cannot find module");
+    });
     expect(result.ok).toBe(false);
     expect(result.errors[0]).toContain("Failed to require");
   });
@@ -45,7 +41,11 @@ describe("checkBuildArtifacts", () => {
 describe("extractNamedImports", () => {
   it("extracts a plain named import", () => {
     const [imp] = extractNamedImports('import { Foo, Bar } from "../packages/core/src";');
-    expect(imp).toEqual({ names: ["Foo", "Bar"], specifier: "../packages/core/src", isTypeOnly: false });
+    expect(imp).toEqual({
+      names: ["Foo", "Bar"],
+      specifier: "../packages/core/src",
+      isTypeOnly: false,
+    });
   });
 
   it("marks `import type { ... }` as type-only", () => {

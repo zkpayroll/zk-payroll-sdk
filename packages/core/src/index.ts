@@ -72,3 +72,9 @@ export {
   formatContractProofError,
   mapContractProofError,
 } from "./errors/contractErrors";
+
+// ── Proof Artifacts ─────────────────────────────────────────────────────────
+export * from "./artifacts";
+
+// ── Backward-Compatibility Exports ──────────────────────────────────────────
+export * from "./compat-exports";

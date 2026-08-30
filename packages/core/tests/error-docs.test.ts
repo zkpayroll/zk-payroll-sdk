@@ -55,8 +55,12 @@ describe("renderErrorDocsMarkdown", () => {
   it("includes a header, row count, and a markdown table with every code", () => {
     const markdown = renderErrorDocsMarkdown();
     expect(markdown).toContain("# SDK Error Codes");
-    expect(markdown).toContain(`${Object.keys(ERROR_CODE_REGISTRY).length} documented error code(s).`);
-    expect(markdown).toContain("| Code | Source | Category | Meaning | Retryable | Suggested Fix |");
+    expect(markdown).toContain(
+      `${Object.keys(ERROR_CODE_REGISTRY).length} documented error code(s).`
+    );
+    expect(markdown).toContain(
+      "| Code | Source | Category | Meaning | Retryable | Suggested Fix |"
+    );
     for (const code of Object.keys(ERROR_CODE_REGISTRY)) {
       expect(markdown).toContain(`\`${code}\``);
     }

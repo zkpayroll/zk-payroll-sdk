@@ -16,7 +16,7 @@
  * on failure (see that file for why it must run post-build).
  */
 import { existsSync, readFileSync } from "fs";
-import { dirname, resolve as resolvePath } from "path";
+import { dirname, resolve as resolvePath, posix } from "path";
 import { Keypair, Networks, rpc, StrKey } from "@stellar/stellar-sdk";
 import { PayrollService } from "../payroll";
 import { PayrollContractWrapper } from "../adapters/PayrollContractWrapper";
@@ -73,8 +73,7 @@ export interface ExtractedImport {
   isTypeOnly: boolean;
 }
 
-const IMPORT_STATEMENT_RE =
-  /import\s+(type\s+)?\{([^}]+)\}\s+from\s+["']([^"']+)["']/g;
+const IMPORT_STATEMENT_RE = /import\s+(type\s+)?\{([^}]+)\}\s+from\s+["']([^"']+)["']/g;
 
 /**
  * Extracts named (non-default, non-namespace) import statements from a
@@ -143,7 +142,11 @@ function extractLocalDeclaredNames(dtsSource: string): {
   const reExportRe = /^export\s+(?:type\s+)?\{([^}]+)\}/gm;
   while ((match = reExportRe.exec(dtsSource)) !== null) {
     for (const raw of match[1].split(",")) {
-      const name = raw.trim().split(/\s+as\s+/).pop()?.trim();
+      const name = raw
+        .trim()
+        .split(/\s+as\s+/)
+        .pop()
+        ?.trim();
       if (name) names.add(name);
     }
   }
@@ -179,11 +182,17 @@ export function extractDeclaredTypeNames(
   const names = new Set<string>();
   const visited = new Set<string>();
 
+  function getDir(p: string): string {
+    return p.startsWith("/") && !p.includes(":") ? posix.dirname(p) : dirname(p);
+  }
+
   /** Mirrors Node/TS module resolution: try "<specifier>.d.ts", then "<specifier>/index.d.ts". */
   function resolveDtsPath(fromDir: string, specifier: string): string | undefined {
-    const asFile = `${resolvePath(fromDir, specifier)}.d.ts`;
+    const isMockPosix = fromDir.startsWith("/") && !fromDir.includes(":");
+    const resolve = isMockPosix ? posix.resolve : resolvePath;
+    const asFile = `${resolve(fromDir, specifier)}.d.ts`;
     if (existsFn(asFile)) return asFile;
-    const asIndex = resolvePath(fromDir, specifier, "index.d.ts");
+    const asIndex = resolve(fromDir, specifier, "index.d.ts");
     if (existsFn(asIndex)) return asIndex;
     return undefined;
   }
@@ -202,8 +211,9 @@ export function extractDeclaredTypeNames(
     const { names: localNames, wildcardSpecifiers } = extractLocalDeclaredNames(source);
     localNames.forEach((n) => names.add(n));
 
+    const dir = getDir(path);
     for (const specifier of wildcardSpecifiers) {
-      const targetPath = resolveDtsPath(dirname(path), specifier);
+      const targetPath = resolveDtsPath(dir, specifier);
       if (targetPath) visit(targetPath);
     }
   }
@@ -282,7 +292,6 @@ export function checkClientConstruction(
     const contractWrapper = new PayrollContractWrapper(server, dummyContractId);
     const signer = Keypair.random();
 
-    // eslint-disable-next-line no-new
     new PayrollService(contractWrapper, SMOKE_PROOF_GENERATOR, signer, Networks.TESTNET);
 
     return { ok: true };

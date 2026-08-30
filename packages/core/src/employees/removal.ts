@@ -75,7 +75,7 @@ const STATUS_REASON_CODE: Partial<Record<PayrollStatus, EmployeeRemovalReasonCod
  */
 export function checkEmployeeRemoval(
   employeeId: string,
-  payrollStatus: PayrollStatus,
+  payrollStatus: PayrollStatus
 ): EmployeeRemovalCheckResult {
   if (EDITABLE_PAYROLL_STATUSES.includes(payrollStatus)) {
     return { employeeId, payrollStatus, allowed: true, blockedReason: null };

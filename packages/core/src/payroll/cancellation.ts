@@ -52,7 +52,7 @@ export const CANCELLATION_REASONS: readonly CancellationReasonInfo[] = [
 ];
 
 const REASON_BY_CODE: ReadonlyMap<CancellationReasonCode, CancellationReasonInfo> = new Map(
-  CANCELLATION_REASONS.map((reason) => [reason.code, reason]),
+  CANCELLATION_REASONS.map((reason) => [reason.code, reason])
 );
 
 /** Human-readable label for a cancellation reason code. */

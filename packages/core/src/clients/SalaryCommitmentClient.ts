@@ -182,7 +182,7 @@ export class SalaryCommitmentClient extends BaseContractWrapper {
     };
   }
 
-  private encodeProofStruct(proof: ProofStruct): xdr.ScVal {
+  protected encodeProofStruct(proof: ProofStruct): xdr.ScVal {
     const piA = xdr.ScVal.scvVec(proof.pi_a.map((s) => nativeToScVal(s, { type: "string" })));
     const piB = xdr.ScVal.scvVec(
       proof.pi_b.map((pair) =>

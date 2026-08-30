@@ -3,7 +3,11 @@ import type { ISigner } from "../signer/types";
 import { toISigner } from "../signer/KeypairSigner";
 import { BaseContractWrapper } from "../adapters/BaseContractWrapper";
 import type { ClientOptions } from "./types";
-import { normalizePauseStatus, type PauseStatus, type RawPauseStatusResponse } from "../pause/status";
+import {
+  normalizePauseStatus,
+  type PauseStatus,
+  type RawPauseStatusResponse,
+} from "../pause/status";
 import type { Keypair } from "@stellar/stellar-sdk";
 
 export class PauseStatusClient extends BaseContractWrapper {
@@ -23,7 +27,7 @@ export class PauseStatusClient extends BaseContractWrapper {
       "get_pause_status",
       [],
       toISigner(signer),
-      network ?? this.networkPassphrase,
+      network ?? this.networkPassphrase
     );
     return normalizePauseStatus(this.decodePauseStatusMap(result));
   }

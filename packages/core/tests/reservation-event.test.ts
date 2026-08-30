@@ -38,8 +38,8 @@ function mapScVal(entries: Record<string, xdr.ScVal>): xdr.ScVal {
         new xdr.ScMapEntry({
           key: nativeToScVal(key, { type: "symbol" }),
           val,
-        }),
-    ),
+        })
+    )
   );
 }
 
@@ -106,7 +106,7 @@ describe("parseFundingReservationCreatedEvent — multi-asset", () => {
 describe("parseFundingReservationCreatedEvent — malformed events", () => {
   it("throws when the event has no topics", () => {
     expect(() => parseFundingReservationCreatedEvent(buildRawEvent({ topics: [] }))).toThrow(
-      ReservationEventParsingError,
+      ReservationEventParsingError
     );
   });
 

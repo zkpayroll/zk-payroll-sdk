@@ -168,8 +168,6 @@ describe("dispute.* webhook events", () => {
       payload: { ...payload, severity: "critical" } as WebhookPayload,
     };
 
-    expect(() => verifyWebhookSignature(tampered, TEST_SECRET)).toThrow(
-      /signature mismatch/i
-    );
+    expect(() => verifyWebhookSignature(tampered, TEST_SECRET)).toThrow(/signature mismatch/i);
   });
 });
