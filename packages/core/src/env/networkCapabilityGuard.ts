@@ -49,8 +49,7 @@ export class NetworkCapabilityGuard {
         reason: "Signing is explicitly disabled",
       };
     }
-    const supported =
-      this.env.hasWalletSupport || this.env.environment === "node";
+    const supported = this.env.hasWalletSupport || this.env.environment === "node";
     return {
       supported,
       capability: NetworkCapability.SIGNING,
@@ -71,14 +70,11 @@ export class NetworkCapabilityGuard {
         reason: "Fetching is explicitly disabled",
       };
     }
-    const supported =
-      this.env.capabilities.has("fetch") || this.env.environment === "node";
+    const supported = this.env.capabilities.has("fetch") || this.env.environment === "node";
     return {
       supported,
       capability: NetworkCapability.FETCHING,
-      reason: supported
-        ? undefined
-        : "Fetching is not supported in this runtime environment",
+      reason: supported ? undefined : "Fetching is not supported in this runtime environment",
     };
   }
 
@@ -145,14 +141,14 @@ export class NetworkCapabilityGuard {
       default:
         throw new PayrollError(
           `Unknown network capability: ${capability}`,
-          "INVALID_CAPABILITY" as any,
+          "INVALID_CAPABILITY" as any
         );
     }
 
     if (!result.supported) {
       throw new PayrollError(
         `Network capability '${capability}' is not supported in this environment: ${result.reason}`,
-        "UNSUPPORTED_ENVIRONMENT" as any,
+        "UNSUPPORTED_ENVIRONMENT" as any
       );
     }
   }

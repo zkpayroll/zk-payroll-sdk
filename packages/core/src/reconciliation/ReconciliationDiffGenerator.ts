@@ -171,3 +171,12 @@ export function generateReconciliationDiff(
 
   return { entries, counts, isFullyReconciled, generatedAt: Date.now() };
 }
+
+export class ReconciliationDiffGenerator {
+  generateDiff(
+    expected: PayrollExecutionSummary,
+    observed: ObservedPaymentState[]
+  ): ReconciliationDiffResult {
+    return generateReconciliationDiff(expected, observed);
+  }
+}

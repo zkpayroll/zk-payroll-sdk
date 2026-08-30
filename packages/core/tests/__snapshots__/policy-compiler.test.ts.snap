@@ -1,0 +1,56 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`compilePayrollPolicy — minimal policy compiles successfully and matches the locked snapshot 1`] = `
+{
+  "assetId": "native",
+  "audit": {
+    "allowedViewerRoles": [],
+    "auditRequired": false,
+    "retentionDays": 0,
+  },
+  "capacity": {
+    "maxBatchSize": 1,
+    "maxPerRecipientPayout": "1",
+    "maxTotalPayout": "1",
+  },
+  "policyId": "minimal",
+  "reserve": {
+    "minReserveBalance": "0",
+    "strict": true,
+  },
+  "schemaVersion": 1,
+  "settlement": {
+    "maxOpenSeconds": 60,
+    "minDelaySeconds": 0,
+  },
+}
+`;
+
+exports[`compilePayrollPolicy — strict policy compiles successfully and matches the locked snapshot 1`] = `
+{
+  "assetId": "native",
+  "audit": {
+    "allowedViewerRoles": [
+      "compliance_reviewer",
+      "payroll_admin",
+    ],
+    "auditRequired": true,
+    "retentionDays": 2555,
+  },
+  "capacity": {
+    "maxBatchSize": 250,
+    "maxPerRecipientPayout": "250000000000",
+    "maxTotalPayout": "10000000000000",
+  },
+  "policyId": "strict-production",
+  "reserve": {
+    "minReserveBalance": "5000000000000",
+    "strict": true,
+  },
+  "schemaVersion": 1,
+  "settlement": {
+    "maxOpenSeconds": 86400,
+    "minDelaySeconds": 3600,
+  },
+}
+`;

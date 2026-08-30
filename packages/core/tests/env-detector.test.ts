@@ -19,10 +19,11 @@ describe("Environment Capability Detector", () => {
       expect(typeof env.hasCrypto).toBe("boolean");
     });
 
-    it("detects Node.js environment in test runner", () => {
+    it("detects the current runtime environment in the test runner", () => {
       const env = detectEnvironment();
-      // Jest runs in Node.js
-      expect(env.environment).toBe("node");
+      // Node's jest reports "node"; the jsdom-based browser config reports "browser".
+      const inBrowser = typeof window !== "undefined" && typeof window.document !== "undefined";
+      expect(env.environment).toBe(inBrowser ? "browser" : "node");
     });
 
     it("Node.js has rpc_call capability", () => {
@@ -62,7 +63,16 @@ describe("Environment Capability Detector", () => {
     });
 
     it("returns supported=false with missing capabilities", () => {
-      const result = canRunOperation("connectWallet");
+      // Deterministic regardless of the test environment: the jsdom browser
+      // config advertises wallet_connection, so a Node-like environment is
+      // supplied to assert the missing-capability path.
+      const result = canRunOperation("connectWallet", {
+        environment: "node",
+        capabilities: new Set(["rpc_call", "file_system"]),
+        hasWalletSupport: false,
+        hasWasm: false,
+        hasCrypto: false,
+      });
       expect(result.supported).toBe(false);
       expect(result.missing).toContain("wallet_connection");
     });

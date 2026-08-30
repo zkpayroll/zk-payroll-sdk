@@ -37,7 +37,7 @@ function u64ScVal(value: bigint): xdr.ScVal {
 }
 
 function bytesScVal(hex: string): xdr.ScVal {
-  return nativeToScVal(Buffer.from(hex, "hex"), { type: "bytes" });
+  return xdr.ScVal.scvBytes(Buffer.from(hex, "hex"));
 }
 
 function symbolScVal(name: string): xdr.ScVal {

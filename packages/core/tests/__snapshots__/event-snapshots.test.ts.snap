@@ -1,0 +1,173 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Event Schema Snapshots Dispute Event Snapshots snaps all dispute events consistently 1`] = `
+[
+  {
+    "category": "payment_mismatch",
+    "status": "opened",
+  },
+  {
+    "category": "payment_mismatch",
+    "status": "updated",
+  },
+  {
+    "category": "payment_mismatch",
+    "status": "resolved",
+  },
+  {
+    "category": "state_inconsistency",
+    "status": "appealed",
+  },
+  {
+    "category": "payment_mismatch",
+    "status": "closed",
+  },
+]
+`;
+
+exports[`Event Schema Snapshots Payroll Event Snapshots snaps all payroll events consistently 1`] = `
+[
+  {
+    "data": {
+      "batch_id": "batch_2024_01",
+      "employee_count": 100,
+      "employer": "GEMPLOYER1234567890abcdefghijklmn",
+    },
+    "eventIndex": 0,
+    "eventName": "registered",
+    "ledgerSeq": 50000,
+    "txHash": "0x0000000000000000000000000000000000000000000000000000000000000001",
+  },
+  {
+    "data": {
+      "batch_id": "batch_2024_01_updated",
+      "employer": "GEMPLOYER1234567890abcdefghijklmn",
+    },
+    "eventIndex": 1,
+    "eventName": "registry_updated",
+    "ledgerSeq": 50000,
+    "txHash": "0x0000000000000000000000000000000000000000000000000000000000000001",
+  },
+  {
+    "data": {
+      "commitment_hash": "0x0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+      "employee_count": 100,
+      "employer": "GEMPLOYER1234567890abcdefghijklmn",
+    },
+    "eventIndex": 2,
+    "eventName": "committed",
+    "ledgerSeq": 50000,
+    "txHash": "0x0000000000000000000000000000000000000000000000000000000000000002",
+  },
+  {
+    "data": {
+      "employee_index": 2,
+      "employer": "GEMPLOYER1234567890abcdefghijklmn",
+      "revealed_salary": 5000000000n,
+    },
+    "eventIndex": 3,
+    "eventName": "salary_revealed",
+    "ledgerSeq": 50000,
+    "txHash": "0x0000000000000000000000000000000000000000000000000000000000000003",
+  },
+  {
+    "data": {
+      "amount": 5000000000n,
+      "asset": "native",
+      "employer": "GEMPLOYER1234567890abcdefghijklmn",
+      "recipient": "GRECIPIENT1111111111111111111111",
+      "tx_hash": "0xpaymenttxhash",
+    },
+    "eventIndex": 4,
+    "eventName": "payment_executed",
+    "ledgerSeq": 50000,
+    "txHash": "0x0000000000000000000000000000000000000000000000000000000000000004",
+  },
+  {
+    "data": {
+      "amount": 3000000000n,
+      "asset": "native",
+      "employer": "GEMPLOYER1234567890abcdefghijklmn",
+      "execute_at": 1700086400,
+      "memo": "scheduled_payment_memo",
+      "recipient": "GRECIPIENT2222222222222222222222",
+    },
+    "eventIndex": 5,
+    "eventName": "payment_scheduled",
+    "ledgerSeq": 50000,
+    "txHash": "0x0000000000000000000000000000000000000000000000000000000000000005",
+  },
+  {
+    "data": {
+      "employer": "GEMPLOYER1234567890abcdefghijklmn",
+      "payment_id": 1,
+    },
+    "eventIndex": 6,
+    "eventName": "payment_cancelled",
+    "ledgerSeq": 50000,
+    "txHash": "0x0000000000000000000000000000000000000000000000000000000000000006",
+  },
+]
+`;
+
+exports[`Event Schema Snapshots Treasury Event Snapshots snaps all treasury events consistently 1`] = `
+[
+  {
+    "eventName": "reservation_created",
+    "keys": [
+      "amount",
+      "asset",
+      "created_at",
+      "employer",
+      "event_at",
+      "expires_at",
+      "reservation_id",
+      "schema_version",
+      "tx_hash",
+    ],
+  },
+  {
+    "eventName": "reservation_released",
+    "keys": [
+      "asset",
+      "created_at",
+      "employer",
+      "event_at",
+      "reason",
+      "released_amount",
+      "reservation_id",
+      "schema_version",
+      "tx_hash",
+    ],
+  },
+  {
+    "eventName": "reservation_finalized",
+    "keys": [
+      "asset",
+      "created_at",
+      "employer",
+      "event_at",
+      "execution_summary",
+      "remaining_amount",
+      "reservation_id",
+      "schema_version",
+      "tx_hash",
+      "used_amount",
+    ],
+  },
+  {
+    "eventName": "reservation_expired",
+    "keys": [
+      "asset",
+      "auto_returned",
+      "created_at",
+      "employer",
+      "event_at",
+      "expired_at",
+      "remaining_balance",
+      "reservation_id",
+      "schema_version",
+    ],
+  },
+]
+`;

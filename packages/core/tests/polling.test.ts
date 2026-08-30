@@ -106,6 +106,25 @@ describe("pollTransaction", () => {
     await expect(promise).rejects.toThrow("cancelled");
   });
 
+  it("stops making requests after cancellation instead of continuing to poll", async () => {
+    const server = createMockServer([NOT_FOUND_RESPONSE]);
+    const controller = new AbortController();
+
+    const promise = pollTransaction(server, "tx_hash_cancel", {
+      intervalMs: 10,
+      signal: controller.signal,
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 15)); // let the first poll land
+    controller.abort();
+    await expect(promise).rejects.toThrow("cancelled");
+
+    const callsAtCancellation = (server.getTransaction as jest.Mock).mock.calls.length;
+    await new Promise((resolve) => setTimeout(resolve, 100)); // well past several more intervals
+
+    expect(server.getTransaction).toHaveBeenCalledTimes(callsAtCancellation);
+  });
+
   it("propagates RPC errors", async () => {
     const server = {
       getTransaction: jest.fn().mockRejectedValue(new Error("RPC Network failure")),

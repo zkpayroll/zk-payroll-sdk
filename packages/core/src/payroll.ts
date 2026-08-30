@@ -12,6 +12,26 @@ import { createPayrollProgressEvent } from "./progress";
 import { assertValidPayrollWitness } from "./crypto/proofInputSanitizer";
 import { iterateBatches } from "./batch/paginate";
 import type { BatchPayload } from "./batch/BatchPayloadBuilder";
+import {
+  createPayrollReceipt,
+  verifyPayrollReceipt,
+  assertValidPayrollReceipt,
+} from "./receipts/receiptVerifier";
+import type {
+  PayrollReceipt,
+  ReceiptVerificationOptions,
+  ReceiptVerificationResult,
+  CreatePayrollReceiptParams,
+} from "./receipts/types";
+
+import {
+  filterActiveRuns,
+  filterArchivedRuns,
+  filterDisputedRuns,
+  filterFinalizedRuns,
+  filterHeldRuns,
+  PayrollRunItem,
+} from "./archive";
 
 export interface Transaction {
   amount: bigint;
@@ -227,6 +247,31 @@ export class PayrollService {
     return results;
   }
 
+  /** Filter archived, disputed, and held runs out of active operational views. */
+  filterActivePayrollRuns<T extends PayrollRunItem>(runs: T[]): T[] {
+    return filterActiveRuns(runs);
+  }
+
+  /** Filter safely archived runs (excluding disputed or held runs). */
+  filterArchivedPayrollRuns<T extends PayrollRunItem>(runs: T[]): T[] {
+    return filterArchivedRuns(runs);
+  }
+
+  /** Filter disputed payroll runs. */
+  filterDisputedPayrollRuns<T extends PayrollRunItem>(runs: T[]): T[] {
+    return filterDisputedRuns(runs);
+  }
+
+  /** Filter finalized payroll runs free of disputes or holds. */
+  filterFinalizedPayrollRuns<T extends PayrollRunItem>(runs: T[]): T[] {
+    return filterFinalizedRuns(runs);
+  }
+
+  /** Filter held payroll runs. */
+  filterHeldPayrollRuns<T extends PayrollRunItem>(runs: T[]): T[] {
+    return filterHeldRuns(runs);
+  }
+
   private validatePaymentParams(params: PaymentParams): void {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { PayrollValidation } = require("./core/validation");
@@ -234,12 +279,84 @@ export class PayrollService {
     if (!result.isValid) {
       // Map to backward-compatible PayrollError
       const firstError = result.errors[0];
-      let code = 0;
+      let code: number | string = 0;
       if (firstError.field === "recipient") code = PayrollServiceErrorCode.INVALID_RECIPIENT;
       else if (firstError.field === "amount") code = PayrollServiceErrorCode.INVALID_AMOUNT;
       else if (firstError.field === "asset") code = PayrollServiceErrorCode.INVALID_ASSET;
 
       throw new PayrollError(firstError.message, code);
     }
+  }
+
+  /**
+   * Generates a verifiable PayrollReceipt record for a completed payment.
+   * Sensitive values remain safely formatted or redacted.
+   */
+  createReceipt(
+    params: PaymentParams,
+    result: PaymentResult,
+    payrollId: string = `pr_${Date.now()}`,
+    overrides: Partial<CreatePayrollReceiptParams> = {}
+  ): PayrollReceipt {
+    return createPayrollReceipt({
+      payrollId,
+      settlementStatus: "settled",
+      transactionReference: {
+        txHash: result.txHash,
+        network: this.network,
+        confirmedAt: Date.now(),
+      },
+      totalAmount: params.amount,
+      currency: params.asset,
+      recipientCount: 1,
+      metadata: {
+        recipient: params.recipient,
+        asset: params.asset,
+        idempotencyKey: params.idempotencyKey,
+      },
+      ...overrides,
+    });
+  }
+
+  /**
+   * Verifies a payroll receipt against defined integrity, settlement,
+   * transaction reference, and metadata digest constraints.
+   */
+  verifyReceipt(
+    receipt: PayrollReceipt | unknown,
+    options?: ReceiptVerificationOptions
+  ): ReceiptVerificationResult {
+    return verifyPayrollReceipt(receipt, options);
+  }
+
+  /**
+   * Asserts that a payroll receipt is valid, throwing `PayrollReceiptVerificationError`
+   * if verification fails.
+   */
+  assertValidReceipt(
+    receipt: PayrollReceipt | unknown,
+    options?: ReceiptVerificationOptions
+  ): PayrollReceipt {
+    return assertValidPayrollReceipt(receipt, options);
+  }
+
+  /**
+   * Static helper: verifies a payroll receipt.
+   */
+  static verifyReceipt(
+    receipt: PayrollReceipt | unknown,
+    options?: ReceiptVerificationOptions
+  ): ReceiptVerificationResult {
+    return verifyPayrollReceipt(receipt, options);
+  }
+
+  /**
+   * Static helper: asserts validity of a payroll receipt.
+   */
+  static assertValidReceipt(
+    receipt: PayrollReceipt | unknown,
+    options?: ReceiptVerificationOptions
+  ): PayrollReceipt {
+    return assertValidPayrollReceipt(receipt, options);
   }
 }

@@ -58,17 +58,13 @@ function isValidContractId(id: string): boolean {
  * @param config - Partial configuration object to validate.
  * @returns ConfigValidationResult containing boolean `isValid` and error details.
  */
-export function validateConfig(
-  config?: Partial<ClientConfig>,
-): ConfigValidationResult {
+export function validateConfig(config?: Partial<ClientConfig>): ConfigValidationResult {
   const errors: ConfigValidationErrorDetail[] = [];
 
   if (!config) {
     return {
       isValid: false,
-      errors: [
-        { field: "config", message: "Configuration object is required." },
-      ],
+      errors: [{ field: "config", message: "Configuration object is required." }],
     };
   }
 
@@ -108,13 +104,11 @@ export function validateConfig(
   }
 
   // 3. Validate contract ID / contract IDs
-  const hasContractId = Boolean(
-    config.contractId && config.contractId.trim() !== "",
-  );
+  const hasContractId = Boolean(config.contractId && config.contractId.trim() !== "");
   const hasContractIds = Boolean(
     config.contractIds &&
     typeof config.contractIds === "object" &&
-    Object.keys(config.contractIds).length > 0,
+    Object.keys(config.contractIds).length > 0
   );
 
   if (!hasContractId && !hasContractIds) {
@@ -145,19 +139,13 @@ export function validateConfig(
 
   // 4. Validate proof artifact locations
   if (config.proofConfig) {
-    if (
-      !config.proofConfig.wasmUrl ||
-      config.proofConfig.wasmUrl.trim() === ""
-    ) {
+    if (!config.proofConfig.wasmUrl || config.proofConfig.wasmUrl.trim() === "") {
       errors.push({
         field: "proofConfig.wasmUrl",
         message: "proofConfig.wasmUrl is required.",
       });
     }
-    if (
-      !config.proofConfig.zkeyUrl ||
-      config.proofConfig.zkeyUrl.trim() === ""
-    ) {
+    if (!config.proofConfig.zkeyUrl || config.proofConfig.zkeyUrl.trim() === "") {
       errors.push({
         field: "proofConfig.zkeyUrl",
         message: "proofConfig.zkeyUrl is required.",
@@ -167,13 +155,9 @@ export function validateConfig(
 
   // 5. Validate retry policy
   if (config.retryPolicy) {
-    const { maxAttempts, initialDelayMs, maxDelayMs, backoffFactor } =
-      config.retryPolicy;
+    const { maxAttempts, initialDelayMs, maxDelayMs, backoffFactor } = config.retryPolicy;
 
-    if (
-      maxAttempts !== undefined &&
-      (typeof maxAttempts !== "number" || maxAttempts < 1)
-    ) {
+    if (maxAttempts !== undefined && (typeof maxAttempts !== "number" || maxAttempts < 1)) {
       errors.push({
         field: "retryPolicy.maxAttempts",
         message: "retryPolicy.maxAttempts must be at least 1.",
@@ -188,30 +172,19 @@ export function validateConfig(
         message: "retryPolicy.initialDelayMs cannot be negative.",
       });
     }
-    if (
-      maxDelayMs !== undefined &&
-      (typeof maxDelayMs !== "number" || maxDelayMs < 0)
-    ) {
+    if (maxDelayMs !== undefined && (typeof maxDelayMs !== "number" || maxDelayMs < 0)) {
       errors.push({
         field: "retryPolicy.maxDelayMs",
         message: "retryPolicy.maxDelayMs cannot be negative.",
       });
     }
-    if (
-      initialDelayMs !== undefined &&
-      maxDelayMs !== undefined &&
-      maxDelayMs < initialDelayMs
-    ) {
+    if (initialDelayMs !== undefined && maxDelayMs !== undefined && maxDelayMs < initialDelayMs) {
       errors.push({
         field: "retryPolicy.maxDelayMs",
-        message:
-          "retryPolicy.maxDelayMs must be greater than or equal to initialDelayMs.",
+        message: "retryPolicy.maxDelayMs must be greater than or equal to initialDelayMs.",
       });
     }
-    if (
-      backoffFactor !== undefined &&
-      (typeof backoffFactor !== "number" || backoffFactor < 1)
-    ) {
+    if (backoffFactor !== undefined && (typeof backoffFactor !== "number" || backoffFactor < 1)) {
       errors.push({
         field: "retryPolicy.backoffFactor",
         message: "retryPolicy.backoffFactor must be at least 1.",
@@ -221,10 +194,7 @@ export function validateConfig(
 
   // 6. Validate feature flags
   if (config.featureFlags !== undefined) {
-    if (
-      typeof config.featureFlags !== "object" ||
-      config.featureFlags === null
-    ) {
+    if (typeof config.featureFlags !== "object" || config.featureFlags === null) {
       errors.push({
         field: "featureFlags",
         message: "featureFlags must be an object.",
@@ -254,9 +224,7 @@ export function validateConfig(
  * @param config - Partial configuration object.
  * @throws {ValidationError} If validation fails.
  */
-export function assertValidConfig(
-  config?: Partial<ClientConfig>,
-): ClientConfig {
+export function assertValidConfig(config?: Partial<ClientConfig>): ClientConfig {
   const result = validateConfig(config);
   if (!result.isValid) {
     const errorMessages = result.errors.map((e) => `- ${e.message}`).join("\n");
@@ -265,7 +233,7 @@ export function assertValidConfig(
       `Configuration validation failed:\n${errorMessages}`,
       firstField,
       "CONFIG_VALIDATION_ERROR",
-      { errors: result.errors },
+      { errors: result.errors }
     );
   }
 
@@ -275,8 +243,7 @@ export function assertValidConfig(
     rpcUrl: config!.rpcUrl || effectiveUrl,
     network: config!.network,
     contractId:
-      config!.contractId ||
-      (config!.contractIds ? Object.values(config!.contractIds)[0] : ""),
+      config!.contractId || (config!.contractIds ? Object.values(config!.contractIds)[0] : ""),
     contractIds: config!.contractIds,
     adminKey: config!.adminKey,
     proofConfig: config!.proofConfig,
@@ -409,3 +376,160 @@ export const DEFAULT_CONFIG: ClientConfig = {
   network: "testnet",
   contractId: "",
 };
+
+/**
+ * Single deprecated field discovered while migrating a legacy config.
+ */
+export interface ConfigMigrationWarning {
+  /** The deprecated field name that was encountered. */
+  field: string;
+  /** Human-readable explanation of what changed and what to use instead. */
+  message: string;
+}
+
+/**
+ * Result of migrating a legacy config object into the current schema.
+ */
+export interface ConfigMigrationResult {
+  /** Best-effort config conforming to the current {@link ClientConfig} schema. */
+  config: ClientConfig;
+  /** Non-empty when deprecated fields were encountered and remapped. */
+  warnings: ConfigMigrationWarning[];
+  /** True when one or more deprecated fields were migrated. */
+  migrated: boolean;
+  /** Validation outcome of the migrated config. */
+  validation: ConfigValidationResult;
+}
+
+/**
+ * Map of deprecated legacy field names to their current replacement.
+ *
+ * Integrators who built against older SDK versions referenced these names.
+ * The migration helper remaps them and emits a warning so the change is
+ * never silent.
+ */
+const DEPRECATED_CONFIG_FIELDS: Record<string, { target: keyof ClientConfig; message: string }> = {
+  nodeUrl: {
+    target: "networkUrl",
+    message: "`nodeUrl` has been renamed to `networkUrl`.",
+  },
+  serverUrl: {
+    target: "networkUrl",
+    message: "`serverUrl` has been renamed to `networkUrl`.",
+  },
+  adminSecret: {
+    target: "adminKey",
+    message: "`adminSecret` has been renamed to `adminKey`.",
+  },
+  signingKey: {
+    target: "adminKey",
+    message: "`signingKey` has been renamed to `adminKey`.",
+  },
+  contractAddress: {
+    target: "contractId",
+    message: "`contractAddress` has been renamed to `contractId`.",
+  },
+};
+
+function buildClientConfig(source: Record<string, unknown>): ClientConfig {
+  return {
+    networkUrl: (source.networkUrl as string) ?? "",
+    rpcUrl: (source.rpcUrl as string) ?? (source.networkUrl as string) ?? "",
+    network: (source.network as string) ?? undefined,
+    contractId: (source.contractId as string) ?? "",
+    contractIds: source.contractIds as Record<string, string> | undefined,
+    adminKey: (source.adminKey as string) ?? undefined,
+    proofConfig: source.proofConfig as ProofGeneratorConfig | undefined,
+    retryPolicy: source.retryPolicy as RetryPolicyConfig | undefined,
+    featureFlags: source.featureFlags as FeatureFlagsConfig | undefined,
+  };
+}
+
+/**
+ * Inspects a legacy config object and reports any deprecated fields without
+ * mutating or rebuilding the config.
+ *
+ * @example
+ * const warnings = detectDeprecatedConfigFields(oldConfig);
+ * for (const w of warnings) console.warn(`${w.field}: ${w.message}`);
+ */
+export function detectDeprecatedConfigFields(
+  input: Record<string, unknown>
+): ConfigMigrationWarning[] {
+  const warnings: ConfigMigrationWarning[] = [];
+
+  for (const [deprecated, info] of Object.entries(DEPRECATED_CONFIG_FIELDS)) {
+    if (input[deprecated] !== undefined && input[deprecated] !== null) {
+      warnings.push({ field: deprecated, message: info.message });
+    }
+  }
+
+  if (input.networkUrl === undefined && input.rpcUrl !== undefined) {
+    warnings.push({
+      field: "rpcUrl",
+      message:
+        "`rpcUrl` is deprecated as the primary endpoint; `networkUrl` is now preferred (rpcUrl is still accepted).",
+    });
+  }
+
+  return warnings;
+}
+
+/**
+ * Migrates an older SDK config object to the current {@link ClientConfig}
+ * schema, remapping deprecated fields and collecting warnings for each one.
+ *
+ * The helper is backward-compatible: configs that already use the current
+ * schema pass through unchanged (with an empty warning list). Deprecated
+ * fields are remapped only when the replacement is not already set, so an
+ * explicit current value always wins over a legacy alias.
+ *
+ * @param input - A legacy or current config object.
+ * @returns The migrated config plus any deprecation warnings.
+ *
+ * @example
+ * const { config, warnings } = migrateConfig(oldConfig);
+ * if (warnings.length) console.warn("Config migrated:", warnings);
+ */
+export function migrateConfig(input: Record<string, unknown>): ConfigMigrationResult {
+  const source: Record<string, unknown> = { ...input };
+  const result: Record<string, unknown> = {};
+  const warnings: ConfigMigrationWarning[] = [];
+
+  // Copy current-schema fields first so an explicit value always wins over
+  // a legacy alias remapped below.
+  for (const [key, value] of Object.entries(source)) {
+    if (!(key in DEPRECATED_CONFIG_FIELDS)) {
+      result[key] = value;
+    }
+  }
+
+  // Remap deprecated aliases only when the replacement is not already set.
+  for (const [deprecated, info] of Object.entries(DEPRECATED_CONFIG_FIELDS)) {
+    if (source[deprecated] !== undefined && source[deprecated] !== null) {
+      if (result[info.target] === undefined) {
+        result[info.target] = source[deprecated];
+      }
+      warnings.push({ field: deprecated, message: info.message });
+    }
+  }
+
+  if (result.networkUrl === undefined && result.rpcUrl !== undefined) {
+    result.networkUrl = result.rpcUrl;
+    warnings.push({
+      field: "rpcUrl",
+      message:
+        "`rpcUrl` is deprecated as the primary endpoint; `networkUrl` is now preferred (rpcUrl is still accepted).",
+    });
+  }
+
+  const validation = validateConfig(result as Partial<ClientConfig>);
+  const config = buildClientConfig(result);
+
+  return {
+    config,
+    warnings,
+    migrated: warnings.length > 0,
+    validation,
+  };
+}
