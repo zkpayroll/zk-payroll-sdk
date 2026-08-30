@@ -10,80 +10,17 @@ npm install @zk-payroll/sdk
 
 ## Usage
 
-The SDK provides configuration presets for common environments to simplify initialization:
-
 ```typescript
-import { PayrollService, ConfigPresets } from "@zk-payroll/sdk";
-
-// Initialize config for a specific environment
-const config = ConfigPresets.testnet()
-  .withContractId("CCONTRACT_ID...")
-  .withProofConfig({
-    wasmUrl: "https://cdn.example.com/payroll_circuit.wasm",
-    zkeyUrl: "https://cdn.example.com/payroll_circuit.zkey",
-  })
-  .build(); // Validates required fields
+import { PayrollService, DEFAULT_CONFIG } from "@zk-payroll/sdk";
 
 // Initialize service
-const service = new PayrollService(config);
+const service = new PayrollService(DEFAULT_CONFIG);
 
 // Process a private payment
 await service.processPayment(
   "G...", // Recipient Stellar address
   1000n   // Amount
 );
-```
-
-### Configuration & Schema Validation
-
-The SDK enforces strict schema validation for all configuration parameters (`network`, `rpcUrl`/`networkUrl`, `contractId`/`contractIds`, `proofConfig`, `retryPolicy`, and `featureFlags`) before operations run.
-
-#### Minimal Valid Config Example
-```typescript
-import { ConfigPresets, validateConfig, assertValidConfig } from "@zk-payroll/sdk";
-
-// Using ConfigPresets for a minimal valid setup:
-const config = ConfigPresets.testnet()
-  .withContractId("CAKZGMMMJOHMSZ5V3DYKCUDNTIWBG57MAMFJDSVICNWUNVXLX6EZN3NC")
-  .build();
-
-// Direct schema validation utility
-const validation = validateConfig(config);
-if (!validation.isValid) {
-  console.error("Config errors:", validation.errors);
-}
-
-// Asserts configuration validity or throws structured ValidationError
-assertValidConfig(config);
-```
-
-#### Invalid Configuration Handling
-The `ConfigBuilder` and `assertValidConfig` fail fast with structured `ValidationError` (`code: CONFIG_VALIDATION_ERROR`) if required fields are missing or malformed:
-
-```typescript
-// Throws ValidationError: "Configuration validation failed:\n- contractId is malformed: invalid_id"
-ConfigPresets.testnet().withContractId("invalid_id").build();
-```
-
-## Idempotent retries
-
-For safe retries, pass an `idempotencyKey` when processing a payment.
-
-```typescript
-import { PayrollService, createPaymentIdempotencyKey } from "@zk-payroll/sdk";
-
-const idempotencyKey = createPaymentIdempotencyKey({
-  recipient: "G...",
-  amount: 1000n,
-  asset: "native",
-});
-
-await service.processPayment({
-  recipient: "G...",
-  amount: 1000n,
-  asset: "native",
-  idempotencyKey,
-});
 ```
 
 ## Features
@@ -93,87 +30,6 @@ await service.processPayment({
 - **Caching**: Built-in caching for proofs and circuit artifacts.
 - **Error Handling**: Robust error typing and management.
 - **Mock Testing Environment**: Comprehensive testing utilities for unit tests without a live network.
-- **Setup Checklist Generator**: Generates a pre-payroll integration checklist covering config, network, contracts, treasury, proofs, wallet, and test fixtures.
-
-## Browser and Backend Usage
-
-Use this section to pick the right environment before you wire the SDK into a product. The package supports **browsers** (wallets, dashboards) and **Node.js backends** (workers, automation), but secrets and signing paths differ.
-
-### Quick matrix
-
-| Concern | Browser (frontend) | Backend (Node worker / service) |
-|--------|--------------------|----------------------------------|
-| **Wallet signing** | User wallets (Freighter, Albedo) via adapters | Server-held keys from a secrets manager — **not** browser extensions |
-| **Proof generation** | On-device with snarkjs; prefer [Web Workers](./docs/WORKER_PROOF_GENERATION.md) so the UI stays responsive | On the worker/process for batch payroll; good for heavy or unattended jobs |
-| **Secrets / witnesses** | Never embed Stellar secret keys (`S…`) or long-lived note secrets in frontend code, env shipped to the client, or `localStorage` | Load signer material from env / KMS / secrets manager; never log full witnesses |
-| **Next.js / SSR** | Import SDK only in Client Components (`"use client"`) | Do not import the browser wallet path in Server Components or Route Handlers for UI signing |
-| **Best fit** | Employee/employer dashboards, interactive connect + sign | Payroll automation, queues, retries, multi-payment workers |
-
-Supported runtime versions: [Runtime Support Matrix](./docs/SUPPORT_MATRIX.md).
-
-### Browser (short guidance)
-
-Interactive apps should connect a wallet, generate or request proofs without blocking the main thread when possible, and keep sensitive material off the client bundle.
-
-```typescript
-// Frontend / Next.js Client Component — "use client"
-import { FreighterAdapter } from "@zk-payroll/sdk";
-
-const wallet = new FreighterAdapter();
-if (wallet.isAvailable()) {
-  const publicKey = await wallet.connect();
-  // Build XDR with public flows; sign via the adapter — never with a hardcoded secret key
-  // const signed = await wallet.signTransaction(xdr);
-}
-```
-
-- Prefer [Worker-based proof generation](./docs/WORKER_PROOF_GENERATION.md) for multi-second circuit work.
-- For App Router apps, follow [Next.js Integration](./docs/NEXTJS_INTEGRATION.md) (client boundary rules).
-- Wallet details: [Wallet Adapters](./docs/WALLET_ADAPTERS.md).
-
-### Backend (short guidance)
-
-Backend services own **automation**: queue jobs, generate proofs on the server, sign with keys that never leave the host, and submit to RPC.
-
-```typescript
-// Node worker — secrets from environment / secrets manager only
-import { PayrollService, ConfigPresets } from "@zk-payroll/sdk";
-
-const config = ConfigPresets.testnet()
-  .withContractId(process.env.CONTRACT_ID!)
-  .withProofConfig({
-    wasmUrl: process.env.WASM_URL!,
-    zkeyUrl: process.env.ZKEY_URL!,
-  })
-  .build();
-
-const service = new PayrollService(config);
-// Signer secret: process.env / KMS — never commit S… keys or put them in browser env
-```
-
-- End-to-end worker prototype: [Backend Worker Quickstart](./docs/BACKEND_WORKER_QUICKSTART.md).
-- Production patterns (config, secret handling, retries): [Backend Integration Guide](./docs/BACKEND_INTEGRATION_GUIDE.md).
-
-### Secret handling (both environments)
-
-| Do | Don't |
-|----|--------|
-| Keep note `secret` / nullifier inputs in memory only as long as needed for proving | Log witnesses, proofs with private inputs, or secret keys |
-| Use HTTPS CDN or authenticated artifact hosts for `.wasm` / `.zkey` | Ship production signing keys in frontend env (`NEXT_PUBLIC_*`, Vite `VITE_*`, etc.) |
-| Rotate and scope backend signer keys; prefer HSM/KMS where possible | Reuse a single hot key across untrusted multi-tenant frontends |
-
-Proof APIs and witness shapes: [ZK Proof Generation](./docs/ZK_PROOF_GENERATION.md).
-
-### Related docs
-
-- [Browser and Server Usage Guide](./docs/BROWSER_AND_SERVER_USAGE.md)
-- [Runtime Support Matrix](./docs/SUPPORT_MATRIX.md)
-- [Wallet Adapters](./docs/WALLET_ADAPTERS.md)
-- [ZK Proof Generation](./docs/ZK_PROOF_GENERATION.md)
-- [Worker Proof Generation](./docs/WORKER_PROOF_GENERATION.md)
-- [Next.js Integration](./docs/NEXTJS_INTEGRATION.md)
-- [Backend Worker Quickstart](./docs/BACKEND_WORKER_QUICKSTART.md)
-- [Backend Integration Guide](./docs/BACKEND_INTEGRATION_GUIDE.md)
 
 ## Zero-Knowledge Proof Generation
 
@@ -206,10 +62,6 @@ const proof = await generator.generateProof(witness);
 
 See [ZK Proof Generation Guide](./docs/ZK_PROOF_GENERATION.md) for detailed documentation.
 
-## Backend Worker Quickstart
-
-Teams building internal payroll automation workers can follow the [Backend Worker Quickstart](./docs/BACKEND_WORKER_QUICKSTART.md) for a practical end-to-end prototype covering setup, polling, retries, and event handling.
-
 ## Testing
 
 The SDK includes a powerful mock testing environment for writing unit tests:
@@ -226,45 +78,6 @@ const txHash = await mockContract.deposit(1000n);
 
 See the [Testing Guide](docs/TESTING.md) for complete documentation.
 
-## Examples
-
-Runnable examples covering two core use cases are in the [`examples/`](./examples/) directory.
-Each example works out of the box in demo mode (no Stellar node required) and switches to a
-live network automatically when the relevant environment variables are set.
-
-### Employee Onboarding
-
-[`examples/employee-onboarding.ts`](./examples/employee-onboarding.ts)
-
-Shows how to onboard a new employee: verify they have no existing payroll account, fund it
-with an initial allocation, and confirm the deposit was recorded.
-
-```bash
-npx tsx examples/employee-onboarding.ts
-```
-
-### Payroll Execution
-
-[`examples/payroll-execution.ts`](./examples/payroll-execution.ts)
-
-Shows how to run a full private payroll batch: configure `SnarkjsProofGenerator` with circuit
-artifacts and caching, wire up `PayrollService`, process multiple payments, and report results.
-
-```bash
-npx tsx examples/payroll-execution.ts
-```
-
-### Configuration
-
-Copy the environment variable template and fill in your values to run against a live network:
-
-```bash
-cp examples/.env.example examples/.env
-# edit examples/.env
-source examples/.env && npx tsx examples/payroll-execution.ts
-```
-
-See [`examples/.env.example`](./examples/.env.example) for all available variables.
 ## Typed Contract Clients
 
 The SDK provides typed client wrappers for the core ZK Payroll contracts. Each client exposes typed methods that encode arguments and decode responses automatically.
@@ -323,54 +136,6 @@ const isValid = await client.verifyCommitment("G...", "G...", 1n, proof, signer)
 await client.revealSalary("G...", "G...", 1n, 1000n, signer);
 ```
 
-## Payload Normalization
-
-Consumers rarely pass payroll data in exactly one shape (different key names, extra whitespace, comma-formatted amounts, mixed-case addresses). `normalizePayrollPayload` converts any of these variations into the SDK's canonical entry shape before validation, proof preparation, or transaction building:
-
-```typescript
-import { normalizePayrollPayload } from "@zk-payroll/sdk";
-
-const { entries, issues } = normalizePayrollPayload({
-  entries: [
-    { employee_id: "  E-42  ", wallet: "gabc...", asset: "xlm", amount: "1,000.50" },
-  ],
-});
-
-// entries[0] => { employeeId: "E-42", walletAddress: "GABC...", asset: "native", amount: "1000.50", source: {...} }
-
-// Required fields (employeeId, walletAddress, asset, amount) are never silently dropped —
-// missing/unparseable data shows up as an indexed issue instead, with the original
-// input still reachable via entries[issue.index].source.raw for clear validation errors.
-if (issues.length > 0) {
-  console.log(issues);
-}
-```
-
-See the [Payload Normalization Guide](./docs/PAYLOAD_NORMALIZATION.md) for the full field-by-field normalization rules.
-
-## Batch Payload Validation
-
-The SDK automatically validates batch payroll payloads before submitting them to contracts, preventing empty batches, duplicate recipients, and invalid amounts:
-
-```typescript
-import { BatchPayloadBuilder, validateBatchPayload, PayrollValidation } from "@zk-payroll/sdk";
-
-const entries = [
-  { recipient: "GABC...", amount: 1000n, asset: "native" },
-  { recipient: "GDEF...", amount: 2000n, asset: "native" },
-];
-
-// Validate entries before building
-const errors = validateBatchPayload(entries);
-if (errors.length === 0) {
-  const payload = new BatchPayloadBuilder().addMany(entries).build();
-  // Safe to submit payload.entries
-} else {
-  // Structured errors returned for UI display (code, message, field, index)
-  console.log(errors);
-}
-```
-
 ### ProofVerifierClient
 
 ```typescript
@@ -424,283 +189,63 @@ await client.cancel(scheduled.paymentId, signer);
 const payments = await client.getPendingPayments("G...", 0n, 20, signer);
 ```
 
-## Environment Sanity Checker
+## Environment Variables
 
-To catch configuration integration problems (such as misconfigured RPC endpoints, invalid contract IDs, or missing/unreachable circuit artifacts) before starting runtime work, the SDK provides the `validateEnvironment` helper:
+The SDK and its examples read configuration from environment variables so that
+contracts, RPC endpoints, and circuit artifacts can be swapped per environment
+without code changes. Never commit secrets (private keys) to version control.
 
-```typescript
-import { validateEnvironment } from "@zk-payroll/sdk";
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `STELLAR_RPC_URL` / `SOROBAN_RPC_URL` | No | `https://soroban-testnet.stellar.org` | Soroban RPC endpoint for contract calls |
+| `PAYROLL_CONTRACT_ID` / `CONTRACT_ID` | Yes for live calls | `""` | Deployed Payroll contract address (`C...`) |
+| `REGISTRY_CONTRACT_ID` | No | — | PayrollRegistry contract address |
+| `SALARY_COMMITMENT_CONTRACT_ID` | No | — | SalaryCommitment contract address |
+| `PROOF_VERIFIER_CONTRACT_ID` | No | — | ProofVerifier contract address |
+| `PAYMENT_EXECUTOR_CONTRACT_ID` | No | — | PaymentExecutor contract address |
+| `WASM_URL` | No* | — | URL or local path to the circuit `.wasm` artifact |
+| `ZKEY_URL` | No* | — | URL or local path to the proving key `.zkey` artifact |
+| `NETWORK_PASSPHRASE` / `STELLAR_NETWORK` | No | `Test SDF Network ; September 2015` | Stellar network passphrase (`testnet` / `mainnet`) |
+| `SIGNER_SECRET` / `STELLAR_SECRET_KEY` | No | — | Secret key for local signing (use only in local dev / tests) |
+| `ARTIFACT_CACHE_TTL` | No | `86400` | Cache TTL in seconds for proof artifacts |
 
-const clientConfig = {
-  networkUrl: "https://soroban-testnet.stellar.org",
-  contractId: "CCONTRACT_ID...",
-};
+\* Required when using `SnarkjsProofGenerator` for real proof generation.
+See [Setup Guide](./docs/setup.md) for `.env` examples and local quick-start.
 
-const proofConfig = {
-  wasmUrl: "https://cdn.example.com/payroll_circuit.wasm",
-  zkeyUrl: "https://cdn.example.com/payroll_circuit.zkey",
-};
-
-const result = await validateEnvironment(clientConfig, proofConfig);
-
-if (!result.isValid) {
-  console.error("Environment check failed!");
-  for (const diagnostic of result.diagnostics) {
-    if (diagnostic.status === "error") {
-      console.error(`- [${diagnostic.component}] ${diagnostic.message}`);
-    }
-  }
-} else {
-  console.log("Environment is ready!");
-}
-```
-
-### Diagnostic Result Structure
-
-`validateEnvironment` returns a `SanityCheckResult` containing:
-- `isValid: boolean` - `true` if all validations pass with no errors.
-- `diagnostics: DiagnosticEntry[]` - List of diagnostics for each checked component.
-
-Each `DiagnosticEntry` contains:
-- `component: "rpc" | "contract" | "artifacts"` - The checked component.
-- `status: "success" | "warning" | "error"` - The validation status.
-- `message: string` - Actionable diagnostic message explaining the result.
-- `error?: Error` - The caught error object, if any.
-- `details?: Record<string, unknown>` - Extra context (e.g. network passphrases or RPC response details).
-
-## Payroll Setup Checklist
-
-Before running payroll, use `generateSetupChecklist` to generate an integration checklist covering **config, network, contracts, treasury, proofs, wallet, and test fixtures**:
-
-```typescript
-import { generateSetupChecklist } from "@zk-payroll/sdk";
-
-const checklist = generateSetupChecklist(config, {
-  expectedNetworkPassphrase: "Test SDF Network ; September 2015",
-  rpcReachable: true,             // result of validateEnvironment(config)
-  networkPassphrase: "Test SDF Network ; September 2015",
-  contractDeployed: true,         // result of validateEnvironment(config)
-  treasury: { treasuryAddress: "G...", funded: true },
-  wallet: { name: "Freighter", isAvailable: true, isConnected: true, network: "testnet" },
-  testFixturesAvailable: true,
-});
-
-if (!checklist.isReady) {
-  for (const blocker of checklist.blockers) {
-    console.error(`[${blocker.category}] ${blocker.message} → ${blocker.remediation}`);
-  }
-}
-```
-
-Each check returns `pass`, `warn`, or `fail` with an actionable `remediation`.
-See the [Setup Checklist Guide](docs/SETUP_CHECKLIST.md) for full details.
-## Audit-Safe Debug Snapshot
-
-To troubleshoot issues without exposing private payroll data, capture an
-audit-safe snapshot of SDK configuration and runtime state:
-
-```typescript
-import { createDebugSnapshot } from "@zk-payroll/sdk";
-
-const { snapshot, redactedFieldCount, redactedKeys } = await createDebugSnapshot({
-  config: client.getConfig(),
-  state: { pendingPayments, draft, signerSecret: signer.secret() },
-});
-
-console.log(`Redacted ${redactedFieldCount} fields: ${redactedKeys.join(", ")}`);
-console.log(JSON.stringify(snapshot)); // safe to attach to a support ticket
-```
-
-The snapshot is always JSON-serializable (BigInt, dates, cycles handled),
-redacts sensitive payroll fields recursively, and carries an integrity hash
-verifiable via `verifyDebugSnapshot`. See the [Audit-Safe Debug Snapshot guide](docs/DEBUG_SNAPSHOT.md).
-## Network Request Timing
-
-To diagnose slow RPC or API paths, wrap your `rpc.Server` with `createTimedRpcServer` and read back the timing metadata — without changing any existing response behavior:
-
-```typescript
-import { rpc } from "@stellar/stellar-sdk";
-import { createTimedRpcServer } from "@zk-payroll/sdk";
-
-const server = createTimedRpcServer(new rpc.Server(rpcUrl));
-// Pass `server` to the SDK wherever it accepts an rpc.Server.
-
-// Existing behavior is unchanged.
-// ... run payroll operations ...
-
-const stats = server.getNetworkTimingStats();
-if (stats.byOperation.simulateTransaction?.avgDurationMs > 1500) {
-  console.warn("simulateTransaction is slow; consider a closer RPC endpoint");
-}
-```
-
-HTTP(S) artifact fetches can be timed per-request with `timeAxiosRequest` or
-globally (opt-in) with `installAxiosTiming`. Timing metadata is attached to
-responses as a non-enumerable symbol and never includes payloads or private
-payroll values. See the [Network Request Timing guide](docs/NETWORK_REQUEST_TIMING.md).
-
-## Multi-Asset Support
-
-The SDK provides a centralised `AssetRegistry` that maps asset identifiers to labels,
-decimal precision, and display behaviour. Applications can extend it with any custom
-Soroban token.
-
-```typescript
-import { AssetRegistry, formatAmount, parseAmount } from "@zk-payroll/sdk";
-
-// Use a built-in asset (native XLM, USDC, EUROC ship pre-registered)
-const xlm = AssetRegistry.getOrThrow("native");
-formatAmount(10_000_000n, xlm); // "1.0000000 XLM"
-
-// Register a custom Soroban token
-AssetRegistry.register({
-  id: "CTOKEN_CORP123",
-  symbol: "CORP",
-  label: "Corp Company Token",
-  decimals: 7,
-});
-
-const corp = AssetRegistry.getOrThrow("CTOKEN_CORP123");
-parseAmount("500.00 CORP", corp); // 3_500_000_000n
-```
-
-### Canonical amount normalization
-
-Before submitting any amount to a contract, batch builder, or commitment hash, normalize
-it into the asset's canonical smallest-unit `bigint`. `normalizeCanonicalAmount` accepts
-any of the loose shapes payroll data arrives in (`string`, `number`, `bigint`) and either
-an asset id string (resolved via the registry) or an `AssetMetadata` object:
-
-```typescript
-import {
-  normalizeCanonicalAmount,
-  tryNormalizeCanonicalAmount,
-  RoundingMode,
-} from "@zk-payroll/sdk";
-
-// Throwing variant — canonical { amount, decimals, assetSymbol, assetId, wasRounded, original }
-const { amount, assetSymbol, wasRounded } = normalizeCanonicalAmount(
-  "  $1,000.50 XLM  ", // formatted string with currency symbol + whitespace
-  "native",             // asset id resolved via AssetRegistry
-  { rounding: RoundingMode.HALF_UP }
-);
-// amount      => 10_005_000_000n (canonical stroops)
-// assetSymbol => "XLM"
-// wasRounded  => false  (input has 2 decimals, XLM has 7 — no rounding)
-
-// bigint inputs are already canonical (matches formatAmount) — no double-scaling
-normalizeCanonicalAmount(10_005_000_000n, "native").amount; // 10_005_000_000n
-
-// Non-throwing variant — discriminated { ok, value | error }
-const result = tryNormalizeCanonicalAmount(input, "USDC");
-if (!result.ok) {
-  console.warn(result.error.code, result.error.message);
-} else {
-  submit(result.value.amount);
-}
-```
-
-Use `normalizeCanonicalAmount` instead of manually scaling strings, so submissions always
-carry the canonical precision the contract expects.
-
-See the [Multi-Asset Guide](./docs/MULTI_ASSET.md) for the full API reference, isolation
-patterns for tests, and rules for extending the registry in production.
-
-## Employee Eligibility & Reason Codes
-
-The SDK includes a comprehensive, typed employee eligibility evaluation engine to inspect employee records before payroll resolution. It returns typed, machine-readable reason codes that make it easy for dashboards and backends to explain blocked recipients without exposing private payroll amounts.
-
-```typescript
-import {
-  evaluateEmployeeEligibility,
-  evaluateBatchEligibility,
-  filterEligibleEmployees,
-  formatEligibilityReport,
-  EligibilityReasonCode,
-  EmployeeRegistry,
-} from "@zk-payroll/sdk";
-
-// Single employee evaluation
-const result = evaluateEmployeeEligibility({
-  employeeId: "EMP-001",
-  recipient: "GA...",
-  salary: 5000000000n,
-  asset: "native",
-  status: "suspended",
-});
-
-if (!result.isEligible) {
-  console.log(result.primaryReasonCode); // "EMPLOYEE_SUSPENDED"
-  console.log(result.reasons[0].action); // "Resolve the administrative suspension prior to releasing payroll disbursements."
-}
-
-// Batch evaluation with privacy-safe diagnostic summary for dashboards
-const batch = evaluateBatchEligibility([
-  { employeeId: "EMP-001", recipient: "GA...", salary: 5000000000n, asset: "native" },
-  { employeeId: "EMP-002", recipient: "", salary: 2000000000n, asset: "native" },
-]);
-
-const report = formatEligibilityReport(batch);
-// All salaries and secrets remain redacted in logs/telemetry:
-console.log(report.reasonSummary); // { MISSING_RECIPIENT_ADDRESS: 1 }
-```
-
-### Typed Reason Codes Catalog
-
-| Reason Code | Category | Description | Suggested Remediation |
-| :--- | :--- | :--- | :--- |
-| `MISSING_RECIPIENT_ADDRESS` | Identity | Destination Stellar address is missing or empty | Provide a valid Stellar G... address |
-| `INVALID_RECIPIENT_ADDRESS` | Identity | Address format is malformed or invalid | Correct public key address format |
-| `MISSING_EMPLOYEE_ID` | Identity | Employee record identifier is missing | Assign a unique employee ID |
-| `DUPLICATE_EMPLOYEE_ID` | Identity | Duplicate employee ID within payroll batch | Deduplicate employee records in batch |
-| `DUPLICATE_RECIPIENT_ADDRESS` | Identity | Duplicate destination address within batch | Ensure unique recipient per payout batch |
-| `INACTIVE_EMPLOYEE_STATUS` | Status | Account is flagged as inactive | Activate employee in HR/payroll system |
-| `EMPLOYEE_SUSPENDED` | Status | Account is currently suspended | Resolve administrative suspension |
-| `EMPLOYEE_TERMINATED` | Status | Employee is terminated / offboarded | Settle through severance workflows |
-| `EFFECTIVE_DATE_FUTURE` | Status | Employment start date is in the future | Schedule payout for on/after effective date |
-| `EFFECTIVE_DATE_EXPIRED` | Status | Contract period ended before payroll cycle | Renew contract or adjust cycle bounds |
-| `ZERO_OR_NEGATIVE_SALARY` | Compensation | Payout amount is zero or negative | Set positive non-zero payout amount |
-| `SALARY_EXCEEDS_MAX_LIMIT` | Compensation | Salary exceeds configured maximum ceiling | Split transaction or request limit elevation |
-| `SALARY_BELOW_MIN_LIMIT` | Compensation | Salary is below minimum payout threshold | Combine into next cycle or verify amount |
-| `MISSING_ASSET_IDENTIFIER` | Compensation | Asset identifier is missing | Specify token address or "native" |
-| `UNSUPPORTED_ASSET` | Compensation | Asset is not permitted in configuration | Use an approved asset token |
-| `COMPLIANCE_BLOCKED` | Compliance | Failed KYC/AML verification or policy hold | Complete identity verification |
-| `PAYROLL_LOCKED` | Compliance | Administrative or security hold active | Release lock in dashboard |
-| `SANCTION_LISTED` | Compliance | Recipient matches prohibited sanctions list | Escalate to compliance/legal team |
-| `REGISTRY_RECORD_NOT_FOUND` | Registry | No on-chain registry record found | Register employee with contract first |
-| `REGISTRY_RECORD_DEACTIVATED`| Registry | On-chain registry record is deactivated | Reactivate registry entry on-chain |
-| `REGISTRY_SALARY_MISMATCH` | Registry | Resolution salary differs from on-chain | Update registry salary on-chain |
-| `REGISTRY_TOKEN_MISMATCH` | Registry | Payment token differs from on-chain token | Use registered token contract |
-| `CUSTOM_INELIGIBILITY_RULE` | Custom | Custom user-defined eligibility rule failed | Review custom business policy criteria |
-
+**Privacy note:** The SDK never logs `recipient`, `amount`, `witness`, or
+`privateKey` values. Logging hooks receive `[redacted]` for those fields via
+`redactSensitive` – even when `STELLAR_SECRET_KEY` is set, the secret is
+excluded from logs, exports, telemetry, and events.
 
 ## Documentation
 
-- [Terminology Guide](./docs/terminology.md) - Canonical names for concepts shared across contracts, SDK, and dashboard
-- [Runtime Support Matrix](./docs/SUPPORT_MATRIX.md) - Supported Node.js and browser versions
-- [Browser and Backend Usage](#browser-and-backend-usage) - Where to run the SDK, wallets, proofs, and secrets
-- [Payload Normalization](./docs/PAYLOAD_NORMALIZATION.md) - Canonicalizing payroll payloads before validation
+- [Setup Guide](./docs/setup.md) - Environment variables and local development setup
 - [API Reference](./docs/API.md) - Complete API documentation
-- [Error Handling](./docs/ERRORS.md) - Public error hierarchy and recovery patterns
 - [ZK Proof Generation](./docs/ZK_PROOF_GENERATION.md) - Detailed proof generation guide
-- [Versioning & Compatibility](./docs/VERSIONING.md) - SDK semantic versioning and contract compatibility matrix
-- [SDK Migration Cookbook](./docs/SDK_MIGRATION_COOKBOOK.md) - Step-by-step upgrade checklist and migration patterns
-- [Troubleshooting](./docs/TROUBLESHOOTING.md) - Solutions for common CI, dependency, and environment issues
+- [Examples](./examples/README.md) - Runnable examples and setup steps
 
 ## Development
 
 ```bash
-# Install dependencies
+# 1. Clone and install
+git clone https://github.com/your-org/zk-payroll-sdk.git
+cd zk-payroll-sdk
 npm install
 
-# Build
-npm run build
+# 2. Configure environment (copy and edit)
+cp .env.example .env
+# Edit .env with your RPC URL, contract IDs and artifact URLs
 
-# Run tests
+# 3. Build, typecheck, lint, and test
+npm run build
+npm run typecheck
+npm run lint
 npm test
 
-# Lint
-npm run lint
+# Or run via Turbo in the monorepo root
+npm run build -w packages/core
+npm run test -w packages/core
 ```
 
-> Having trouble? See the [Troubleshooting Guide](./docs/TROUBLESHOOTING.md).
+See [CONTRIBUTING.md](./CONTRIBUTING.md) and [docs/setup.md](./docs/setup.md) for
+full contributor workflow, pre-commit hooks, and troubleshooting.

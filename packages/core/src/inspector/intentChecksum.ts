@@ -55,7 +55,6 @@ export function computeIntentChecksum(
   const canonical = canonicalizeIntent(intent);
   if (typeof process !== "undefined" && process.versions && process.versions.node) {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
       const crypto = require("crypto");
       return crypto.createHash("sha256").update(canonical, "utf8").digest("hex");
     } catch {

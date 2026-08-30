@@ -31,13 +31,6 @@ import {
   PayrollRunItem,
 } from "./archive";
 
-import { QuorumSessionManager } from "./sessions/QuorumSessionManager";
-import type {
-  CreateSessionParams,
-  SessionSubmissionPackage,
-  SessionSummary,
-  SignerSession,
-} from "./sessions/types";
 export interface Transaction {
   amount: bigint;
   [key: string]: unknown;
@@ -271,23 +264,6 @@ export class PayrollService {
     return filterHeldRuns(runs);
   }
 
-  /** Quorum session manager instance for multi-signer workflows. */
-  readonly sessionManager = new QuorumSessionManager();
-
-  /** Create a multi-signer authorization session for payroll approvals. */
-  createSigningSession(params: CreateSessionParams): SignerSession {
-    return this.sessionManager.createSession(params);
-  }
-
-  /** Get UI-friendly summary of a signing session. */
-  getSessionSummary(sessionId: string): SessionSummary {
-    return this.sessionManager.getSummary(sessionId);
-  }
-
-  /** Prepare submission package for contract execution once threshold is met. */
-  prepareQuorumSubmission(sessionId: string): SessionSubmissionPackage {
-    return this.sessionManager.prepareSubmissionPackage(sessionId);
-  }
   private validatePaymentParams(params: PaymentParams): void {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { PayrollValidation } = require("./core/validation");
@@ -295,7 +271,7 @@ export class PayrollService {
     if (!result.isValid) {
       // Map to backward-compatible PayrollError
       const firstError = result.errors[0];
-      let code = 0;
+      let code: number | string = 0;
       if (firstError.field === "recipient") code = PayrollServiceErrorCode.INVALID_RECIPIENT;
       else if (firstError.field === "amount") code = PayrollServiceErrorCode.INVALID_AMOUNT;
       else if (firstError.field === "asset") code = PayrollServiceErrorCode.INVALID_ASSET;

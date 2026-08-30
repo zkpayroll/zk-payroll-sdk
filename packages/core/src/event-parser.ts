@@ -358,8 +358,12 @@ function parsePaymentCancelled(event: RawContractEvent): PaymentCancelledEvent {
 }
 
 // ── ScVal Decoding Helpers ───────────────────────────────────────────────────
+//
+// Exported so other event decoders (e.g. `events/employerOnboarding.ts`,
+// `events/operatorRemoval.ts`) can decode the same ScVal event shape without
+// duplicating this logic.
 
-function decodeEventName(topic: xdr.ScVal): string {
+export function decodeEventName(topic: xdr.ScVal): string {
   try {
     if (topic.switch()?.name === "scvSymbol") {
       return topic.sym()?.toString() ?? "";
@@ -370,7 +374,7 @@ function decodeEventName(topic: xdr.ScVal): string {
   return "";
 }
 
-function decodeAddress(scVal: xdr.ScVal | undefined): string {
+export function decodeAddress(scVal: xdr.ScVal | undefined): string {
   if (!scVal) return "";
   try {
     return Address.fromScVal(scVal).toString();
@@ -379,7 +383,7 @@ function decodeAddress(scVal: xdr.ScVal | undefined): string {
   }
 }
 
-function decodeBigInt(scVal: xdr.ScVal | undefined): bigint {
+export function decodeBigInt(scVal: xdr.ScVal | undefined): bigint {
   if (!scVal) return 0n;
   try {
     const swName = scVal.switch()?.name;
@@ -399,21 +403,21 @@ function decodeBigInt(scVal: xdr.ScVal | undefined): bigint {
   return 0n;
 }
 
-function decodeU64AsNumber(scVal: xdr.ScVal | undefined): number {
+export function decodeU64AsNumber(scVal: xdr.ScVal | undefined): number {
   if (!scVal) return 0;
   const u64 = scVal.u64();
   if (u64) return Number(u64);
   return 0;
 }
 
-function decodeBytes(scVal: xdr.ScVal | undefined): string {
+export function decodeBytes(scVal: xdr.ScVal | undefined): string {
   if (!scVal) return "";
   const bytes = scVal.bytes();
   if (bytes) return Buffer.from(bytes).toString("hex");
   return "";
 }
 
-function decodeDataMap(scVal: xdr.ScVal): Record<string, xdr.ScVal> {
+export function decodeDataMap(scVal: xdr.ScVal): Record<string, xdr.ScVal> {
   const map = scVal.map();
   if (!map) return {};
   const entries: Record<string, xdr.ScVal> = {};

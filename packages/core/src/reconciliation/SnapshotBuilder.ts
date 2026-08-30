@@ -48,7 +48,7 @@ export class ReconciliationSnapshotBuilder {
     metadata?: Record<string, unknown>
   ): Promise<ReconciliationSnapshot> {
     const expectedPayments = this.extractExpectedPayments(input.executionSummary);
-    const reconciliationDiff = await this.diffGenerator.generateDiff(
+    const reconciliationDiff = this.diffGenerator.generateDiff(
       input.executionSummary,
       input.observedPayments
     );

@@ -7,3 +7,9 @@ export type {
   PrivacyPolicyRule,
   PrivacyBudget,
 } from "./types";
+export {
+  REDACTED_PLACEHOLDER,
+  PRIVATE_EMPLOYEE_FIELDS,
+  redactAmount,
+  redactIdentifier,
+} from "./redaction";
