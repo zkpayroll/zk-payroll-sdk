@@ -26,6 +26,12 @@ import {
 import { rpc, Keypair, xdr, scValToNative } from "@stellar/stellar-sdk";
 import { BaseContractWrapper } from "./adapters/BaseContractWrapper";
 import { ContractExecutionError } from "./core/errors";
+import {
+  MockProofVerifierAdapter,
+  normalizeProofVerificationError,
+  type ProofVerifierAdapter,
+} from "./proofs/verifierAdapter";
+import type { ProofVerificationInput, ProofVerificationResult } from "./proofs/types";
 
 /**
  * Typed client helper for the payroll asset registry.
@@ -109,4 +115,70 @@ export async function getEnabledSupportedAssetsForClient(
   provider: SupportedAssetProvider
 ): Promise<SupportedAsset[]> {
   return _getEnabledSupportedAssets(provider);
+}
+
+/**
+ * Verifies a proof through an injected {@link ProofVerifierAdapter} and
+ * normalizes any thrown adapter error into an SDK-safe error object.
+ *
+ * This is the standalone form of {@link ProofVerificationClient} for callers that
+ * already hold an adapter instance.
+ *
+ * @param adapter - The proof verifier adapter to delegate to.
+ * @param input - Proof payload and verification context.
+ * @returns A stable, typed {@link ProofVerificationResult}.
+ * @throws {@link ProofVerificationError} when the adapter throws (normalized
+ *   via `normalizeProofVerificationError`).
+ *
+ * @example
+ * import { verifyProofWithAdapter, MockProofVerifierAdapter } from "@zk-payroll/core";
+ * const result = await verifyProofWithAdapter(new MockProofVerifierAdapter(), { proof });
+ */
+export async function verifyProofWithAdapter(
+  adapter: ProofVerifierAdapter,
+  input: ProofVerificationInput
+): Promise<ProofVerificationResult> {
+  try {
+    return await adapter.verify(input);
+  } catch (error) {
+    throw normalizeProofVerificationError(error, { ...input.context });
+  }
+}
+
+/**
+ * Typed client for proof verification with pluggable adapter injection.
+ *
+ * SDK consumers can inject any {@link ProofVerifierAdapter} (local snarkjs,
+ * hosted, testnet, or a future ZK verifier). When no adapter is provided, a
+ * {@link MockProofVerifierAdapter} is used so verification works out of the
+ * box in tests and local development without network calls.
+ *
+ * Note: this is the adapter-based verification client. The on-chain
+ * `ProofVerifierClient` (contract wrapper) is a separate class exported from
+ * `./clients`.
+ *
+ * @example
+ * import { ProofVerificationClient, MockProofVerifierAdapter } from "@zk-payroll/core";
+ * const verifier = new ProofVerificationClient(new MockProofVerifierAdapter({ defaultStatus: "valid" }));
+ * const result = await verifier.verifyProof({ proof });
+ */
+export class ProofVerificationClient {
+  private readonly adapter: ProofVerifierAdapter;
+
+  constructor(adapter?: ProofVerifierAdapter) {
+    this.adapter = adapter ?? new MockProofVerifierAdapter();
+  }
+
+  /** The adapter currently backing this client. */
+  get verifierAdapter(): ProofVerifierAdapter {
+    return this.adapter;
+  }
+
+  /**
+   * Verifies a proof with the injected adapter, normalizing any thrown
+   * adapter error into an SDK-safe error object.
+   */
+  async verifyProof(input: ProofVerificationInput): Promise<ProofVerificationResult> {
+    return verifyProofWithAdapter(this.adapter, input);
+  }
 }

@@ -1,6 +1,40 @@
 import { ZkPayrollError, ProofGenerationError, ContractExecutionError } from "../core/errors";
 
 /**
+ * Stable error codes for payroll proof verification failures.
+ */
+export const ProofVerificationErrorCode = {
+  /** The verifier ran but could not complete verification (generic failure). */
+  VERIFICATION_FAILED: "PROOF_VERIFICATION_FAILED",
+  /** The verifier was unreachable (hosted outage, offline node, timeout). */
+  VERIFIER_UNAVAILABLE: "PROOF_VERIFIER_UNAVAILABLE",
+  /** The proof payload itself is structurally invalid. */
+  MALFORMED_PROOF: "PROOF_VERIFICATION_MALFORMED",
+} as const;
+
+export type ProofVerificationErrorCodeType =
+  (typeof ProofVerificationErrorCode)[keyof typeof ProofVerificationErrorCode];
+
+/**
+ * SDK-safe error thrown when a proof verifier adapter fails.
+ *
+ * Extends {@link ZkPayrollError} so consumers can catch it with a single
+ * `instanceof ZkPayrollError` check, and carries the original adapter error
+ * as `cause` for diagnostics.
+ */
+export class ProofVerificationError extends ZkPayrollError {
+  constructor(
+    message: string,
+    code: ProofVerificationErrorCodeType = ProofVerificationErrorCode.VERIFICATION_FAILED,
+    context: Record<string, unknown> = {},
+    cause?: unknown
+  ) {
+    super(message, code, context, cause);
+    this.name = "ProofVerificationError";
+  }
+}
+
+/**
  * Thrown when a proof reference string fails to parse or validate.
  */
 export class ProofReferenceParsingError extends ZkPayrollError {

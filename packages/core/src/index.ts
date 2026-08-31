@@ -47,7 +47,14 @@ export {
   formatProofError,
   MISSING_PROOF_REMEDIATION,
   GENERIC_PROOF_REMEDIATION,
+  ProofVerificationError,
+  ProofVerificationErrorCode,
 } from "./proofs/errors";
+export type { ProofVerificationErrorCodeType } from "./proofs/errors";
+
+// ── Proof Verification Adapter ───────────────────────────────────────────────
+export * from "./proofs/types";
+export * from "./proofs/verifierAdapter";
 
 // ── Typed Contract Clients ───────────────────────────────────────────────────
 export * from "./clients";
@@ -58,6 +65,8 @@ export {
   getSupportedAssetsForClient,
   getEnabledSupportedAssetsForClient,
   type SupportedAssetProvider,
+  ProofVerificationClient,
+  verifyProofWithAdapter,
 } from "./client";
 export type { SupportedAsset, RawSupportedAsset } from "./assets/supportedAssets";
 export { normalizeSupportedAsset, normalizeSupportedAssets } from "./assets/supportedAssets";
