@@ -129,6 +129,29 @@ export const ERROR_CODE_REGISTRY: Record<string, ErrorCodeEntry> = {
     suggestedMessage:
       "Zero-knowledge proof generation failed. This may be due to invalid inputs or insufficient system resources.",
   },
+  PROOF_VERIFICATION_FAILED: {
+    category: ErrorCategory.PROOF,
+    meaning:
+      "A proof verifier adapter ran but could not complete verification — the proof is invalid or an unexpected error occurred.",
+    retryable: false,
+    suggestedMessage:
+      "Proof verification failed. The proof may not satisfy the verification key; check the proof and verification key id and try again.",
+  },
+  PROOF_VERIFIER_UNAVAILABLE: {
+    category: ErrorCategory.PROOF,
+    meaning:
+      "The proof verifier could not be reached (hosted outage, offline node, timeout) — the proof itself was not evaluated.",
+    retryable: true,
+    suggestedMessage:
+      "The proof verifier is currently unavailable. Please check the verifier endpoint and retry.",
+  },
+  PROOF_VERIFICATION_MALFORMED: {
+    category: ErrorCategory.PROOF,
+    meaning:
+      "The proof payload handed to the verifier is structurally invalid (missing or mis-shaped pi_a/pi_b/pi_c or publicSignals).",
+    retryable: false,
+    suggestedMessage: "The proof payload is malformed. Regenerate the proof and try again.",
+  },
 
   // ── Contract Execution ──────────────────────────────────────────────────
   SIMULATION_FAILED: {
