@@ -156,6 +156,9 @@ export * from "./reconciliation";
 // ── Audit View-Key Helpers ──────────────────────────────────────────────────
 export * from "./audit";
 
+// ── Idempotent Payroll Request Builder ─────────────────────────────────────
+export * from "./request";
+
 // ── Webhook Verification ────────────────────────────────────────────────────
 export * from "./webhooks";
 
