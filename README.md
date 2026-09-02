@@ -8,6 +8,32 @@ TypeScript SDK for interacting with the ZK Payroll smart contracts.
 npm install @zk-payroll/sdk
 ```
 
+## Quickstart
+
+Minimal examples using fake data — initialize the SDK, validate a payroll
+draft, and read payroll status.
+
+```typescript
+import { PayrollContract, ConfigPresets, DraftBuilder } from "@zk-payroll/sdk";
+
+// 1. Initialize the SDK
+const config = ConfigPresets.testnet()
+  .withContractId("CCONTRACT_ID_EXAMPLE")
+  .build();
+const contract = new PayrollContract(config);
+
+// 2. Validate a payroll draft before submitting it
+const { errors, warnings } = new DraftBuilder()
+  .add({ recipientId: "GABC...EXAMPLE", amount: "100.00", asset: "native" })
+  .validate();
+if (errors.length > 0) {
+  console.error("Draft is invalid:", errors);
+}
+
+// 3. Read payroll status (balance) for an address
+const balance = await contract.getBalance("GABC...EXAMPLE");
+```
+
 ## Usage
 
 The SDK provides configuration presets for common environments to simplify initialization:
@@ -540,6 +566,7 @@ patterns for tests, and rules for extending the registry in production.
 - [Runtime Support Matrix](./docs/SUPPORT_MATRIX.md) - Supported Node.js and browser versions
 - [Browser and Backend Usage](#browser-and-backend-usage) - Where to run the SDK, wallets, proofs, and secrets
 - [Payload Normalization](./docs/PAYLOAD_NORMALIZATION.md) - Canonicalizing payroll payloads before validation
+- [Contract Events](./docs/CONTRACT_EVENTS.md) - On-chain + webhook event schemas for indexers and dashboards
 - [API Reference](./docs/API.md) - Complete API documentation
 - [Error Handling](./docs/ERRORS.md) - Public error hierarchy and recovery patterns
 - [ZK Proof Generation](./docs/ZK_PROOF_GENERATION.md) - Detailed proof generation guide
