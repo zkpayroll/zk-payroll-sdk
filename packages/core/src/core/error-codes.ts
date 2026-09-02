@@ -16,6 +16,7 @@ export const ErrorCategory = {
   METADATA: "metadata",
   SIMULATION: "simulation",
   IDEMPOTENCY: "idempotency",
+  COMPLIANCE: "compliance",
 } as const;
 
 export type ErrorCategoryType =
@@ -335,6 +336,24 @@ export const ERROR_CODE_REGISTRY: Record<string, ErrorCodeEntry> = {
     retryable: false,
     suggestedMessage:
       "Unexpected on-chain activity was detected. Review the reconciliation report for details.",
+  },
+
+  // ── Compliance Holds ────────────────────────────────────────────────────
+  COMPLIANCE_HOLD_VALIDATION_FAILED: {
+    category: ErrorCategory.COMPLIANCE,
+    meaning:
+      "A request to place a compliance hold failed local validation (invalid scope, missing target, or unrecognized reason code).",
+    retryable: false,
+    suggestedMessage:
+      "The compliance hold request is invalid. Please review the target, reason code, and required fields.",
+  },
+  COMPLIANCE_HOLD_RELEASE_UNAUTHORIZED: {
+    category: ErrorCategory.COMPLIANCE,
+    meaning:
+      "A request to release a compliance hold was missing the inputs needed to prove the releasing party is authorized.",
+    retryable: false,
+    suggestedMessage:
+      "This hold cannot be released without a valid authorization token identifying who is releasing it.",
   },
 };
 

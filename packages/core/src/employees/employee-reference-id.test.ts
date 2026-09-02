@@ -1,4 +1,3 @@
-import { describe, it, expect } from 'vitest';
 import { validateEmployeeReferenceId, assertValidEmployeeReferenceId } from './referenceId';
 
 describe('Employee Reference ID Validator (#388)', () => {

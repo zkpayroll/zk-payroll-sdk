@@ -185,13 +185,21 @@ export * from "./indexer";
 // Proof Artifact Lifecycle
 export * from "./artifacts";
 
+// ── Compliance Holds ─────────────────────────────────────────────────────────
+export * from "./compliance";
+
 // Treasury Checkpoints & Report Parser (#405)
 export * from "./treasury/checkpoints";
 export * from "./reconciliation/report";
 
 // Approval Invalidation Analyzer (#404)
 export * from "./signing/invalidationAnalyzer";
-export * from "./policy/types";
+export type {
+  PayrollPolicyConfig,
+  PayrollDraftRecipient,
+  InvalidationAnalysisResult,
+} from "./policy/types";
+export type { PayrollDraft as PayrollPolicyDraft } from "./policy/types";
 
 // Obligation Snapshot Planner (#403)
 export * from "./obligations/snapshotPlanner";
@@ -199,4 +207,3 @@ export * from "./privacy/redaction";
 
 // Employee Reference ID Validator (#388)
 export * from "./employees/referenceId";
-
