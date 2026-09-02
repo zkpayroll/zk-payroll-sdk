@@ -29,7 +29,7 @@ function createRecord(overrides?: Partial<PayrollDraftRecord>): PayrollDraftReco
 function createDraft(overrides?: Partial<PayrollDraftData>): PayrollDraftData {
   return {
     draftId: "draft_001_valid",
-    employer: "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF",
+    employer: "GDVEU3DD4KOFECV66VIHWEZOYX4ZKR3WV27L464SIIPOU2IUI3JCZA57",
     createdAt: Date.now(),
     lastModifiedAt: Date.now(),
     period: "2024-01",
@@ -85,7 +85,7 @@ export const ValidDraftWithMultipleAssets = createDraft({
     }),
     createRecord({
       employeeId: "bob@company.com",
-      asset: "CBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF",
+      asset: "CBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA7",
       amount: 1000000n,
     }),
   ],
@@ -118,12 +118,12 @@ export const ValidDraftWithRedaction = createDraft({
   draftId: "draft_with_redaction",
   records: [
     createRecord({
-      employeeId: "[REDACTED]_1",
+      employeeId: "[REDACTED]001",
       employeeName: "[REDACTED]",
       amount: 5000000000n,
     }),
     createRecord({
-      employeeId: "[REDACTED]_2",
+      employeeId: "[REDACTED]002",
       employeeName: "[REDACTED]",
       amount: 3000000000n,
     }),
@@ -556,12 +556,12 @@ export const EdgeCaseMixedAssetTypes = createDraft({
     }),
     createRecord({
       employeeId: "bob@company.com",
-      asset: "CBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF",
+      asset: "CBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA7",
       amount: 1000000n,
     }),
     createRecord({
       employeeId: "charlie@company.com",
-      asset: "CDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF",
+      asset: "CDAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA7",
       amount: 500000n,
     }),
   ],

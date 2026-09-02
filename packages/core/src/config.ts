@@ -13,6 +13,24 @@ export interface RetryPolicyConfig {
   initialDelayMs?: number;
   maxDelayMs?: number;
   backoffFactor?: number;
+  /** Optional random extra delay (in ms) applied on top of the exponential backoff. */
+  jitterMs?: number;
+  /** Optional overall retry deadline in milliseconds, measured from the first attempt. */
+  timeoutMs?: number;
+}
+
+/**
+ * Per-operation-type retry budgets. Each operation type resolves its own
+ * budget from these overrides on top of the built-in defaults, so idempotent
+ * reads can be retried aggressively while non-idempotent writes stay protected.
+ */
+export interface RetryBudgetsConfig {
+  /** Idempotent read operations (e.g. getAccount, simulateTransaction). */
+  read?: RetryPolicyConfig;
+  /** Non-idempotent write/transaction submissions. */
+  write?: RetryPolicyConfig;
+  /** Idempotent transaction status polling. */
+  poll?: RetryPolicyConfig;
 }
 
 export type FeatureFlagsConfig = Record<string, boolean>;
@@ -26,6 +44,7 @@ export interface ClientConfig {
   adminKey?: string;
   proofConfig?: ProofGeneratorConfig;
   retryPolicy?: RetryPolicyConfig;
+  retryBudgets?: RetryBudgetsConfig;
   featureFlags?: FeatureFlagsConfig;
 }
 
@@ -49,6 +68,64 @@ function isValidContractId(id: string): boolean {
     // fallback to Soroban contract ID regex pattern
   }
   return /^C[A-Z2-7]{55}$/.test(id);
+}
+
+/**
+ * Validate a single retry policy object (either the legacy `retryPolicy` or
+ * one of the per-operation `retryBudgets`). `path` is used to build
+ * human-readable field names for validation errors.
+ */
+function validateRetryPolicyConfig(
+  policy: RetryPolicyConfig,
+  path: string
+): ConfigValidationErrorDetail[] {
+  const errors: ConfigValidationErrorDetail[] = [];
+  const { maxAttempts, initialDelayMs, maxDelayMs, backoffFactor, jitterMs, timeoutMs } = policy;
+
+  if (maxAttempts !== undefined && (typeof maxAttempts !== "number" || maxAttempts < 1)) {
+    errors.push({
+      field: `${path}.maxAttempts`,
+      message: `${path}.maxAttempts must be at least 1.`,
+    });
+  }
+  if (initialDelayMs !== undefined && (typeof initialDelayMs !== "number" || initialDelayMs < 0)) {
+    errors.push({
+      field: `${path}.initialDelayMs`,
+      message: `${path}.initialDelayMs cannot be negative.`,
+    });
+  }
+  if (maxDelayMs !== undefined && (typeof maxDelayMs !== "number" || maxDelayMs < 0)) {
+    errors.push({
+      field: `${path}.maxDelayMs`,
+      message: `${path}.maxDelayMs cannot be negative.`,
+    });
+  }
+  if (initialDelayMs !== undefined && maxDelayMs !== undefined && maxDelayMs < initialDelayMs) {
+    errors.push({
+      field: `${path}.maxDelayMs`,
+      message: `${path}.maxDelayMs must be greater than or equal to initialDelayMs.`,
+    });
+  }
+  if (backoffFactor !== undefined && (typeof backoffFactor !== "number" || backoffFactor < 1)) {
+    errors.push({
+      field: `${path}.backoffFactor`,
+      message: `${path}.backoffFactor must be at least 1.`,
+    });
+  }
+  if (jitterMs !== undefined && (typeof jitterMs !== "number" || jitterMs < 0)) {
+    errors.push({
+      field: `${path}.jitterMs`,
+      message: `${path}.jitterMs cannot be negative.`,
+    });
+  }
+  if (timeoutMs !== undefined && (typeof timeoutMs !== "number" || timeoutMs < 0)) {
+    errors.push({
+      field: `${path}.timeoutMs`,
+      message: `${path}.timeoutMs cannot be negative.`,
+    });
+  }
+
+  return errors;
 }
 
 /**
@@ -153,42 +230,17 @@ export function validateConfig(config?: Partial<ClientConfig>): ConfigValidation
     }
   }
 
-  // 5. Validate retry policy
+  // 5. Validate retry policy and per-operation retry budgets
   if (config.retryPolicy) {
-    const { maxAttempts, initialDelayMs, maxDelayMs, backoffFactor } = config.retryPolicy;
-
-    if (maxAttempts !== undefined && (typeof maxAttempts !== "number" || maxAttempts < 1)) {
-      errors.push({
-        field: "retryPolicy.maxAttempts",
-        message: "retryPolicy.maxAttempts must be at least 1.",
-      });
-    }
-    if (
-      initialDelayMs !== undefined &&
-      (typeof initialDelayMs !== "number" || initialDelayMs < 0)
-    ) {
-      errors.push({
-        field: "retryPolicy.initialDelayMs",
-        message: "retryPolicy.initialDelayMs cannot be negative.",
-      });
-    }
-    if (maxDelayMs !== undefined && (typeof maxDelayMs !== "number" || maxDelayMs < 0)) {
-      errors.push({
-        field: "retryPolicy.maxDelayMs",
-        message: "retryPolicy.maxDelayMs cannot be negative.",
-      });
-    }
-    if (initialDelayMs !== undefined && maxDelayMs !== undefined && maxDelayMs < initialDelayMs) {
-      errors.push({
-        field: "retryPolicy.maxDelayMs",
-        message: "retryPolicy.maxDelayMs must be greater than or equal to initialDelayMs.",
-      });
-    }
-    if (backoffFactor !== undefined && (typeof backoffFactor !== "number" || backoffFactor < 1)) {
-      errors.push({
-        field: "retryPolicy.backoffFactor",
-        message: "retryPolicy.backoffFactor must be at least 1.",
-      });
+    errors.push(...validateRetryPolicyConfig(config.retryPolicy, "retryPolicy"));
+  }
+  if (config.retryBudgets) {
+    const operations = ["read", "write", "poll"] as const;
+    for (const operation of operations) {
+      const operationPolicy = config.retryBudgets[operation];
+      if (operationPolicy) {
+        errors.push(...validateRetryPolicyConfig(operationPolicy, `retryBudgets.${operation}`));
+      }
     }
   }
 
@@ -248,6 +300,7 @@ export function assertValidConfig(config?: Partial<ClientConfig>): ClientConfig 
     adminKey: config!.adminKey,
     proofConfig: config!.proofConfig,
     retryPolicy: config!.retryPolicy,
+    retryBudgets: config!.retryBudgets,
     featureFlags: config!.featureFlags,
   };
 }
@@ -261,6 +314,7 @@ export class ConfigBuilder {
   private _adminKey?: string;
   private _proofConfig?: ProofGeneratorConfig;
   private _retryPolicy?: RetryPolicyConfig;
+  private _retryBudgets?: RetryBudgetsConfig;
   private _featureFlags?: FeatureFlagsConfig;
 
   constructor(preset?: Partial<ClientConfig>) {
@@ -273,6 +327,7 @@ export class ConfigBuilder {
       this._adminKey = preset.adminKey;
       this._proofConfig = preset.proofConfig;
       this._retryPolicy = preset.retryPolicy;
+      this._retryBudgets = preset.retryBudgets;
       this._featureFlags = preset.featureFlags;
     }
   }
@@ -317,6 +372,11 @@ export class ConfigBuilder {
     return this;
   }
 
+  public withRetryBudgets(budgets: RetryBudgetsConfig): this {
+    this._retryBudgets = budgets;
+    return this;
+  }
+
   public withFeatureFlags(flags: FeatureFlagsConfig): this {
     this._featureFlags = flags;
     return this;
@@ -340,6 +400,7 @@ export class ConfigBuilder {
       adminKey: this._adminKey,
       proofConfig: this._proofConfig,
       retryPolicy: this._retryPolicy,
+      retryBudgets: this._retryBudgets,
       featureFlags: this._featureFlags,
     };
   }
@@ -441,6 +502,7 @@ function buildClientConfig(source: Record<string, unknown>): ClientConfig {
     adminKey: (source.adminKey as string) ?? undefined,
     proofConfig: source.proofConfig as ProofGeneratorConfig | undefined,
     retryPolicy: source.retryPolicy as RetryPolicyConfig | undefined,
+    retryBudgets: source.retryBudgets as RetryBudgetsConfig | undefined,
     featureFlags: source.featureFlags as FeatureFlagsConfig | undefined,
   };
 }

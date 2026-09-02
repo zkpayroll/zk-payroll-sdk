@@ -1,6 +1,6 @@
 import { PayrollExecutionSummary } from "../summary/types";
 import { ObservedPaymentState, ReconciliationDiffResult } from "./types";
-import { ReconciliationDiffGenerator } from "./ReconciliationDiffGenerator";
+import { generateReconciliationDiff } from "./ReconciliationDiffGenerator";
 
 export interface SnapshotInput {
   executionSummary: PayrollExecutionSummary;
@@ -37,18 +37,12 @@ export interface ReconciliationSnapshot {
 }
 
 export class ReconciliationSnapshotBuilder {
-  private diffGenerator: ReconciliationDiffGenerator;
-
-  constructor() {
-    this.diffGenerator = new ReconciliationDiffGenerator();
-  }
-
   async buildSnapshot(
     input: SnapshotInput,
     metadata?: Record<string, unknown>
   ): Promise<ReconciliationSnapshot> {
     const expectedPayments = this.extractExpectedPayments(input.executionSummary);
-    const reconciliationDiff = this.diffGenerator.generateDiff(
+    const reconciliationDiff = generateReconciliationDiff(
       input.executionSummary,
       input.observedPayments
     );

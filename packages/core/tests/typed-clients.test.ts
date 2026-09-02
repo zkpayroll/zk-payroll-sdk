@@ -10,6 +10,17 @@ import type {
   ProofStruct,
 } from "../src/clients/types";
 
+/**
+ * Builds byte payloads for `nativeToScVal({ type: "bytes" })`.
+ * Uses Uint8Array rather than Buffer directly: the browser jest config
+ * runs against @stellar/stellar-sdk's browser bundle, whose internal
+ * type checks don't recognize Node's global Buffer as a valid byte
+ * source in that realm, even though it's Uint8Array-compatible.
+ */
+function hexBytes(hex: string): Uint8Array {
+  return Uint8Array.from(Buffer.from(hex, "hex"));
+}
+
 const TEST_CONTRACT_ID = StrKey.encodeContract(Buffer.alloc(32, 1));
 const TEST_EMPLOYER = Keypair.random().publicKey();
 const TEST_EMPLOYEE = Keypair.random().publicKey();
@@ -56,9 +67,7 @@ function makeCommitmentEntryScVal(overrides?: Partial<Record<string, xdr.ScVal>>
   const defaults: Record<string, xdr.ScVal> = {
     employer: new Address(TEST_EMPLOYER).toScVal(),
     employee: new Address(TEST_EMPLOYEE).toScVal(),
-    commitment_hash: nativeToScVal(Uint8Array.from(Buffer.from("abcd", "hex")), {
-      type: "bytes",
-    }),
+    commitment_hash: nativeToScVal(hexBytes("abcd"), { type: "bytes" }),
     cycle_id: nativeToScVal(1n, { type: "u64" }),
     created_at: nativeToScVal(100n, { type: "u64" }),
     revealed: xdr.ScVal.scvBool(false),
@@ -468,7 +477,7 @@ describe("ProofVerifierClient", () => {
 
   describe("getVerificationKey", () => {
     it("calls invoke with method name 'get_verification_key'", async () => {
-      const keyBytes = Uint8Array.from(Buffer.from("deadbeef", "hex"));
+      const keyBytes = hexBytes("deadbeef");
       client.invokeStub.mockResolvedValue(nativeToScVal(keyBytes, { type: "bytes" }));
       const key = await client.getVerificationKey(1, signer);
       expect(client.invokeStub.mock.calls[0][0]).toBe("get_verification_key");
@@ -514,7 +523,7 @@ describe("ProofVerifierClient", () => {
         }),
         new xdr.ScMapEntry({
           key: nativeToScVal("key", { type: "symbol" }),
-          val: nativeToScVal(Uint8Array.from(Buffer.from("ff00", "hex")), { type: "bytes" }),
+          val: nativeToScVal(hexBytes("ff00"), { type: "bytes" }),
         }),
       ]);
       client.invokeStub.mockResolvedValue(infoScVal);
@@ -553,9 +562,7 @@ describe("PaymentExecutorClient", () => {
 
   describe("execute", () => {
     it("calls invoke with method name 'execute'", async () => {
-      client.invokeStub.mockResolvedValue(
-        nativeToScVal(Uint8Array.from(Buffer.from("txhash", "hex")), { type: "bytes" })
-      );
+      client.invokeStub.mockResolvedValue(nativeToScVal(hexBytes("txhash"), { type: "bytes" }));
       const result = await client.execute(
         { recipient: TEST_EMPLOYEE, amount: 1000n, asset: TEST_TOKEN },
         signer
@@ -565,9 +572,7 @@ describe("PaymentExecutorClient", () => {
     });
 
     it("encodes four XDR arguments", async () => {
-      client.invokeStub.mockResolvedValue(
-        nativeToScVal(Uint8Array.from(Buffer.from("00", "hex")), { type: "bytes" })
-      );
+      client.invokeStub.mockResolvedValue(nativeToScVal(hexBytes("00"), { type: "bytes" }));
       await client.execute(
         { recipient: TEST_EMPLOYEE, amount: 1000n, asset: TEST_TOKEN, memo: "bonus" },
         signer

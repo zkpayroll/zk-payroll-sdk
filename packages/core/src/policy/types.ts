@@ -140,3 +140,45 @@ export interface CompiledPayrollPolicy {
 /** Result of {@link compilePayrollPolicy}. */
 export type CompilePolicyResult =
   { ok: true; value: CompiledPayrollPolicy } | { ok: false; errors: PolicyCompileError[] };
+// ── Payroll Drafts ────────────────────────────────────────────────────────────
+
+/** A single approval/signoff recorded against a payroll draft. */
+export interface PayrollDraftApproval {
+  approverId: string;
+  approvedAt: string;
+  signature?: string;
+}
+
+/** A single recipient line item within a payroll draft. */
+export interface PayrollDraftRecipient {
+  recipientId: string;
+  amount: string;
+}
+
+/**
+ * A payroll run in draft form — editable, comparable, and subject to
+ * approval invalidation when its contents change after signoff.
+ */
+export interface PayrollDraft {
+  draftId: string;
+  totalAmount: string;
+  asset: string;
+  scheduleTimestamp: string;
+  recipients: PayrollDraftRecipient[];
+  policy: CompiledPayrollPolicy;
+  approvals: PayrollDraftApproval[];
+}
+
+/** Result of comparing two {@link PayrollDraft} versions (see `batches/diff.ts`). */
+export interface DraftComparisonResult {
+  hasDifferences: boolean;
+  changedFields: string[];
+}
+
+/** Result of {@link analyzeApprovalInvalidation} — whether prior approvals still hold. */
+export interface InvalidationAnalysisResult {
+  requiresReapproval: boolean;
+  invalidatedApprovalsCount: number;
+  reasons: string[];
+  changedFields: string[];
+}

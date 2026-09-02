@@ -1,3 +1,7 @@
+/**
+ * SDK fixture builder types.
+ * See docs/testing.md for usage.
+ */
 export interface Employee {
   id: string;
   wallet: string;

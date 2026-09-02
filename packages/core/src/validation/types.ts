@@ -226,8 +226,8 @@ export const ValidationPresets = {
     checkDuplicates: true,
     validateRedaction: true,
     validateApprovals: true,
-    minAmount: 10000000n,
-    maxAmount: 100000000000n,
+    minAmount: 1000000n, // 0.1 XLM — flag tiny payouts
+    maxAmount: 100000000000n, // 10,000 XLM — flag oversized single payouts
     maxRecordsPerDraft: 10000,
     allowMissingApprovals: false,
   } as ValidationConfig,

@@ -10,6 +10,8 @@
  * batch commitment) fully visible.
  */
 
+import { createHash } from "crypto";
+
 export const REDACTED_PLACEHOLDER = "[REDACTED]" as const;
 
 /** Employee-level fields that must never appear in a signature summary by default. */
@@ -48,4 +50,8 @@ export function redactIdentifier(value: string | undefined, reveal = false): str
   if (reveal) return value;
   if (value.length <= 8) return REDACTED_PLACEHOLDER;
   return `${value.slice(0, 4)}…${value.slice(-4)}`;
+}
+
+export function hashEmployeeReferenceId(employeeReferenceId: string): string {
+  return createHash("sha256").update(employeeReferenceId).digest("hex");
 }

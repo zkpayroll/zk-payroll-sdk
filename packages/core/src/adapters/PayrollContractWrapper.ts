@@ -3,6 +3,7 @@ import type { ISigner } from "../signer/types";
 import { toISigner } from "../signer/KeypairSigner";
 import { BaseContractWrapper, InvokeOptions, PreparedInvocation } from "./BaseContractWrapper";
 import { ProofPayload } from "../crypto/IProofGenerator";
+import type { RetryBudgetsConfig } from "../config";
 
 /**
  * PayrollContractWrapper — Concrete adapter for the ZK Payroll Soroban contract.
@@ -11,8 +12,8 @@ import { ProofPayload } from "../crypto/IProofGenerator";
  * via the BaseContractWrapper.invoke() pipeline.
  */
 export class PayrollContractWrapper extends BaseContractWrapper {
-  constructor(server: rpc.Server, contractId: string) {
-    super(server, contractId);
+  constructor(server: rpc.Server, contractId: string, retryBudgets?: RetryBudgetsConfig) {
+    super(server, contractId, retryBudgets);
   }
 
   /**

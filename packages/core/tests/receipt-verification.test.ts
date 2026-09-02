@@ -1,7 +1,7 @@
+import { PayrollService } from "../src";
 import {
-  PayrollReceipt,
   PayrollReceiptVerificationError,
-  PayrollService,
+  // PayrollService,
   ReceiptVerificationCode,
   assertValidPayrollReceipt,
   canonicalizeMetadata,
@@ -14,7 +14,33 @@ import {
   verifyPayrollReceipt,
   verifyPayrollReceiptAsync,
   verifyPayrollReceiptBatch,
-} from "../src";
+  PayrollSettlementStatus,
+} from "../src/receipts";
+
+type PayrollReceipt = {
+  receiptId: string;
+  payrollId: string;
+  settlementStatus: PayrollSettlementStatus;
+  transactionReference:
+    | string
+    | {
+        txHash: string;
+        ledger?: number;
+        network?: string;
+        confirmedAt?: number;
+      };
+  metadataDigest: string;
+  metadata: Record<string, unknown>;
+  totalAmount: string;
+  currency: string;
+  recipientCount: number;
+  issuedAt: number;
+  settledAt?: number;
+  signature?: string;
+  signerPublicKey?: string;
+  redacted?: boolean;
+  [key: string]: unknown;
+};
 
 describe("Payroll Receipt Verification", () => {
   const sampleMetadata = {
@@ -125,15 +151,17 @@ describe("Payroll Receipt Verification", () => {
     it("fails when receipt is null, undefined, or primitive", () => {
       const nullResult = verifyPayrollReceipt(null);
       expect(nullResult.isValid).toBe(false);
-      expect(nullResult.issues.some((i) => i.code === ReceiptVerificationCode.INVALID_SHAPE)).toBe(
-        true
-      );
+      expect(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        nullResult.issues.some((i: any) => i.code === ReceiptVerificationCode.INVALID_SHAPE)
+      ).toBe(true);
 
       const strResult = verifyPayrollReceipt("not a receipt");
       expect(strResult.isValid).toBe(false);
-      expect(strResult.issues.some((i) => i.code === ReceiptVerificationCode.INVALID_SHAPE)).toBe(
-        true
-      );
+      expect(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        strResult.issues.some((i: any) => i.code === ReceiptVerificationCode.INVALID_SHAPE)
+      ).toBe(true);
     });
 
     it("fails when required fields are missing or empty", () => {
@@ -144,7 +172,8 @@ describe("Payroll Receipt Verification", () => {
 
       const result = verifyPayrollReceipt(incomplete);
       expect(result.isValid).toBe(false);
-      expect(result.issues.some((i) => i.code === ReceiptVerificationCode.INVALID_SHAPE)).toBe(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect(result.issues.some((i: any) => i.code === ReceiptVerificationCode.INVALID_SHAPE)).toBe(
         true
       );
     });
@@ -168,7 +197,8 @@ describe("Payroll Receipt Verification", () => {
       expect(result.isValid).toBe(false);
       expect(result.verifiedFields.payrollId).toBe(false);
       expect(
-        result.issues.some((i) => i.code === ReceiptVerificationCode.PAYROLL_ID_MISMATCH)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        result.issues.some((i: any) => i.code === ReceiptVerificationCode.PAYROLL_ID_MISMATCH)
       ).toBe(true);
       expect(result.errors[0]).toContain("does not match expected payrollId");
     });
@@ -195,7 +225,8 @@ describe("Payroll Receipt Verification", () => {
       const pendingResult = verifyPayrollReceipt(pendingReceipt);
       expect(pendingResult.isValid).toBe(false);
       expect(
-        pendingResult.issues.some((i) => i.code === ReceiptVerificationCode.UNSETTLED_STATUS)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        pendingResult.issues.some((i: any) => i.code === ReceiptVerificationCode.UNSETTLED_STATUS)
       ).toBe(true);
 
       const failedReceipt: PayrollReceipt = {
@@ -206,7 +237,8 @@ describe("Payroll Receipt Verification", () => {
       const failedResult = verifyPayrollReceipt(failedReceipt);
       expect(failedResult.isValid).toBe(false);
       expect(
-        failedResult.issues.some((i) => i.code === ReceiptVerificationCode.UNSETTLED_STATUS)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        failedResult.issues.some((i: any) => i.code === ReceiptVerificationCode.UNSETTLED_STATUS)
       ).toBe(true);
     });
 
@@ -256,7 +288,8 @@ describe("Payroll Receipt Verification", () => {
       expect(result.isValid).toBe(false);
       expect(result.verifiedFields.transactionReference).toBe(false);
       expect(
-        result.issues.some((i) => i.code === ReceiptVerificationCode.TRANSACTION_HASH_MISMATCH)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        result.issues.some((i: any) => i.code === ReceiptVerificationCode.TRANSACTION_HASH_MISMATCH)
       ).toBe(true);
     });
   });
@@ -293,7 +326,8 @@ describe("Payroll Receipt Verification", () => {
       expect(result.isValid).toBe(false);
       expect(result.verifiedFields.metadataDigest).toBe(false);
       expect(
-        result.issues.some((i) => i.code === ReceiptVerificationCode.METADATA_DIGEST_MISMATCH)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        result.issues.some((i: any) => i.code === ReceiptVerificationCode.METADATA_DIGEST_MISMATCH)
       ).toBe(true);
     });
 
@@ -306,7 +340,8 @@ describe("Payroll Receipt Verification", () => {
       const result = verifyPayrollReceipt(badDigestReceipt);
       expect(result.isValid).toBe(false);
       expect(
-        result.issues.some((i) => i.code === ReceiptVerificationCode.METADATA_DIGEST_INVALID)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        result.issues.some((i: any) => i.code === ReceiptVerificationCode.METADATA_DIGEST_INVALID)
       ).toBe(true);
     });
   });
@@ -332,7 +367,8 @@ describe("Payroll Receipt Verification", () => {
 
       expect(result.isValid).toBe(false);
       expect(result.verifiedFields.freshness).toBe(false);
-      expect(result.issues.some((i) => i.code === ReceiptVerificationCode.EXPIRED)).toBe(true);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect(result.issues.some((i: any) => i.code === ReceiptVerificationCode.EXPIRED)).toBe(true);
     });
 
     it("fails when issuedAt is far into the future beyond clock tolerance", () => {
@@ -347,9 +383,10 @@ describe("Payroll Receipt Verification", () => {
       });
 
       expect(result.isValid).toBe(false);
-      expect(result.issues.some((i) => i.code === ReceiptVerificationCode.FUTURE_TIMESTAMP)).toBe(
-        true
-      );
+      expect(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        result.issues.some((i: any) => i.code === ReceiptVerificationCode.FUTURE_TIMESTAMP)
+      ).toBe(true);
     });
   });
 
@@ -376,9 +413,10 @@ describe("Payroll Receipt Verification", () => {
       });
 
       expect(result.isValid).toBe(false);
-      expect(result.issues.some((i) => i.code === ReceiptVerificationCode.SIGNATURE_MISSING)).toBe(
-        true
-      );
+      expect(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        result.issues.some((i: any) => i.code === ReceiptVerificationCode.SIGNATURE_MISSING)
+      ).toBe(true);
     });
 
     it("fails when signer is not in trusted list", () => {
@@ -387,9 +425,10 @@ describe("Payroll Receipt Verification", () => {
       });
 
       expect(result.isValid).toBe(false);
-      expect(result.issues.some((i) => i.code === ReceiptVerificationCode.SIGNATURE_INVALID)).toBe(
-        true
-      );
+      expect(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        result.issues.some((i: any) => i.code === ReceiptVerificationCode.SIGNATURE_INVALID)
+      ).toBe(true);
     });
   });
 

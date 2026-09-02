@@ -322,20 +322,21 @@ export const ERROR_CODE_REGISTRY: Record<string, ErrorCodeEntry> = {
       "The audit access request failed validation. Please review the requester details, scope, expiration, reason, and target payroll period.",
   },
 
-  // ── Eligibility ──────────────────────────────────────────────────────────
+  // ── Employee Eligibility ─────────────────────────────────────────────────
   INELIGIBLE_EMPLOYEE_RECORD: {
     category: ErrorCategory.ELIGIBILITY,
-    meaning: "One or more employee records failed eligibility validation checks.",
+    meaning:
+      "An employee record failed eligibility evaluation (identity, status, salary, asset, or compliance checks).",
     retryable: false,
     suggestedMessage:
-      "Employee record is ineligible for payroll processing. Check employee status and requirements.",
+      "One or more employees are ineligible for payroll resolution. Review the eligibility reasons and fix the affected records.",
   },
   BATCH_ELIGIBILITY_FAILED: {
     category: ErrorCategory.ELIGIBILITY,
-    meaning: "Batch employee eligibility validation failed.",
+    meaning: "A payroll batch contains one or more ineligible employee records.",
     retryable: false,
     suggestedMessage:
-      "Batch eligibility check failed. Review individual employee eligibility statuses.",
+      "The payroll batch contains ineligible employee records. Review the batch eligibility report and correct the affected records.",
   },
 };
 

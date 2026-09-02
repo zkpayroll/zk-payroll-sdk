@@ -11,16 +11,13 @@ import {
   archiveIterator,
   buildArchiveSummaryReport,
   filterArchivedRecords,
-} from "../src";
-
-import type {
-  ArchivedRecord,
-  ArchivedRecordFilter,
-  ArchiveQuery,
-  ArchiveSummaryReport,
-  PaginatedResult,
-  PaginationMeta,
-} from "../src";
+  type ArchivedRecord,
+  type ArchivedRecordFilter,
+  type ArchiveQuery,
+  type ArchiveSummaryReport,
+  type PaginatedResult,
+  type PaginationMeta,
+} from "../src/archived";
 
 // ---------------------------------------------------------------------------
 // Export presence

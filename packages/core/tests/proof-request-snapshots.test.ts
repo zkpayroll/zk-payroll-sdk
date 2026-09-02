@@ -36,8 +36,9 @@ class TestablePayrollContractWrapper extends PayrollContractWrapper {
 }
 
 class TestableProofVerifierClient extends ProofVerifierClient {
-  public override encodeProofStruct(proof: ProofStruct): xdr.ScVal {
-    return super.encodeProofStruct(proof);
+  public encodeProofStructForTest(proof: ProofStruct): xdr.ScVal {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (this as any).encodeProofStruct(proof);
   }
 
   public encodeVerifyArgs(
@@ -45,7 +46,7 @@ class TestableProofVerifierClient extends ProofVerifierClient {
     publicInputs: string[],
     verificationKeyId: number
   ): xdr.ScVal[] {
-    const proofStructScVal = super.encodeProofStruct(proof);
+    const proofStructScVal = this.encodeProofStructForTest(proof);
 
     return [
       proofStructScVal,
@@ -62,8 +63,11 @@ class TestableProofVerifierClient extends ProofVerifierClient {
 }
 
 class TestableSalaryCommitmentClient extends SalaryCommitmentClient {
-  public override encodeProofStruct(proof: ProofStruct): xdr.ScVal {
-    return super.encodeProofStruct(proof);
+  public encodeProofStructForTest(proof: ProofStruct): xdr.ScVal {
+    // The parent implementation is private, so we must invoke it through the
+    // instance in tests while preserving the public surface for assertions.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (this as any).encodeProofStruct(proof);
   }
 }
 
@@ -132,7 +136,7 @@ describe("ProofVerifierClient.encodeProofStruct (ProofStruct → XDR ScVal)", ()
   ];
 
   it.each(FIXTURES)("produces scVal for %s payload", (_label, payload) => {
-    const scVal = client.encodeProofStruct(payload);
+    const scVal = client.encodeProofStructForTest(payload);
     const hex = scValToHex(scVal);
     expect(hex).toBeTruthy();
     expect(typeof hex).toBe("string");
@@ -158,7 +162,7 @@ describe("SalaryCommitmentClient.encodeProofStruct (ProofStruct → XDR ScVal)",
   ];
 
   it.each(FIXTURES)("produces scVal for %s payload", (_label, payload) => {
-    const scVal = client.encodeProofStruct(payload);
+    const scVal = client.encodeProofStructForTest(payload);
     const hex = scValToHex(scVal);
     expect(hex).toBeTruthy();
     expect(typeof hex).toBe("string");

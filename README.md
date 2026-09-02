@@ -8,6 +8,30 @@ TypeScript SDK for interacting with the ZK Payroll smart contracts.
 npm install @zk-payroll/sdk
 ```
 
+## Quickstart
+
+Minimal examples using fake data — initialize the SDK, validate a payroll
+draft, and read payroll status.
+
+```typescript
+import { PayrollContract, ConfigPresets, DraftBuilder } from "@zk-payroll/sdk";
+
+// 1. Initialize the SDK
+const config = ConfigPresets.testnet().withContractId("CCONTRACT_ID_EXAMPLE").build();
+const contract = new PayrollContract(config);
+
+// 2. Validate a payroll draft before submitting it
+const { errors, warnings } = new DraftBuilder()
+  .add({ recipientId: "GABC...EXAMPLE", amount: "100.00", asset: "native" })
+  .validate();
+if (errors.length > 0) {
+  console.error("Draft is invalid:", errors);
+}
+
+// 3. Read payroll status (balance) for an address
+const balance = await contract.getBalance("GABC...EXAMPLE");
+```
+
 ## Usage
 
 ```typescript
@@ -19,7 +43,7 @@ const service = new PayrollService(DEFAULT_CONFIG);
 // Process a private payment
 await service.processPayment(
   "G...", // Recipient Stellar address
-  1000n   // Amount
+  1000n // Amount
 );
 ```
 
@@ -124,10 +148,14 @@ await client.commit(
 const commitment = await client.getCommitment("G...", "G...", 1n, signer);
 
 // Batch commit multiple salaries
-await client.batchCommit("G...", [
-  { employee: "G...1", commitmentHash: "abcd", cycleId: 1n },
-  { employee: "G...2", commitmentHash: "ef01", cycleId: 1n },
-], signer);
+await client.batchCommit(
+  "G...",
+  [
+    { employee: "G...1", commitmentHash: "abcd", cycleId: 1n },
+    { employee: "G...2", commitmentHash: "ef01", cycleId: 1n },
+  ],
+  signer
+);
 
 // Verify a commitment against a ZK proof
 const isValid = await client.verifyCommitment("G...", "G...", 1n, proof, signer);
@@ -145,7 +173,15 @@ const client = new ProofVerifierClient(server, "CCONTRACT_ID...");
 
 // Verify a ZK proof on-chain
 const valid = await client.verify(
-  { pi_a: ["1","2"], pi_b: [["3","4"],["5","6"]], pi_c: ["7","8"], publicSignals: ["sig1"] },
+  {
+    pi_a: ["1", "2"],
+    pi_b: [
+      ["3", "4"],
+      ["5", "6"],
+    ],
+    pi_c: ["7", "8"],
+    publicSignals: ["sig1"],
+  },
   ["input1"],
   1, // verification key ID
   signer
@@ -220,7 +256,9 @@ excluded from logs, exports, telemetry, and events.
 ## Documentation
 
 - [Setup Guide](./docs/setup.md) - Environment variables and local development setup
+- [Troubleshooting Guide](./docs/TROUBLESHOOTING.md) - Fixes for common install, build, and test failures
 - [API Reference](./docs/API.md) - Complete API documentation
+- [Pagination Helpers](./docs/pagination.md) - Cursor- and offset-based pagination for payroll history and audit records
 - [ZK Proof Generation](./docs/ZK_PROOF_GENERATION.md) - Detailed proof generation guide
 - [Examples](./examples/README.md) - Runnable examples and setup steps
 
@@ -248,4 +286,8 @@ npm run test -w packages/core
 ```
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) and [docs/setup.md](./docs/setup.md) for
-full contributor workflow, pre-commit hooks, and troubleshooting.
+full contributor workflow, pre-commit hooks, and troubleshooting. 
+
+
+
+draft pr 
