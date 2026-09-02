@@ -1,4 +1,3 @@
-import { describe, it, expect } from 'vitest';
 import { buildObligationSnapshotPlan } from './snapshotPlanner';
 
 describe('Payroll Obligation Snapshot Planner (#403)', () => {

@@ -194,7 +194,12 @@ export * from "./reconciliation/report";
 
 // Approval Invalidation Analyzer (#404)
 export * from "./signing/invalidationAnalyzer";
-export * from "./policy/types";
+export type {
+  PayrollPolicyConfig,
+  PayrollDraftRecipient,
+  InvalidationAnalysisResult,
+} from "./policy/types";
+export type { PayrollDraft as PayrollPolicyDraft } from "./policy/types";
 
 // Obligation Snapshot Planner (#403)
 export * from "./obligations/snapshotPlanner";
