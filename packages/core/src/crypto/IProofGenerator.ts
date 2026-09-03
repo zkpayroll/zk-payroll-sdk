@@ -45,6 +45,20 @@ export interface ProofPayload {
     curve: string;
   };
   publicSignals: string[];
+  /** Optional metadata used to verify proof freshness before submission. */
+  metadata?: ProofMetadata;
+}
+
+/** Timestamps and payroll period bound to a generated proof. */
+export interface ProofMetadata {
+  /** ISO-8601 creation timestamp. */
+  createdAt: string;
+  /** ISO-8601 expiry timestamp. */
+  expiresAt: string;
+  /** Inclusive start of the payroll period covered by the proof. */
+  payrollPeriodStart: string;
+  /** Exclusive end of the payroll period covered by the proof. */
+  payrollPeriodEnd: string;
 }
 
 /** Configuration for proof generation artifacts. */

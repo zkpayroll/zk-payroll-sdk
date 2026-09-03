@@ -35,11 +35,7 @@
  */
 
 import { createHmac, timingSafeEqual } from "crypto";
-import type {
-  SignedWebhookEnvelope,
-  WebhookPayload,
-  WebhookVerificationOptions,
-} from "./types";
+import type { SignedWebhookEnvelope, WebhookPayload, WebhookVerificationOptions } from "./types";
 import { WebhookVerificationError } from "./types";
 
 /** Default maximum age for webhook payloads: 5 minutes. */
@@ -72,10 +68,7 @@ function canonicalSerialize(payload: WebhookPayload): string {
  * // "sha256=a1b2c3d4e5..."
  * ```
  */
-export function computeSignature(
-  payload: WebhookPayload,
-  secret: string | Buffer,
-): string {
+export function computeSignature(payload: WebhookPayload, secret: string | Buffer): string {
   const canonical = canonicalSerialize(payload);
   const hmac = createHmac("sha256", secret);
   hmac.update(canonical, "utf8");
@@ -106,34 +99,34 @@ export function computeSignature(
 export function verifyWebhookSignature(
   envelope: SignedWebhookEnvelope,
   secret: string | Buffer,
-  options?: WebhookVerificationOptions,
+  options?: WebhookVerificationOptions
 ): WebhookPayload {
   // ── Envelope structural validation ────────────────────────────────────────
   if (!envelope || typeof envelope !== "object") {
     throw new WebhookVerificationError(
       "Invalid webhook envelope: expected an object",
-      "ENVELOPE_INVALID",
+      "ENVELOPE_INVALID"
     );
   }
 
   if (!envelope.payload) {
     throw new WebhookVerificationError(
       "Invalid webhook envelope: missing payload",
-      "PAYLOAD_MISSING",
+      "PAYLOAD_MISSING"
     );
   }
 
   if (!envelope.signature) {
     throw new WebhookVerificationError(
       "Invalid webhook envelope: missing signature",
-      "SIGNATURE_MISSING",
+      "SIGNATURE_MISSING"
     );
   }
 
   if (!envelope.version) {
     throw new WebhookVerificationError(
       "Invalid webhook envelope: missing version",
-      "VERSION_MISSING",
+      "VERSION_MISSING"
     );
   }
 
@@ -141,7 +134,7 @@ export function verifyWebhookSignature(
     throw new WebhookVerificationError(
       `Unsupported webhook envelope version: "${envelope.version}"`,
       "UNSUPPORTED_VERSION",
-      { version: envelope.version },
+      { version: envelope.version }
     );
   }
 
@@ -151,7 +144,7 @@ export function verifyWebhookSignature(
   if (!envelope.signature.startsWith(SIGNATURE_PREFIX)) {
     throw new WebhookVerificationError(
       "Invalid signature format: expected 'sha256=...' prefix",
-      "SIGNATURE_FORMAT_INVALID",
+      "SIGNATURE_FORMAT_INVALID"
     );
   }
 
@@ -160,7 +153,7 @@ export function verifyWebhookSignature(
   if (!receivedSig || receivedSig.length === 0) {
     throw new WebhookVerificationError(
       "Invalid signature: empty digest after prefix",
-      "SIGNATURE_EMPTY",
+      "SIGNATURE_EMPTY"
     );
   }
 
@@ -172,18 +165,13 @@ export function verifyWebhookSignature(
   const receivedBuf = Buffer.from(receivedSig, "hex");
   const computedBuf = Buffer.from(computedDigest, "hex");
 
-  if (
-    receivedBuf.length !== computedBuf.length ||
-    !timingSafeEqual(receivedBuf, computedBuf)
-  ) {
+  if (receivedBuf.length !== computedBuf.length || !timingSafeEqual(receivedBuf, computedBuf)) {
     throw new WebhookVerificationError(
       "Webhook signature mismatch: payload may have been tampered with",
       "SIGNATURE_MISMATCH",
       {
-        eventId: (payload as unknown as Record<string, unknown>).eventId as
-          | string
-          | undefined,
-      },
+        eventId: (payload as unknown as Record<string, unknown>).eventId as string | undefined,
+      }
     );
   }
 
@@ -192,12 +180,12 @@ export function verifyWebhookSignature(
   const toleranceMs = options?.toleranceMs ?? 0;
 
   if (maxAgeMs > 0) {
-    const timestamp = (payload as unknown as Record<string, unknown>)
-      .timestamp as string | undefined;
+    const timestamp = (payload as unknown as Record<string, unknown>).timestamp as
+      string | undefined;
     if (!timestamp) {
       throw new WebhookVerificationError(
         "Webhook payload is missing timestamp; cannot enforce max age",
-        "TIMESTAMP_MISSING",
+        "TIMESTAMP_MISSING"
       );
     }
 
@@ -206,7 +194,7 @@ export function verifyWebhookSignature(
       throw new WebhookVerificationError(
         "Webhook payload has an invalid timestamp",
         "TIMESTAMP_INVALID",
-        { timestamp },
+        { timestamp }
       );
     }
 
@@ -221,7 +209,7 @@ export function verifyWebhookSignature(
           timestamp,
           age: Math.round(age / 1000),
           maxAge: Math.round(maxAgeMs / 1000),
-        },
+        }
       );
     }
 
@@ -230,7 +218,7 @@ export function verifyWebhookSignature(
       throw new WebhookVerificationError(
         "Webhook payload timestamp is in the future",
         "TIMESTAMP_FUTURE",
-        { timestamp, toleranceMs },
+        { timestamp, toleranceMs }
       );
     }
   }
@@ -257,10 +245,7 @@ export function verifyWebhookSignature(
  */
 export function parseWebhookEnvelope(body: unknown): SignedWebhookEnvelope {
   if (!body || typeof body !== "object") {
-    throw new WebhookVerificationError(
-      "Webhook body must be a JSON object",
-      "BODY_INVALID",
-    );
+    throw new WebhookVerificationError("Webhook body must be a JSON object", "BODY_INVALID");
   }
 
   const candidate = body as Record<string, unknown>;
@@ -268,7 +253,7 @@ export function parseWebhookEnvelope(body: unknown): SignedWebhookEnvelope {
   if (!candidate.payload || !candidate.signature || !candidate.version) {
     throw new WebhookVerificationError(
       "Webhook body is missing required fields (payload, signature, version)",
-      "ENVELOPE_MALFORMED",
+      "ENVELOPE_MALFORMED"
     );
   }
 

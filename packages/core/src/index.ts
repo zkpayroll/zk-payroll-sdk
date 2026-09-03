@@ -2,11 +2,19 @@
  * ZK Payroll SDK — Main entry point.
  *
  * Architecture layers:
+ *   api/      — Public-facing classes and interfaces
+ *   core/     — Business logic (ZK proofs, payroll, caching)
  *   adapters/ — Low-level blockchain/Soroban wrappers
- *   crypto/   — ZK proof generation
- *   cache/    — Caching providers
- *   testing/  — Mock utilities
  */
+
+// ── API Layer ───────────────────────────────────────────────────────────────
+export * from "./api";
+
+// ── Core Layer ──────────────────────────────────────────────────────────────
+export * from "./core";
+
+// ── Backward-compat error aliases (not in the core layer) ───────────────────
+export { PayrollError, PayrollServiceErrorCode, handleApiError } from "./errors";
 
 // ── Adapters Layer ──────────────────────────────────────────────────────────
 export { PayrollService } from "./payroll";
@@ -33,7 +41,6 @@ export {
   formatRedactedError,
   DEFAULT_ERROR_MESSAGES,
   mapRpcError,
-  PayrollError,
   ErrorCategory,
   ERROR_CODE_REGISTRY,
   getErrorCategory,
@@ -52,19 +59,23 @@ export type {
   ErrorCategoryType,
   ErrorCodeEntry,
 } from "./errors";
-export {
-  DEFAULT_CONFIG,
-  ConfigPresets,
-  ConfigBuilder,
-  validateConfig,
-  assertValidConfig,
-} from "./config";
 export type {
   ClientConfig,
   RetryPolicyConfig,
   FeatureFlagsConfig,
   ConfigValidationErrorDetail,
   ConfigValidationResult,
+  ConfigMigrationWarning,
+  ConfigMigrationResult,
+} from "./config";
+export {
+  DEFAULT_CONFIG,
+  ConfigPresets,
+  ConfigBuilder,
+  validateConfig,
+  assertValidConfig,
+  migrateConfig,
+  detectDeprecatedConfigFields,
 } from "./config";
 export * from "./cache";
 export * from "./types";
@@ -77,12 +88,12 @@ export {
 export type { PayrollIdempotencyKeyInput, PaymentIdempotencyKeyInput } from "./core/idempotency";
 export { Semaphore } from "./core/concurrency";
 export * from "./crypto/IProofGenerator";
+export * from "./proofs/freshness";
 export { resolveProofConfig, resolveProofConfigFromEnv } from "./crypto/ProofConfigResolver";
 export type { ProofConfigResolverOptions } from "./crypto/ProofConfigResolver";
+// Keep backward compatibility with existing adapters barrel export
 export * from "./adapters";
 
-// ── Wallet Adapters ─────────────────────────────────────────────────────────
-export * from "./wallets";
 // ── Logging ─────────────────────────────────────────────────────────────────
 export * from "./logging";
 
@@ -95,25 +106,23 @@ export * from "./testing";
 // ── Events ──────────────────────────────────────────────────────────────────
 export { TransactionWatcher } from "./events";
 export type { ConfirmationOptions, ConfirmationResult } from "./events";
-export * from "./polling";
 
-// ── Pagination Helpers ───────────────────────────────────────────────────────
-export * from "./pagination";
+// ── Assets ────────────────────────────────────────────────────────────────────
+export * from "./assets";
 
-// ── Event Stream Parser ──────────────────────────────────────────────────────
-export { parseContractEvent, parseContractEvents, EventParsingError } from "./event-parser";
-export type {
-  RawContractEvent,
-  TypedContractEvent,
-  RegisteredEvent,
-  RegistryUpdatedEvent,
-  RegistryDeactivatedEvent,
-  CommittedEvent,
-  SalaryRevealedEvent,
-  PaymentExecutedEvent,
-  PaymentScheduledEvent,
-  PaymentCancelledEvent,
-} from "./event-parser";
+// ── Proofs ────────────────────────────────────────────────────────────────────
+export {
+  MissingProofError,
+  isMissingProofError,
+  isProofError,
+  getMissingProofRemediation,
+  getProofRemediation,
+  getMissingProofErrorRemediation,
+  formatMissingProofError,
+  formatProofError,
+  MISSING_PROOF_REMEDIATION,
+  GENERIC_PROOF_REMEDIATION,
+} from "./proofs/errors";
 
 // ── Typed Contract Clients ───────────────────────────────────────────────────
 export * from "./clients";
@@ -144,6 +153,10 @@ export * from "./assets";
 
 // ── Transaction Status Mapping ──────────────────────────────────────────────
 export * from "./transactions";
+// ── Payroll Status Label Helpers ────────────────────────────────────────────
+export * from "./status";
+// ── Payroll Period Summary ──────────────────────────────────────────────────
+export * from "./payroll";
 // ── Payload Normalization ───────────────────────────────────────────────────
 export * from "./normalization";
 
@@ -156,8 +169,17 @@ export * from "./reconciliation";
 // ── Audit View-Key Helpers ──────────────────────────────────────────────────
 export * from "./audit";
 
-// ── Idempotent Payroll Request Builder ─────────────────────────────────────
-export * from "./request";
+// ── Audit-Safe Debug Snapshot ───────────────────────────────────────────────
+export * from "./debug";
+
+// ── Privacy Utilities ───────────────────────────────────────────────────────
+export * from "./privacy";
+
+// ── Capability Management ───────────────────────────────────────────────────
+export * from "./capabilities";
+
+// ── Contract Upgrade Analysis ───────────────────────────────────────────────
+export * from "./upgrades";
 
 // ── Webhook Verification ────────────────────────────────────────────────────
 export * from "./webhooks";
@@ -182,28 +204,52 @@ export * from "./classification";
 // Contract State Indexer
 export * from "./indexer";
 
+// ── Payroll Signing Payload Inspector ───────────────────────────────────────
+export * from "./signing";
+
+// ── Error Code Documentation Generation ─────────────────────────────────────
+export * from "./error-docs";
+
 // Proof Artifact Lifecycle
 export * from "./artifacts";
 
-// ── Compliance Holds ─────────────────────────────────────────────────────────
-export * from "./compliance";
+// Multi-Signer Authorization
+export * from "./authorization";
 
-// ── Treasury Checkpoints & Report Parser (#405) ─────────────────────────────
-export * from "./treasury/checkpoints";
-export * from "./reconciliation/report";
+// ── Local Payload Validation ─────────────────────────────────────────────────
+export { PayrollValidation } from "./core/validation";
+export type { ValidationResult } from "./core/validation";
 
-// ── Approval Invalidation Analyzer (#404) ──────────────────────────────────
-export * from "./signing/invalidationAnalyzer";
-export type {
-  PayrollPolicyConfig,
-  PayrollDraftRecipient,
-  InvalidationAnalysisResult,
-} from "./policy/types";
-export type { PayrollDraft as PayrollPolicyDraft } from "./policy/types";
+// ── Payroll Receipts & Verification ─────────────────────────────────────────
+export * from "./receipts";
+export * from "./verification";
+// Payroll Setup Checklist Generator
+export * from "./setup";
 
-// ── Obligation Snapshot Planner (#403) ──────────────────────────────────────
-export * from "./obligations/snapshotPlanner";
-export * from "./privacy/redaction";
+// Network Request Timing Metadata
+export * from "./network";
 
-// ── Employee Reference ID Validator (#388) ─────────────────────────────────
-export * from "./employees/referenceId";
+// ── Employee Eligibility & Reason Codes ─────────────────────────────────────
+export * from "./eligibility";
+export * from "./employees";
+
+// ── Contract Error Remediation Mapper ───────────────────────────────────────
+export * from "./remediation";
+
+// ── Payroll Policy Compiler ──────────────────────────────────────────────────
+export * from "./policy";
+
+// ── Treasury Reservation Lifecycle ──────────────────────────────────────────
+export * from "./treasury";
+
+// ── Reservation Helpers ─────────────────────────────────────────────────────
+export * from "./reservations";
+
+// ── Payroll Dispute Status Decoder ──────────────────────────────────────────
+export * from "./disputes";
+
+// ── Offline Payroll Draft Validation ────────────────────────────────────────
+export * from "./validation";
+
+// ── Network Environment Profile Resolver ────────────────────────────────────
+export * from "./metadata";

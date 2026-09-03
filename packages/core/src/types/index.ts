@@ -37,3 +37,7 @@ export interface PaymentResult {
   /** Public signals from the ZK proof (for on-chain verification) */
   publicSignals: string[];
 }
+
+export * from "../eligibility/types";
+export * from "../eligibility/reasonCodes";
+export * from "../employees/types";

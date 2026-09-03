@@ -1,6 +1,12 @@
-import { rpc, xdr, nativeToScVal, Address, Keypair, Networks } from "@stellar/stellar-sdk";
-import type { ISigner } from "../signer/types";
-import { toISigner } from "../signer/KeypairSigner";
+import {
+  rpc,
+  xdr,
+  nativeToScVal,
+  scValToNative,
+  Address,
+  Keypair,
+  Networks,
+} from "@stellar/stellar-sdk";
 import { BaseContractWrapper } from "../adapters/BaseContractWrapper";
 import {
   ClientOptions,
@@ -9,13 +15,7 @@ import {
   ScheduledPayment,
 } from "./types";
 
-/**
- * Result returned after successfully submitting a payroll payment.
- */
 export interface ExecutePaymentResponse {
-  /**
-   * Transaction hash of the submitted payment.
-   */
   txHash: string;
 }
 
@@ -33,7 +33,7 @@ export class PaymentExecutorClient extends BaseContractWrapper {
 
   async execute(
     request: ExecutePaymentRequest,
-    signer: Keypair | ISigner,
+    signer: Keypair,
     network?: string
   ): Promise<ExecutePaymentResponse> {
     const args: xdr.ScVal[] = [
@@ -43,18 +43,13 @@ export class PaymentExecutorClient extends BaseContractWrapper {
       nativeToScVal(request.memo ?? "", { type: "string" }),
     ];
 
-    const result = await this.invoke(
-      "execute",
-      args,
-      toISigner(signer),
-      network ?? this.networkPassphrase
-    );
+    const result = await this.invoke("execute", args, signer, network ?? this.networkPassphrase);
     return { txHash: this.scValToHex(result) };
   }
 
   async schedule(
     request: SchedulePaymentRequest,
-    signer: Keypair | ISigner,
+    signer: Keypair,
     network?: string
   ): Promise<SchedulePaymentResponse> {
     const args: xdr.ScVal[] = [
@@ -65,30 +60,25 @@ export class PaymentExecutorClient extends BaseContractWrapper {
       nativeToScVal(request.memo ?? "", { type: "string" }),
     ];
 
-    const result = await this.invoke(
-      "schedule",
-      args,
-      toISigner(signer),
-      network ?? this.networkPassphrase
-    );
+    const result = await this.invoke("schedule", args, signer, network ?? this.networkPassphrase);
     return { paymentId: this.scValToBigInt(result) };
   }
 
   async cancel(paymentId: bigint, signer: Keypair, network?: string): Promise<void> {
     const args: xdr.ScVal[] = [nativeToScVal(paymentId, { type: "u64" })];
-    await this.invoke("cancel", args, toISigner(signer), network ?? this.networkPassphrase);
+    await this.invoke("cancel", args, signer, network ?? this.networkPassphrase);
   }
 
   async getScheduledPayment(
     paymentId: bigint,
-    signer: Keypair | ISigner,
+    signer: Keypair,
     network?: string
   ): Promise<ScheduledPayment> {
     const args: xdr.ScVal[] = [nativeToScVal(paymentId, { type: "u64" })];
     const result = await this.invoke(
       "get_scheduled_payment",
       args,
-      toISigner(signer),
+      signer,
       network ?? this.networkPassphrase
     );
     return this.decodeScheduledPayment(result);
@@ -98,7 +88,7 @@ export class PaymentExecutorClient extends BaseContractWrapper {
     employer: string,
     start: bigint,
     limit: number,
-    signer: Keypair | ISigner,
+    signer: Keypair,
     network?: string
   ): Promise<ScheduledPayment[]> {
     const args: xdr.ScVal[] = [
@@ -110,7 +100,7 @@ export class PaymentExecutorClient extends BaseContractWrapper {
     const result = await this.invoke(
       "get_pending_payments",
       args,
-      toISigner(signer),
+      signer,
       network ?? this.networkPassphrase
     );
     return this.decodeScheduledPaymentVec(result);
@@ -121,7 +111,7 @@ export class PaymentExecutorClient extends BaseContractWrapper {
     const result = await this.invoke(
       "get_payment_count",
       args,
-      toISigner(signer),
+      signer,
       network ?? this.networkPassphrase
     );
     return Number(result.u32());
@@ -168,17 +158,32 @@ export class PaymentExecutorClient extends BaseContractWrapper {
   }
 
   private scValToBigInt(scVal: xdr.ScVal): bigint {
-    const swName = scVal.switch().name;
-    if (swName === "scvI128") {
+    try {
+      const native = scValToNative(scVal);
+      if (typeof native === "bigint") return native;
+      if (typeof native === "number") return BigInt(native);
+      if (typeof native === "string") {
+        try {
+          return BigInt(native);
+        } catch {
+          return 0n;
+        }
+      }
+    } catch {}
+    try {
       const i128 = scVal.i128();
-      const hi = BigInt(i128.hi().toString());
-      const lo = BigInt(i128.lo().toString());
-      return (hi << 64n) | lo;
-    }
-    if (swName === "scvU64") {
+      if (i128) {
+        const hi = BigInt((i128.hi() as unknown as { toString: () => string }).toString());
+        const lo = BigInt((i128.lo() as unknown as { toString: () => string }).toString());
+        return (hi << 64n) | lo;
+      }
+    } catch {}
+    try {
       const u64 = scVal.u64();
-      return BigInt(u64.toString());
-    }
+      if (u64) {
+        return BigInt((u64 as unknown as { toString: () => string }).toString());
+      }
+    } catch {}
     return 0n;
   }
 }

@@ -113,3 +113,81 @@ export interface ViewKeyStatusEntry {
   expiresAt: string;
   revokedAt?: string;
 }
+
+// ── Audit Access Request ─────────────────────────────────────────────────────
+
+/** Scope of data an auditor is requesting access to. */
+export type AuditAccessRequestScope =
+  | "transaction-summaries"
+  | "departmental-breakdowns"
+  | "full-payroll";
+
+/**
+ * An auditor's request for access to payroll data.
+ *
+ * Submitted by the requester (auditor) and validated before reaching
+ * contract or admin approval layers.
+ */
+export interface AuditAccessRequest {
+  /** Unique identifier for this access request. */
+  requestId: string;
+  /** Stellar public key of the entity requesting access. */
+  requester: string;
+  /** Human-readable name of the requesting auditor. */
+  requesterName: string;
+  /** Organisation the auditor represents. */
+  requesterOrg: string;
+  /** Scope of data being requested. */
+  scope: AuditAccessRequestScope;
+  /** ISO-8601 date-time when this request expires if unacted upon. */
+  expiresAt: string;
+  /** Free-text justification for the access request. */
+  reason: string;
+  /** ISO-8601 start date of the target payroll period (inclusive). */
+  targetPayrollPeriodStart: string;
+  /** ISO-8601 end date of the target payroll period (exclusive). */
+  targetPayrollPeriodEnd: string;
+  /** ISO-8601 timestamp when the request was created. */
+  createdAt: string;
+}
+
+/** Structured validation error for an audit access request field. */
+export interface AuditAccessRequestValidationError {
+  /** Error code for programmatic handling. */
+  code: AuditAccessRequestErrorCode;
+  /** Human-readable error description. */
+  message: string;
+  /** Dot-notation path to the failing field. */
+  field: string;
+}
+
+/** Error codes for audit access request validation failures. */
+export type AuditAccessRequestErrorCode =
+  | "MISSING_REQUESTER"
+  | "INVALID_REQUESTER_FORMAT"
+  | "MISSING_REQUESTER_NAME"
+  | "MISSING_REQUESTER_ORG"
+  | "MISSING_SCOPE"
+  | "INVALID_SCOPE"
+  | "MISSING_EXPIRES_AT"
+  | "INVALID_EXPIRES_AT_FORMAT"
+  | "EXPIRES_AT_IN_PAST"
+  | "EXPIRES_AT_EXCEEDED_MAX_DURATION"
+  | "MISSING_REASON"
+  | "REASON_TOO_SHORT"
+  | "REASON_TOO_LONG"
+  | "MISSING_TARGET_PAYROLL_PERIOD_START"
+  | "INVALID_TARGET_PAYROLL_PERIOD_START"
+  | "MISSING_TARGET_PAYROLL_PERIOD_END"
+  | "INVALID_TARGET_PAYROLL_PERIOD_END"
+  | "TARGET_PAYROLL_PERIOD_END_BEFORE_START"
+  | "TARGET_PAYROLL_PERIOD_EXCEEDS_MAX_DURATION"
+  | "TARGET_PAYROLL_PERIOD_IN_FUTURE";
+
+/** Result of validating an audit access request. */
+export interface AuditAccessRequestValidationResult {
+  /** Whether the request passed all validation checks. */
+  isValid: boolean;
+  /** Validation errors (empty when valid). */
+  errors: AuditAccessRequestValidationError[];
+}

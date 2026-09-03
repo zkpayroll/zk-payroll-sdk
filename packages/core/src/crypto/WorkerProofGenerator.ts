@@ -1,18 +1,9 @@
-import {
-  IProofGenerator,
-  ProofPayload,
-  ProofGeneratorConfig,
-  witnessKey,
-} from "./IProofGenerator";
+import { IProofGenerator, ProofPayload, ProofGeneratorConfig, witnessKey } from "./IProofGenerator";
 import type { WorkerRequest, WorkerResponse } from "./WorkerMessages";
 import { PayrollError, ProofGenerationError } from "../errors";
 import { IdempotencyRegistry } from "../core/idempotency";
 
-import {
-  PayrollProgressCallback,
-  PayrollProgressEvent,
-  PayrollProgressStage,
-} from "../progress";
+import { PayrollProgressCallback, PayrollProgressEvent, PayrollProgressStage } from "../progress";
 import { validateProofConfig } from "./configValidation";
 import { sanitizeProofInput } from "./proofInputSanitizer";
 
@@ -44,22 +35,10 @@ export interface WorkerProofOptions {
  */
 export interface WorkerLike {
   postMessage(message: WorkerRequest): void;
-  addEventListener(
-    type: "message",
-    listener: (event: { data: WorkerResponse }) => void,
-  ): void;
-  addEventListener(
-    type: "error",
-    listener: (event: { message: string }) => void,
-  ): void;
-  removeEventListener(
-    type: "message",
-    listener: (event: { data: WorkerResponse }) => void,
-  ): void;
-  removeEventListener(
-    type: "error",
-    listener: (event: { message: string }) => void,
-  ): void;
+  addEventListener(type: "message", listener: (event: { data: WorkerResponse }) => void): void;
+  addEventListener(type: "error", listener: (event: { message: string }) => void): void;
+  removeEventListener(type: "message", listener: (event: { data: WorkerResponse }) => void): void;
+  removeEventListener(type: "error", listener: (event: { message: string }) => void): void;
   terminate(): void;
 }
 
@@ -124,7 +103,7 @@ export class WorkerProofGenerator implements IProofGenerator {
   constructor(
     private readonly worker: WorkerLike,
     private readonly config: ProofGeneratorConfig,
-    private readonly options: WorkerProofOptions = {},
+    private readonly options: WorkerProofOptions = {}
   ) {
     validateProofConfig(config);
     this.dedupEnabled = options.dedupSameWitness !== false;
@@ -152,21 +131,14 @@ export class WorkerProofGenerator implements IProofGenerator {
       case "PROOF_ERROR":
         clearTimeout(pending.timer);
         this.pending.delete(msg.id);
-        pending.reject(
-          new PayrollError(
-            `Worker proof generation failed: ${msg.message}`,
-            500,
-          ),
-        );
+        pending.reject(new PayrollError(`Worker proof generation failed: ${msg.message}`, 500));
         break;
 
       case "PROGRESS":
         for (const cb of pending.progressCallbacks) {
           const rawMsg = msg as unknown as Record<string, unknown>;
           const rawStage: string | undefined =
-            "event" in msg && msg.event
-              ? msg.event.stage
-              : (rawMsg.stage as string | undefined);
+            "event" in msg && msg.event ? msg.event.stage : (rawMsg.stage as string | undefined);
           const mappedStage: PayrollProgressStage =
             rawStage === "loading_zkey"
               ? "proof_loading_zkey"
@@ -216,18 +188,13 @@ export class WorkerProofGenerator implements IProofGenerator {
 
   private dispatch(
     req: WorkerRequest,
-    onProgress?: PayrollProgressCallback,
+    onProgress?: PayrollProgressCallback
   ): Promise<ProofPayload> {
     return new Promise<ProofPayload>((resolve, reject) => {
       const timeoutMs = this.options.timeoutMs ?? 120_000;
       const timer = setTimeout(() => {
         this.pending.delete(req.id);
-        reject(
-          new PayrollError(
-            `Proof generation timed out after ${timeoutMs}ms`,
-            408,
-          ),
-        );
+        reject(new PayrollError(`Proof generation timed out after ${timeoutMs}ms`, 408));
       }, timeoutMs);
 
       const progressCallbacks = new Set<PayrollProgressCallback>();
@@ -269,7 +236,7 @@ export class WorkerProofGenerator implements IProofGenerator {
    */
   generateProof(
     witness: Record<string, unknown>,
-    onProgress?: PayrollProgressCallback,
+    onProgress?: PayrollProgressCallback
   ): Promise<ProofPayload> {
     // ── Sanitize witness before dispatching to the worker ─────────────────
     const sanitizeResult = sanitizeProofInput(witness);
@@ -278,7 +245,7 @@ export class WorkerProofGenerator implements IProofGenerator {
       return Promise.reject(
         new ProofGenerationError(firstError.message, firstError.code, {
           field: firstError.field,
-        }),
+        })
       );
     }
     const sanitized = sanitizeResult.sanitized!;
@@ -291,7 +258,7 @@ export class WorkerProofGenerator implements IProofGenerator {
           witness: sanitized,
           config: this.config,
         },
-        onProgress,
+        onProgress
       );
 
     if (!this.dedupEnabled) {
@@ -318,9 +285,7 @@ export class WorkerProofGenerator implements IProofGenerator {
    * on the next proof generation request.
    */
   clearCache(): Promise<void> {
-    return this.dispatch({ type: "CLEAR_CACHE", id: this.nextId() }).then(
-      () => undefined,
-    );
+    return this.dispatch({ type: "CLEAR_CACHE", id: this.nextId() }).then(() => undefined);
   }
 
   /**

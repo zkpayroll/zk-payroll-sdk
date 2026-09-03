@@ -21,7 +21,14 @@ export type WebhookEventType =
   | "transaction.failed"
   | "audit.view_key_granted"
   | "audit.view_key_revoked"
-  | "audit.view_key_expired";
+  | "audit.view_key_expired"
+  | "funding.reserved"
+  | "funding.finalized"
+  | "hold.active"
+  | "hold.released"
+  | "hold.expired"
+  | "dispute.opened"
+  | "dispute.resolved";
 
 // ── Webhook Error ────────────────────────────────────────────────────────────
 
@@ -157,6 +164,91 @@ export interface AuditViewKeyExpiredPayload extends WebhookPayloadBase {
   expiredAt: string;
 }
 
+/**
+ * Payload for funding reservation lifecycle events.
+ *
+ * Field names mirror `FundingReservation`/`ReservationEvent` in
+ * `treasury/types.ts` — this is the webhook-safe (JSON-serializable)
+ * projection of the same reservation lifecycle. Amounts are strings
+ * (not bigint) since JSON has no bigint representation.
+ */
+export interface FundingReservedPayload extends WebhookPayloadBase {
+  event: "funding.reserved";
+  reservationId: string;
+  employer: string;
+  reservedAmount: string;
+  asset: string;
+  expiresAt: string;
+}
+
+/**
+ * Emitted when a reservation is finalized after payroll execution —
+ * i.e. the funds have actually moved, distinct from `hold.*` events
+ * which describe the reservation's locked/unlocked state while pending.
+ */
+export interface FundingFinalizedPayload extends WebhookPayloadBase {
+  event: "funding.finalized";
+  reservationId: string;
+  employer: string;
+  usedAmount: string;
+  remainingAmount: string;
+  asset: string;
+  txHash: string;
+}
+
+/**
+ * Payload for hold (reservation lock) state-change events — the
+ * pending, not-yet-settled side of a funding reservation's lifecycle.
+ */
+export interface HoldActivePayload extends WebhookPayloadBase {
+  event: "hold.active";
+  reservationId: string;
+  employer: string;
+  reservedAmount: string;
+  asset: string;
+  expiresAt: string;
+}
+
+export interface HoldReleasedPayload extends WebhookPayloadBase {
+  event: "hold.released";
+  reservationId: string;
+  employer: string;
+  releasedAmount: string;
+  asset: string;
+  reason?: string;
+}
+
+export interface HoldExpiredPayload extends WebhookPayloadBase {
+  event: "hold.expired";
+  reservationId: string;
+  employer: string;
+  reservedAmount: string;
+  asset: string;
+}
+
+/**
+ * Payload for payroll dispute lifecycle events.
+ *
+ * Field names mirror `DisputeEvent` in `disputes/types.ts`.
+ */
+export interface DisputeOpenedPayload extends WebhookPayloadBase {
+  event: "dispute.opened";
+  disputeId: string;
+  category: string;
+  severity: "info" | "warning" | "critical";
+  relatedPayrollId?: string;
+  employer?: string;
+  reasonCode?: string;
+}
+
+export interface DisputeResolvedPayload extends WebhookPayloadBase {
+  event: "dispute.resolved";
+  disputeId: string;
+  category: string;
+  relatedPayrollId?: string;
+  employer?: string;
+}
+
 // ── Discriminated Union ──────────────────────────────────────────────────────
 
 /**
@@ -184,7 +276,14 @@ export type WebhookPayload =
   | TransactionPendingPayload
   | AuditViewKeyGrantedPayload
   | AuditViewKeyRevokedPayload
-  | AuditViewKeyExpiredPayload;
+  | AuditViewKeyExpiredPayload
+  | FundingReservedPayload
+  | FundingFinalizedPayload
+  | HoldActivePayload
+  | HoldReleasedPayload
+  | HoldExpiredPayload
+  | DisputeOpenedPayload
+  | DisputeResolvedPayload;
 
 // ── Signed Envelope ──────────────────────────────────────────────────────────
 

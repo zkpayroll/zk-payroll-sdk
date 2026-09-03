@@ -37,7 +37,7 @@ export function buildObligationSnapshotPlan(
   const items: RedactedObligationItem[] = obligations.map((ob) => {
     total += ob.amount;
     return {
-      hashedEmployeeId: hashEmployeeReferenceId(ob.employeeId, salt),
+      hashedEmployeeId: hashEmployeeReferenceId(ob.employeeId),
       amount: ob.amount.toString(),
       asset: ob.asset,
       destinationAddress: ob.destinationAddress,
