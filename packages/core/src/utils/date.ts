@@ -106,6 +106,69 @@ export function getNextPeriod(period: string): string {
  * @param period2 - Second period in "YYYY-MM" format
  * @returns True if same month and year
  */
-function isSamePeriod(period1: string, period2: string): boolean {
+export function isSamePeriod(period1: string, period2: string): boolean {
   return period1 === period2;
+}
+
+/**
+ * Format a duration in milliseconds into a concise human-readable string.
+ *
+ * @param ms - Duration in milliseconds
+ * @returns Human-readable duration (e.g., "5d 12h", "3h 45m", "15m", "45s")
+ */
+export function formatDurationMs(ms: number): string {
+  if (ms <= 0) {
+    return "0s";
+  }
+  const totalSeconds = Math.floor(ms / 1000);
+  const days = Math.floor(totalSeconds / 86400);
+  const hours = Math.floor((totalSeconds % 86400) / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  if (days > 0) {
+    return hours > 0 ? `${days}d ${hours}h` : `${days}d`;
+  }
+  if (hours > 0) {
+    return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
+  }
+  if (minutes > 0) {
+    return seconds > 0 ? `${minutes}m ${seconds}s` : `${minutes}m`;
+  }
+  return `${seconds}s`;
+}
+
+/**
+ * Safely parse a date input (number, string, or Date) into epoch milliseconds.
+ *
+ * @param input - Date representation (epoch ms, ISO string, or Date object)
+ * @returns Epoch milliseconds or null if invalid or undefined
+ */
+export function parseTimestampMs(input?: number | string | Date | null): number | null {
+  if (input === null || input === undefined) {
+    return null;
+  }
+  if (typeof input === "number") {
+    if (!Number.isFinite(input) || Number.isNaN(input)) {
+      return null;
+    }
+    return input;
+  }
+  if (input instanceof Date) {
+    const time = input.getTime();
+    return Number.isNaN(time) ? null : time;
+  }
+  if (typeof input === "string") {
+    const trimmed = input.trim();
+    if (!trimmed) {
+      return null;
+    }
+    const num = Number(trimmed);
+    if (!Number.isNaN(num) && /^\d+$/.test(trimmed)) {
+      return num;
+    }
+    const parsed = Date.parse(trimmed);
+    return Number.isNaN(parsed) ? null : parsed;
+  }
+  return null;
 }
