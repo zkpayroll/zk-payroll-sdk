@@ -172,3 +172,90 @@ export function parseTimestampMs(input?: number | string | Date | null): number 
   }
   return null;
 }
+
+/**
+ * Format relative elapsed time between two timestamps (#423).
+ *
+ * @param from - Origin timestamp (epoch ms, ISO string, or Date)
+ * @param now - Target/current timestamp (epoch ms, ISO string, or Date). Defaults to Date.now()
+ * @returns Human-readable relative time (e.g. "just now", "5 minutes ago", "2 hours ago")
+ */
+export function formatRelativeTime(
+  from?: number | string | Date | null,
+  now?: number | string | Date | null
+): string {
+  const fromMs = parseTimestampMs(from);
+  if (fromMs === null) {
+    return "invalid date";
+  }
+
+  const nowMs =
+    now !== undefined && now !== null ? (parseTimestampMs(now) ?? Date.now()) : Date.now();
+  const diffMs = nowMs - fromMs;
+
+  // Handle small clock skew / slight future differences (< 5 seconds)
+  if (diffMs < 0) {
+    const futureMs = Math.abs(diffMs);
+    if (futureMs < 5000) {
+      return "just now";
+    }
+    const futureSec = Math.floor(futureMs / 1000);
+    if (futureSec < 60) {
+      return `in ${futureSec} seconds`;
+    }
+    const futureMin = Math.floor(futureSec / 60);
+    if (futureMin === 1) {
+      return "in 1 minute";
+    }
+    if (futureMin < 60) {
+      return `in ${futureMin} minutes`;
+    }
+    const futureHrs = Math.floor(futureMin / 60);
+    if (futureHrs === 1) {
+      return "in 1 hour";
+    }
+    if (futureHrs < 24) {
+      return `in ${futureHrs} hours`;
+    }
+    const futureDays = Math.floor(futureHrs / 24);
+    return futureDays === 1 ? "in 1 day" : `in ${futureDays} days`;
+  }
+
+  const sec = Math.floor(diffMs / 1000);
+  if (sec < 45) {
+    return "just now";
+  }
+  const min = Math.floor(sec / 60);
+  if (min < 1) {
+    return "just now";
+  }
+  if (min === 1) {
+    return "1 minute ago";
+  }
+  if (min < 60) {
+    return `${min} minutes ago`;
+  }
+  const hours = Math.floor(min / 60);
+  if (hours === 1) {
+    return "1 hour ago";
+  }
+  if (hours < 24) {
+    return `${hours} hours ago`;
+  }
+  const days = Math.floor(hours / 24);
+  if (days === 1) {
+    return "1 day ago";
+  }
+  if (days < 30) {
+    return `${days} days ago`;
+  }
+  const months = Math.floor(days / 30);
+  if (months === 1) {
+    return "1 month ago";
+  }
+  if (months < 12) {
+    return `${months} months ago`;
+  }
+  const years = Math.floor(days / 365);
+  return years === 1 ? "1 year ago" : `${years} years ago`;
+}
