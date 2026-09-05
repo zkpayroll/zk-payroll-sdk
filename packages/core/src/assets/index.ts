@@ -6,3 +6,4 @@ export * from "./AssetRegistry";
 export * from "./assetIdentity";
 export * from "./formatters";
 export * from "./types";
+export * from "./decimals";
