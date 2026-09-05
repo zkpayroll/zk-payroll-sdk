@@ -57,3 +57,5 @@ export class EventDecodingError extends Error {
     this.name = "EventDecodingError";
   }
 }
+
+export type { TreasuryDepositEvent } from "./treasuryDeposit";
