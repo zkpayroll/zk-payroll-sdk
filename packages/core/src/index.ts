@@ -256,3 +256,6 @@ export * from "./metadata";
 
 // ── Employee Import Result Parser ──────────────────────────────────────────
 export * from "./import";
+
+// ── Payroll Role Capability Matrix (#281) ──────────────────────────────────
+export * from "./roles";
