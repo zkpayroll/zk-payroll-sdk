@@ -36,3 +36,6 @@ export type {
   FinalizeReservationResponse,
   ReservationStatusCheck,
 } from "./types";
+
+// ── Treasury Readiness Result Types (#276) ────────────────────────────────
+export * from "./readiness";
