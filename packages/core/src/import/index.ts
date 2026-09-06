@@ -21,3 +21,6 @@ export type {
   RedactedRecordPreview,
   ReviewableDuplicateCluster,
 } from "./types";
+
+// ── Employee Import Result Parser (#283) ──────────────────────────────────
+export * from "./resultParser";
