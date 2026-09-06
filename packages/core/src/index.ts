@@ -259,3 +259,6 @@ export * from "./import";
 
 // ── Payroll Role Capability Matrix (#281) ──────────────────────────────────
 export * from "./roles";
+
+// ── Payroll Issue Export Sanitizer (#279) ──────────────────────────────────
+export * from "./issues";
