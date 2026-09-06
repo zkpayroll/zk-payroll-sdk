@@ -265,3 +265,6 @@ export * from "./issues";
 
 // ── Payroll Schedule Normalization Helper (#275) ──────────────────────────
 export * from "./schedules";
+
+// ── Payroll Batch Fingerprint Helper (#273) ────────────────────────────────
+export * from "./fingerprint";
