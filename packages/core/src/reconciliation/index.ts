@@ -1,6 +1,7 @@
 export { generateReconciliationDiff } from "./ReconciliationDiffGenerator";
 export { ReconciliationSnapshotBuilder } from "./SnapshotBuilder";
 export { ReservationReconciliationHelper } from "./ReservationReconciliationHelper";
+export * from "./statusClassifier";
 export type {
   ObservedPaymentState,
   ReconciliationDiffCategory,
