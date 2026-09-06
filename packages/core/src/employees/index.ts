@@ -4,3 +4,4 @@ export * from "./walletRotation";
 export * from "./removal";
 export * from "./referenceId";
 export * from "./onboardingDuplicates";
+export * from "../import/resultParser";

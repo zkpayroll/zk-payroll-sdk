@@ -253,3 +253,6 @@ export * from "./validation";
 
 // ── Network Environment Profile Resolver ────────────────────────────────────
 export * from "./metadata";
+
+// ── Employee Import Result Parser ──────────────────────────────────────────
+export * from "./import";
