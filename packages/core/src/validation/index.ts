@@ -18,3 +18,6 @@ export {
   ValidationErrorCodes,
   ValidationStatistics,
 } from "./types";
+
+// ── Payroll Validation Warning Collector (#282) ───────────────────────────
+export * from "./warningCollector";
