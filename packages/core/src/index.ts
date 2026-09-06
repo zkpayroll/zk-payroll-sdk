@@ -262,3 +262,6 @@ export * from "./roles";
 
 // ── Payroll Issue Export Sanitizer (#279) ──────────────────────────────────
 export * from "./issues";
+
+// ── Payroll Schedule Normalization Helper (#275) ──────────────────────────
+export * from "./schedules";
