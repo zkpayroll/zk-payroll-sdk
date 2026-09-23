@@ -207,3 +207,12 @@ export * from "./privacy/redaction";
 
 // Employee Reference ID Validator (#388)
 export * from "./employees/referenceId";
+// Encrypted Memo Preparation (#340)
+export * from "./memos";
+// Multi-Asset Funding Readiness (#341)
+export * from "./funding";
+// Typed Simulation Result Parser (#339)
+export { parseSimulationResponse } from "./simulation/parser";
+export type { ParsedSim, SimCategory, SimDiag } from "./simulation/parser";
+// Payroll Batch Diff Engine (#338)
+export * from "./batches/engine";
