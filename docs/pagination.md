@@ -125,3 +125,67 @@ interface PaginationMeta {
 | `MAX_PAGE_SIZE`     | 100 |
 
 Requests outside this range are automatically clamped.
+
+---
+
+# Batch pagination helpers (Issue #102)
+
+The helpers above paginate *views* of payroll history and audit records.
+For **processing** large employee or payroll-recipient collections in
+manageable batches, use the batch pagination helpers instead:
+
+```ts
+import { getBatchPage, iterateBatches } from "@zk-payroll/core";
+```
+
+These are pure, stateless utilities: they only decide which records belong
+to the current batch. Ordering is always preserved, records are never
+duplicated or skipped across batches, and no payroll data is logged.
+
+## Fetching a single batch
+
+```ts
+const batch = getBatchPage(employees, 100, 0); // pageSize, zero-based batch index
+
+batch.items;        // Records in this batch (original order)
+batch.index;        // Zero-based batch index
+batch.offset;       // Start offset within the collection
+batch.count;        // Records in this batch
+batch.totalItems;   // Total records in the collection
+batch.totalPages;   // Total number of batches
+batch.hasNext;      // Whether another batch follows
+```
+
+An empty collection yields one empty batch with `hasNext = false`.
+A batch index beyond the last page returns an empty batch rather than throwing.
+
+## Iterating all batches
+
+```ts
+for (const batch of iterateBatches(recipients, 50)) {
+  await processRecipientBatch(batch.items);
+}
+```
+
+Concatenating `items` across all batches reconstructs the original
+collection exactly once and in the original order.
+
+Omitting `pageSize` treats the whole collection as a single batch, so
+callers that do not opt into pagination keep their existing behavior:
+
+```ts
+processBatchPayments(entries);        // One pass over all entries
+processBatchPayments(entries, 100);   // Processed in batches of 100
+```
+
+## Validation
+
+Unlike view pagination (which clamps), invalid batch parameters fail fast
+with a `ValidationError` so a payroll run never processes records in an
+unintended batch size:
+
+| Input                                  | Behavior                                    |
+|----------------------------------------|---------------------------------------------|
+| `pageSize` of `0`, negative, `NaN`, `Infinity`, non-integer | Throws `ValidationError` (`field: "pageSize"`) |
+| Negative or non-integer batch index    | Throws `ValidationError` (`field: "batchIndex"`) |
+| `pageSize` omitted                     | Whole collection treated as a single batch  |

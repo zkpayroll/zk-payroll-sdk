@@ -17,6 +17,21 @@ export { buildSimulatedTransaction, simulatePolling } from "./transactionSimulat
 export type { SimulatedTransaction } from "./transactionSimulator";
 export { buildReconciliation } from "./reconciliation";
 
+// ── Typed simulation result parsing ────────────────────────────────────────
+export {
+  parseSimulationResponse,
+  classifySimulationFailure,
+  sanitizeSimulationDetail,
+  SIMULATION_DETAIL_MAX_LENGTH,
+} from "./resultParser";
+export type {
+  ParsedSimulationResult,
+  ParsedSimulationCategory,
+  ParsedSimulationFinding,
+  ParsedFindingSeverity,
+  ParsedSimulationDiagnostics,
+} from "./resultParser";
+
 // ── Types ──────────────────────────────────────────────────────────────────
 export type {
   SimulationCompanyConfig,

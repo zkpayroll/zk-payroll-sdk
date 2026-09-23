@@ -1,6 +1,7 @@
 import { rpc } from "@stellar/stellar-sdk";
 import { TransactionWatcher, ConfirmationResult } from "../src/events";
 import { ContractExecutionError, ContractErrorCode } from "../src/errors";
+import { RetryBudgetExhaustedError } from "../src/core/retry-budget";
 
 function createMockServer(responses: rpc.Api.GetTransactionResponse[]): rpc.Server {
   let callIndex = 0;
@@ -259,7 +260,7 @@ describe("TransactionWatcher", () => {
       });
     });
 
-    it("emits 'error' on RPC errors", async () => {
+    it("emits 'error' with a distinguishable retry-budget error on RPC errors", async () => {
       const server = {
         getTransaction: jest.fn().mockRejectedValue(new Error("RPC down")),
       } as unknown as rpc.Server;
@@ -273,7 +274,12 @@ describe("TransactionWatcher", () => {
       await watcher.waitForConfirmation("tx_hash", { pollIntervalMs: 10 }).catch(() => {});
 
       expect(emittedError).not.toBeNull();
-      expect(emittedError!.message).toBe("RPC down");
+      // The retry budget is exhausted after 3 attempts and surfaces as a
+      // distinct error carrying the original RPC failure as its cause.
+      expect(emittedError).toBeInstanceOf(RetryBudgetExhaustedError);
+      const retryError = emittedError as RetryBudgetExhaustedError | null;
+      expect(retryError!.message).toContain("RPC down");
+      expect(retryError!.attempts).toBe(3);
     });
 
     it("emits 'cancelled' when polling is aborted", async () => {

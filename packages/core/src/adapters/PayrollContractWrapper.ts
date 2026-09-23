@@ -3,6 +3,7 @@ import type { ISigner } from "../signer/types";
 import { toISigner } from "../signer/KeypairSigner";
 import { BaseContractWrapper, InvokeOptions, PreparedInvocation } from "./BaseContractWrapper";
 import { ProofPayload } from "../crypto/IProofGenerator";
+import type { RetryBudgetsConfig } from "../config";
 
 /**
  * PayrollContractWrapper — Concrete adapter for the ZK Payroll Soroban contract.
@@ -11,8 +12,8 @@ import { ProofPayload } from "../crypto/IProofGenerator";
  * via the BaseContractWrapper.invoke() pipeline.
  */
 export class PayrollContractWrapper extends BaseContractWrapper {
-  constructor(server: rpc.Server, contractId: string) {
-    super(server, contractId);
+  constructor(server: rpc.Server, contractId: string, retryBudgets?: RetryBudgetsConfig) {
+    super(server, contractId, retryBudgets);
   }
 
   /**
@@ -130,7 +131,7 @@ export class PayrollContractWrapper extends BaseContractWrapper {
   /**
    * Encode a ProofPayload into an XDR ScVal map for the contract verifier.
    */
-  private encodeProof(proof: ProofPayload): xdr.ScVal {
+  protected encodeProof(proof: ProofPayload): xdr.ScVal {
     const piA = xdr.ScVal.scvVec(proof.proof.pi_a.map((s) => nativeToScVal(s, { type: "string" })));
     const piB = xdr.ScVal.scvVec(
       proof.proof.pi_b.map((pair) =>

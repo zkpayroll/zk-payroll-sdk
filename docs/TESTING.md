@@ -216,6 +216,104 @@ mockEnv.verify();
 // PayrollError: "Expectations not met. The following methods were not invoked: getBalance"
 ```
 
+## Reusable SDK Fixtures
+
+For this SDK, the safest pattern is to keep deterministic fixtures in the shared test fixture suite and compose them through small helper builders instead of hand-writing one-off objects in each test. The repo already groups fixtures by concern in `packages/core/tests/fixtures`, and the barrel export in `packages/core/tests/fixtures/index.ts` makes them easy to import across test files.
+
+### Fixture principles
+
+- Keep fixture values deterministic and fully hardcoded.
+- Prefer reusable helper builders that accept overrides.
+- Use realistic but non-sensitive addresses, employee IDs, and asset IDs.
+- Keep private payroll values out of logs and test names.
+- Cover both happy-path and failure-path fixtures for the same object family.
+
+### Example builder pattern
+
+```typescript
+export type PayrollDraftFixture = {
+  id: string;
+  label: string;
+  employer: string;
+  entries: Array<{
+    recipientId: string;
+    amount: string;
+    asset: string;
+    note?: string;
+  }>;
+};
+
+export const createPayrollDraftFixture = (
+  overrides: Partial<PayrollDraftFixture> = {}
+): PayrollDraftFixture => ({
+  id: "draft_001",
+  label: "April 2025 Payroll",
+  employer: "GAEMPLOYER1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+  entries: [
+    {
+      recipientId: "GAEMPLOYEE1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+      amount: "1000",
+      asset: "native",
+    },
+  ],
+  ...overrides,
+});
+
+export const createEmployeeFixture = (overrides = {}) => ({
+  employeeId: "EMP-001",
+  recipient: "GAEMPLOYEE1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+  department: "Engineering",
+  ...overrides,
+});
+
+export const createAssetFixture = (overrides = {}) => ({
+  id: "native",
+  symbol: "XLM",
+  decimals: 7,
+  ...overrides,
+});
+
+export const createPayrollEventFixture = (overrides = {}) => ({
+  type: "payroll.created",
+  draftId: "draft_001",
+  createdAt: "2025-04-01T00:00:00.000Z",
+  ...overrides,
+});
+```
+
+### Recommended usage
+
+```typescript
+import {
+  createPayrollDraftFixture,
+  createEmployeeFixture,
+  createAssetFixture,
+  createPayrollEventFixture,
+} from "../tests/fixtures";
+
+const draft = createPayrollDraftFixture();
+const employee = createEmployeeFixture({ employeeId: "EMP-002" });
+const asset = createAssetFixture({ id: "USDC", symbol: "USDC", decimals: 6 });
+const event = createPayrollEventFixture({ draftId: draft.id });
+
+expect(draft.entries[0].amount).toBe("1000");
+expect(employee.recipient).toBeDefined();
+expect(asset.symbol).toBe("USDC");
+expect(event.type).toBe("payroll.created");
+```
+
+### Edge cases to cover
+
+- Empty draft or invalid recipient in a payroll draft.
+- Duplicate employee IDs across the same batch.
+- Missing required asset or malformed asset identifier.
+- Mixed asset warnings when a draft combines native and token payouts.
+- Event payloads with missing or redacted private fields.
+
+### Privacy and redaction checks
+
+Fixtures should never include real payroll secrets, witness data, or production-like note values. When an object contains a private amount or witness, prefer a redacted placeholder such as `"[REDACTED]"` or omit the field entirely. This keeps fixture output useful to tests without leaking sensitive payroll data in logs, exports, or telemetry.
+
 ## Advanced Features
 
 ### Strict Mode
@@ -502,10 +600,10 @@ const realServer = new rpc.Server("https://soroban-testnet.stellar.org");
 
 // Wrap the server with flakiness rules
 const flakyServer = createFlakyServer(realServer, {
-  failFirstAttempts: 2,                  // Fail the first 2 attempts
-  failureRate: 0.1,                      // 10% chance of failure on subsequent attempts
-  delayMs: 150,                          // Add a flat 150ms latency to every call
-  targetMethods: ["getTransaction"],     // Only inject flakiness into getTransaction calls
+  failFirstAttempts: 2, // Fail the first 2 attempts
+  failureRate: 0.1, // 10% chance of failure on subsequent attempts
+  delayMs: 150, // Add a flat 150ms latency to every call
+  targetMethods: ["getTransaction"], // Only inject flakiness into getTransaction calls
   errorFactory: () => new Error("RPC down"), // Throw this custom error
 });
 
@@ -563,6 +661,21 @@ mockEnv.expectInvoke("getBalance").toReturn("1000");
 // ✅ Correct type
 mockEnv.expectInvoke("getBalance").toReturn(1000n);
 ```
+
+## Edge Payroll Scenario Fixtures
+
+For difficult payroll states (expired reservations, compliance holds, active
+disputes, stale drafts, network mismatches, duplicate releases), the SDK ships
+deterministic, privacy-safe fixtures. Import them directly:
+
+```ts
+import { createExpiredReservationFixture } from "@zk-payroll/core";
+
+const { reservation, referenceTimestamp } = createExpiredReservationFixture().data;
+```
+
+See [Edge Payroll Scenario Fixtures](./EDGE_FIXTURES.md) for the full scenario
+list, import examples, determinism guarantees, and stability tests.
 
 ## Next Steps
 

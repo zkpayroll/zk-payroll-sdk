@@ -3,10 +3,11 @@ export {
   isKnownEnvironment,
   listKnownEnvironments,
   validateContractMetadata,
+  resolveNetworkProfile,
   buildClientConfig,
 } from "./metadata";
 export type {
-  ContractMetadata,
+  NetworkProfile,
   KnownEnvironment,
   MetadataValidationResult,
   MetadataValidationError,
@@ -14,3 +15,4 @@ export type {
 } from "./types";
 export { MetadataErrorCode } from "./types";
 export { KNOWN_ENVIRONMENTS, ENVIRONMENT_MAP } from "./environments";
+export type { ValidateContractMetadataOptions, NetworkProfileInput } from "./metadata";

@@ -1,10 +1,7 @@
 import { rpc, xdr, Keypair, Networks, StrKey } from "@stellar/stellar-sdk";
 import type { ISigner } from "../src/signer/types";
 import { PayrollContractWrapper } from "../src/adapters/PayrollContractWrapper";
-import type {
-  InvokeOptions,
-  PreparedInvocation,
-} from "../src/adapters/BaseContractWrapper";
+import type { InvokeOptions, PreparedInvocation } from "../src/adapters/BaseContractWrapper";
 import { ProofPayload } from "../src/crypto/IProofGenerator";
 
 // Generate valid Stellar IDs for testing
@@ -18,16 +15,14 @@ const TEST_RECIPIENT = Keypair.random().publicKey();
 class TestablePayrollContractWrapper extends PayrollContractWrapper {
   public invokeStub = jest.fn().mockResolvedValue(xdr.ScVal.scvVoid());
   public buildInvocationStub = jest.fn();
-  public submitInvocationStub = jest
-    .fn()
-    .mockResolvedValue(xdr.ScVal.scvVoid());
+  public submitInvocationStub = jest.fn().mockResolvedValue(xdr.ScVal.scvVoid());
 
   protected async invoke(
     method: string,
     args: xdr.ScVal[],
     signer: ISigner,
     network?: string,
-    options?: InvokeOptions,
+    options?: InvokeOptions
   ): Promise<xdr.ScVal> {
     return this.invokeStub(method, args, signer, network, options);
   }
@@ -37,20 +32,14 @@ class TestablePayrollContractWrapper extends PayrollContractWrapper {
     args: xdr.ScVal[],
     sourcePublicKey: string,
     network?: string,
-    requestId?: string,
+    requestId?: string
   ): Promise<PreparedInvocation> {
-    return this.buildInvocationStub(
-      method,
-      args,
-      sourcePublicKey,
-      network,
-      requestId,
-    );
+    return this.buildInvocationStub(method, args, sourcePublicKey, network, requestId);
   }
 
   protected async submitInvocation(
     prepared: PreparedInvocation,
-    signer: ISigner,
+    signer: ISigner
   ): Promise<xdr.ScVal> {
     return this.submitInvocationStub(prepared, signer);
   }
@@ -87,26 +76,20 @@ describe("PayrollContractWrapper", () => {
         args: unknown[],
         sourcePublicKey: string,
         network?: string,
-        requestId?: string,
+        requestId?: string
       ) =>
         ({
           method,
           requestId: requestId ?? "req-stub",
           network: network ?? Networks.TESTNET,
           transaction: {} as unknown as PreparedInvocation["transaction"],
-        }) satisfies PreparedInvocation,
+        }) satisfies PreparedInvocation
     );
   });
 
   describe("privatePay", () => {
     it("calls invoke with method name 'private_pay'", async () => {
-      await wrapper.privatePay(
-        TEST_RECIPIENT,
-        1000n,
-        "native",
-        MOCK_PROOF,
-        signer,
-      );
+      await wrapper.privatePay(TEST_RECIPIENT, 1000n, "native", MOCK_PROOF, signer);
 
       expect(wrapper.invokeStub).toHaveBeenCalledTimes(1);
       expect(wrapper.invokeStub.mock.calls[0][0]).toBe("private_pay");
@@ -119,7 +102,7 @@ describe("PayrollContractWrapper", () => {
         "native",
         MOCK_PROOF,
         signer,
-        Networks.PUBLIC,
+        Networks.PUBLIC
       );
 
       expect(wrapper.invokeStub.mock.calls[0][2]).toBe(signer);
@@ -136,7 +119,7 @@ describe("PayrollContractWrapper", () => {
         Networks.TESTNET,
         {
           idempotencyKey: "req-1",
-        },
+        }
       );
 
       expect(wrapper.invokeStub.mock.calls[0][4]).toEqual({
@@ -145,38 +128,20 @@ describe("PayrollContractWrapper", () => {
     });
 
     it("defaults to TESTNET when network is not specified", async () => {
-      await wrapper.privatePay(
-        TEST_RECIPIENT,
-        1000n,
-        "native",
-        MOCK_PROOF,
-        signer,
-      );
+      await wrapper.privatePay(TEST_RECIPIENT, 1000n, "native", MOCK_PROOF, signer);
 
       expect(wrapper.invokeStub.mock.calls[0][3]).toBe(Networks.TESTNET);
     });
 
     it("encodes four XDR arguments (recipient, amount, asset, proof)", async () => {
-      await wrapper.privatePay(
-        TEST_RECIPIENT,
-        1000n,
-        "native",
-        MOCK_PROOF,
-        signer,
-      );
+      await wrapper.privatePay(TEST_RECIPIENT, 1000n, "native", MOCK_PROOF, signer);
 
       const args: xdr.ScVal[] = wrapper.invokeStub.mock.calls[0][1];
       expect(args).toHaveLength(4);
     });
 
     it("encodes proof as ScVal map with pi_a, pi_b, pi_c, public_signals keys", async () => {
-      await wrapper.privatePay(
-        TEST_RECIPIENT,
-        1000n,
-        "native",
-        MOCK_PROOF,
-        signer,
-      );
+      await wrapper.privatePay(TEST_RECIPIENT, 1000n, "native", MOCK_PROOF, signer);
 
       const args: xdr.ScVal[] = wrapper.invokeStub.mock.calls[0][1];
       const proofArg = args[3];
@@ -218,7 +183,7 @@ describe("PayrollContractWrapper", () => {
         1000n,
         "native",
         MOCK_PROOF,
-        TEST_RECIPIENT,
+        TEST_RECIPIENT
       );
 
       expect(wrapper.buildInvocationStub).toHaveBeenCalledTimes(1);
@@ -233,13 +198,11 @@ describe("PayrollContractWrapper", () => {
         MOCK_PROOF,
         TEST_RECIPIENT,
         Networks.PUBLIC,
-        "req-42",
+        "req-42"
       );
 
       expect(wrapper.buildInvocationStub.mock.calls[0][2]).toBe(TEST_RECIPIENT);
-      expect(wrapper.buildInvocationStub.mock.calls[0][3]).toBe(
-        Networks.PUBLIC,
-      );
+      expect(wrapper.buildInvocationStub.mock.calls[0][3]).toBe(Networks.PUBLIC);
       expect(wrapper.buildInvocationStub.mock.calls[0][4]).toBe("req-42");
     });
 
@@ -249,7 +212,7 @@ describe("PayrollContractWrapper", () => {
         1000n,
         "native",
         MOCK_PROOF,
-        TEST_RECIPIENT,
+        TEST_RECIPIENT
       );
 
       const args: xdr.ScVal[] = wrapper.buildInvocationStub.mock.calls[0][1];
@@ -263,7 +226,7 @@ describe("PayrollContractWrapper", () => {
         1000n,
         "native",
         MOCK_PROOF,
-        TEST_RECIPIENT,
+        TEST_RECIPIENT
       );
 
       expect(wrapper.invokeStub).not.toHaveBeenCalled();
@@ -276,7 +239,7 @@ describe("PayrollContractWrapper", () => {
         1000n,
         "native",
         MOCK_PROOF,
-        TEST_RECIPIENT,
+        TEST_RECIPIENT
       );
 
       expect(prepared.method).toBe("private_pay");
@@ -291,7 +254,7 @@ describe("PayrollContractWrapper", () => {
         1000n,
         "native",
         MOCK_PROOF,
-        TEST_RECIPIENT,
+        TEST_RECIPIENT
       );
 
       await wrapper.submitPrivatePayInvocation(prepared, signer);
@@ -306,7 +269,7 @@ describe("PayrollContractWrapper", () => {
         1000n,
         "native",
         MOCK_PROOF,
-        TEST_RECIPIENT,
+        TEST_RECIPIENT
       );
       wrapper.buildInvocationStub.mockClear();
 
@@ -323,15 +286,13 @@ describe("PayrollContractWrapper", () => {
         MOCK_PROOF,
         TEST_RECIPIENT,
         Networks.TESTNET,
-        "attempt-1",
+        "attempt-1"
       );
 
-      wrapper.submitInvocationStub.mockRejectedValueOnce(
-        new Error("submission failed"),
+      wrapper.submitInvocationStub.mockRejectedValueOnce(new Error("submission failed"));
+      await expect(wrapper.submitPrivatePayInvocation(firstPrepared, signer)).rejects.toThrow(
+        "submission failed"
       );
-      await expect(
-        wrapper.submitPrivatePayInvocation(firstPrepared, signer),
-      ).rejects.toThrow("submission failed");
 
       // Caller explicitly rebuilds (fresh sequence number) rather than
       // resubmitting the same prepared invocation blindly.
@@ -348,18 +309,14 @@ describe("PayrollContractWrapper", () => {
         MOCK_PROOF,
         TEST_RECIPIENT,
         Networks.TESTNET,
-        "attempt-2",
+        "attempt-2"
       );
 
       await wrapper.submitPrivatePayInvocation(secondPrepared, signer);
 
       expect(wrapper.submitInvocationStub).toHaveBeenCalledTimes(2);
-      expect(wrapper.submitInvocationStub.mock.calls[0][0].requestId).toBe(
-        "attempt-1",
-      );
-      expect(wrapper.submitInvocationStub.mock.calls[1][0].requestId).toBe(
-        "attempt-2",
-      );
+      expect(wrapper.submitInvocationStub.mock.calls[0][0].requestId).toBe("attempt-1");
+      expect(wrapper.submitInvocationStub.mock.calls[1][0].requestId).toBe("attempt-2");
     });
   });
 });

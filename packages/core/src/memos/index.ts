@@ -1,12 +1,15 @@
-export type { MemoContractArgs, MemoEncryptFn, MemoInput, PreparedMemo, PrepareMemoOptions } from "./types";
+/**
+ * Memos Module
+ *
+ * Encrypted payroll memo preparation: typed inputs/outputs, hash commitments
+ * derived from encrypted payloads, and early validation that fails before any
+ * sensitive value leaves the caller's process.
+ */
+
+export type { MemoInput, MemoMetadata, PreparedMemo, MemoRegistrationRequest } from "./types";
 export {
-  DEFAULT_MEMO_MAX_LENGTH,
-  MEMO_COMMITMENT_PREFIX,
-  TEST_ONLY_ALGORITHM,
-  assertNoPlaintext,
-  defaultEncrypt,
-  generateMemoCommitment,
-  isValidMemoCommitment,
-  prepareMemo,
-  toContractArgs,
+  prepareEncryptedMemo,
+  validateMemoInput,
+  MEMO_PLAINTEXT_MAX_LENGTH,
+  MEMO_METADATA_FIELD_MAX_LENGTH,
 } from "./prepare";

@@ -1,7 +1,7 @@
 import { rpc } from "@stellar/stellar-sdk";
 import { EventEmitter } from "events";
 import { ContractExecutionError, ContractErrorCode } from "./errors";
-import { withRetry } from "./core/retry";
+import { RetryOperationType, withRetryBudget } from "./core/retry-budget";
 
 /** Default polling interval in milliseconds */
 const DEFAULT_POLL_INTERVAL_MS = 2_000;
@@ -129,9 +129,9 @@ export class TransactionWatcher extends EventEmitter {
 
       let txResponse: rpc.Api.GetTransactionResponse;
       try {
-        txResponse = await withRetry(() => this.server.getTransaction(txHash), {
-          attempts: 3,
-          delayMs: 100,
+        txResponse = await withRetryBudget(() => this.server.getTransaction(txHash), {
+          operationType: RetryOperationType.POLL,
+          signal,
         });
       } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
@@ -205,3 +205,5 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
     }
   });
 }
+
+export { parseArchiveEvent, ARCHIVE_EVENT_TOPICS } from "./archive/events";

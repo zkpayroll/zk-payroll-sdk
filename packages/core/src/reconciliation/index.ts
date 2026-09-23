@@ -1,9 +1,15 @@
 export { generateReconciliationDiff } from "./ReconciliationDiffGenerator";
-export { formatReconciliationDiff } from "./format";
+export { ReconciliationSnapshotBuilder } from "./SnapshotBuilder";
+export { ReservationReconciliationHelper } from "./ReservationReconciliationHelper";
+export * from "./statusClassifier";
 export type {
   ObservedPaymentState,
   ReconciliationDiffCategory,
   ReconciliationDiffEntry,
   ReconciliationDiffResult,
 } from "./types";
-export type { FormatReconciliationDiffOptions } from "./format";
+export type { ReconciliationSnapshot, SnapshotInput, SnapshotComparison } from "./SnapshotBuilder";
+export type {
+  ExpectedReservationState,
+  ObservedReservationState,
+} from "./ReservationReconciliationHelper";

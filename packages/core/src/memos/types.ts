@@ -1,65 +1,67 @@
 /**
- * Encrypted payroll memo preparation utilities (#340).
+ * Encrypted payroll memo types.
  *
- * Safe-path tooling so contributors do not accidentally submit raw payroll
- * notes to contracts. The only contract-bound shape is {@link PreparedMemo},
- * which carries an encrypted payload plus a hash commitment — never plaintext.
+ * These types model the safe path for attaching a payroll memo to a contract
+ * registration: the caller holds plaintext locally, `prepareEncryptedMemo`
+ * encrypts it and derives a hash commitment, and only the resulting
+ * `PreparedMemo` (ciphertext + commitment) may reach contract helpers.
  *
- * ## Caller responsibilities
- *
- * - Callers MUST encrypt memo text off-chain before registration. Provide an
- *   `encrypt` function (e.g. age/XChaCha20-Poly1305, or a KMS envelope call).
- *   The bundled `defaultEncrypt` is base64 only and is intended for tests and
- *   local development — never for production secrecy.
- * - Callers MUST retain the encryption key/nonce out-of-band. The SDK never
- *   stores keys and cannot recover memo contents from `encryptedPayload`.
- * - Callers MUST pass only {@link PreparedMemo} (via `toContractArgs`) to
- *   contract helpers. Raw `note` / `memo` / `text` fields are rejected by
- *   {@link assertNoPlaintext} and by `toContractArgs` itself.
- * - Callers SHOULD treat `commitment` as the on-chain identity of the memo
- *   (e.g. store `memo:<commitment>` alongside the payroll record) and reveal
- *   `encryptedPayload` only to authorised readers.
+ * @module
  */
 
+/**
+ * A payroll memo as supplied by the caller.
+ *
+ * The `plaintext` field is consumed in-process only: it is encrypted by
+ * `prepareEncryptedMemo` and is **never** copied into any output object,
+ * contract request, error message, or log line.
+ */
 export interface MemoInput {
-  /** Raw human-readable payroll note. Never leaves the caller's machine. */
-  text: string;
-  /** Stable employee identifier (optional, echoed back — not hashed here). */
-  employeeId?: string;
-  /** Payroll period identifier (optional, echoed back). */
-  periodId?: string;
-  /** Asset identifier the memo relates to (optional, echoed back). */
+  /**
+   * The raw memo contents. Treated as sensitive at all times.
+   * Must be a non-empty, printable string within `MEMO_PLAINTEXT_MAX_LENGTH`.
+   */
+  plaintext: string;
+  /** Optional recipient identifier bound into the commitment metadata. */
+  recipientId?: string;
+  /** Optional asset identifier bound into the commitment metadata. */
   asset?: string;
+  /** Optional payroll period identifier bound into the commitment metadata. */
+  periodId?: string;
 }
 
+/** Non-sensitive context carried alongside the encrypted payload. */
+export interface MemoMetadata {
+  /** Recipient identifier the memo is associated with. */
+  recipientId?: string;
+  /** Asset identifier the memo is associated with. */
+  asset?: string;
+  /** Payroll period identifier the memo is associated with. */
+  periodId?: string;
+}
+
+/**
+ * The output of `prepareEncryptedMemo` — the only memo shape contract
+ * helpers accept. Contains no plaintext whatsoever.
+ */
 export interface PreparedMemo {
-  /** Opaque encrypted payload (ciphertext). Safe to persist / register. */
+  /** The encrypted memo payload (ciphertext produced by the encryption provider). */
   encryptedPayload: string;
-  /** SHA-256 hex commitment over the encrypted payload (`memo:<hex>`). */
+  /** Deterministic hash commitment over the encrypted payload and metadata. */
   commitment: string;
-  /** Label describing the encryption used (e.g. `"age:x25519"`, `"base64:test-only"`). */
-  algorithm: string;
-  employeeId?: string;
-  periodId?: string;
-  asset?: string;
-  /** Epoch ms when the memo was prepared. */
-  preparedAt: number;
+  /** Non-sensitive context bound into the commitment. */
+  metadata: MemoMetadata;
 }
 
-/** Synchronous or asynchronous caller-supplied encryption routine. */
-export type MemoEncryptFn = (plaintext: string) => string | Promise<string>;
-
-export interface PrepareMemoOptions {
-  /** Encryption routine. Defaults to test-only base64 (see docs above). */
-  encrypt?: MemoEncryptFn;
-  /** Algorithm label recorded on the output. Defaults to the encryptor's label. */
-  algorithm?: string;
-  /** Maximum accepted plaintext length in characters. Defaults to 1024. */
-  maxLength?: number;
-}
-
-/** Contract-bound memo args — the only shape allowed near contract helpers. */
-export interface MemoContractArgs {
+/**
+ * The exact payload shape accepted by contract registration helpers.
+ * Built exclusively from a `PreparedMemo` via `buildMemoRegistrationRequest`.
+ */
+export interface MemoRegistrationRequest {
+  /** The encrypted memo payload to register on-chain. */
   encryptedPayload: string;
+  /** The hash commitment to register on-chain. */
   commitment: string;
+  /** Non-sensitive context metadata. */
+  metadata: MemoMetadata;
 }

@@ -2,12 +2,7 @@ import type { PaymentParams } from "../types";
 
 export interface PayrollCommandInput {
   /** Type of command being summarized (e.g. "single_payment", "batch_payment", "private_pay") */
-  type?:
-    | "single_payment"
-    | "batch_payment"
-    | "private_pay"
-    | "contract_invocation"
-    | string;
+  type?: "single_payment" | "batch_payment" | "private_pay" | "contract_invocation" | string;
   /** Primary or destination recipient Stellar address */
   recipient?: string;
   /** Payment amount in stroops */
@@ -59,12 +54,7 @@ function truncateAddress(address: string): string {
  * Formats stroop amounts into human-readable representation.
  */
 function formatAmount(amount: bigint, asset: string): string {
-  const assetName =
-    asset === "native"
-      ? "XLM"
-      : asset.length > 12
-        ? truncateAddress(asset)
-        : asset;
+  const assetName = asset === "native" ? "XLM" : asset.length > 12 ? truncateAddress(asset) : asset;
   return `${amount.toString()} (base units) ${assetName}`;
 }
 
@@ -76,14 +66,13 @@ function formatAmount(amount: bigint, asset: string): string {
  * @returns Structured summary containing plain language explanations and warnings.
  */
 export function summarizePayrollCommand(
-  input: PayrollCommandInput | PaymentParams | PaymentParams[],
+  input: PayrollCommandInput | PaymentParams | PaymentParams[]
 ): PayrollCommandSummary {
   const warnings: string[] = [];
   const details: string[] = [];
 
   // Normalize input into unified list of payment entries and metadata
-  let payments: Array<{ recipient: string; amount: bigint; asset?: string }> =
-    [];
+  let payments: Array<{ recipient: string; amount: bigint; asset?: string }> = [];
   let explicitType: string | undefined;
   let sourceAccount: string | undefined;
   let network: string | undefined;
@@ -125,13 +114,9 @@ export function summarizePayrollCommand(
   for (const p of payments) {
     totalAmount += p.amount ?? 0n;
     if (!p.recipient) {
-      warnings.push(
-        "One or more payment targets are missing a recipient address.",
-      );
+      warnings.push("One or more payment targets are missing a recipient address.");
     } else if (p.amount <= 0n) {
-      warnings.push(
-        `Payment to ${truncateAddress(p.recipient)} has a zero or negative amount.`,
-      );
+      warnings.push(`Payment to ${truncateAddress(p.recipient)} has a zero or negative amount.`);
     }
   }
 
@@ -147,12 +132,8 @@ export function summarizePayrollCommand(
 
   // Build plain language bullet details
   details.push(`Command: ${commandType}`);
-  details.push(
-    `Recipients: ${recipientCount} address${recipientCount !== 1 ? "es" : ""}`,
-  );
-  details.push(
-    `Total Disbursement: ${formatAmount(totalAmount, primaryAsset)}`,
-  );
+  details.push(`Recipients: ${recipientCount} address${recipientCount !== 1 ? "es" : ""}`);
+  details.push(`Total Disbursement: ${formatAmount(totalAmount, primaryAsset)}`);
 
   if (sourceAccount) {
     details.push(`Source Account: ${truncateAddress(sourceAccount)}`);
@@ -197,9 +178,7 @@ export function summarizePayrollCommand(
  * @param summary - Output of summarizePayrollCommand
  * @returns Human-readable plain text block
  */
-export function formatPayrollCommandPrompt(
-  summary: PayrollCommandSummary,
-): string {
+export function formatPayrollCommandPrompt(summary: PayrollCommandSummary): string {
   const lines: string[] = [];
   lines.push(`=== ${summary.commandType} Summary ===`);
   lines.push(summary.summaryText);

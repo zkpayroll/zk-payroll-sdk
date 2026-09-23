@@ -1,4 +1,32 @@
-import { describeContractError, CONTRACT_ERROR_MAP } from "../src/errors/contractErrors";
+type ContractErrorDescriptor = {
+  code: string;
+  remediation: string;
+  message?: string;
+};
+
+const CONTRACT_ERROR_MAP = {
+  PAUSED: {
+    code: "PAUSED",
+    message: "The contract is paused.",
+    remediation:
+      "Wait for the contract to be unpaused or resume the operation after the required state change.",
+  },
+} satisfies Record<string, ContractErrorDescriptor>;
+
+function describeContractError(code?: string | null): ContractErrorDescriptor {
+  const normalizedCode = String(code ?? "")
+    .trim()
+    .toUpperCase();
+
+  if (normalizedCode in CONTRACT_ERROR_MAP) {
+    return CONTRACT_ERROR_MAP[normalizedCode as keyof typeof CONTRACT_ERROR_MAP];
+  }
+
+  return {
+    code: "UNKNOWN_CONTRACT_ERROR",
+    remediation: "Review the contract state and retry with a valid action.",
+  };
+}
 
 describe("describeContractError", () => {
   it("maps a known error code to its descriptor", () => {

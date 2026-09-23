@@ -10,12 +10,8 @@
  *  - Bigint-as-canonical convention — round-trip without scaling
  */
 
-import {
-  AmountParseError,
-  AmountParseErrorCode,
-  RoundingMode,
-  AssetRegistryClass,
-} from "../src/assets";
+import { AmountParseError, AmountParseErrorCode, RoundingMode } from "../src/assets/amountParsing";
+import { AssetRegistryClass } from "../src/assets/AssetRegistry";
 import {
   normalizeCanonicalAmount,
   tryNormalizeCanonicalAmount,

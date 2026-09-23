@@ -1,113 +1,176 @@
-import { createHash } from "node:crypto";
-import type { MemoContractArgs, MemoInput, PrepareMemoOptions, PreparedMemo } from "./types";
+/**
+ * Encrypted memo preparation utilities.
+ *
+ * Memo tooling should make the safe path easy so contributors do not
+ * accidentally submit raw payroll notes. This module is the only supported
+ * way to turn a caller-supplied memo into something a contract helper will
+ * accept:
+ *
+ * 1. `validateMemoInput` fails early on invalid inputs (empty/too-long
+ *    plaintext, malformed metadata) before any encryption happens.
+ * 2. `prepareEncryptedMemo` encrypts the plaintext with a caller-supplied
+ *    {@link EncryptionProvider} and derives a hash commitment from the
+ *    **encrypted** payload. It refuses to run without a capable encryption
+ *    provider — there is no plaintext fallback path.
+ * 3. The returned `PreparedMemo` never contains the plaintext: it is
+ *    built field-by-field from the ciphertext, commitment, and metadata.
+ *
+ * ## Expected caller responsibilities
+ *
+ * - Provide a working `EncryptionProvider` (see `draft/EncryptionProvider.ts`).
+ *   The provider's key material stays with the caller; the SDK never persists it.
+ * - Treat `PreparedMemo.encryptedPayload` as confidential-at-rest but safe to
+ *   register on-chain; the `commitment` is public.
+ * - Never log `MemoInput.plaintext`. The SDK never does.
+ *
+ * @module
+ */
 
-export const DEFAULT_MEMO_MAX_LENGTH = 1024;
-export const TEST_ONLY_ALGORITHM = "base64:test-only";
-export const MEMO_COMMITMENT_PREFIX = "memo:";
-const HEX64 = /^[0-9a-f]{64}$/;
+import { ValidationError } from "../core/errors";
+import { computeMemoCommitment, type MemoCommitmentContext } from "../crypto/memoCommitment";
+import type { EncryptionProvider } from "../draft/EncryptionProvider";
+import type { MemoInput, MemoMetadata, PreparedMemo } from "./types";
 
-/** Test-only encryptor: base64. Not secret — use a real cipher in production. */
-export function defaultEncrypt(plaintext: string): string {
-  return Buffer.from(plaintext, "utf8").toString("base64");
-}
+/** Maximum length of a memo plaintext, in characters. */
+export const MEMO_PLAINTEXT_MAX_LENGTH = 4096;
 
-/** SHA-256 hex commitment over the encrypted payload bytes. */
-export function generateMemoCommitment(encryptedPayload: string): string {
-  if (!encryptedPayload || encryptedPayload.trim() === "") {
-    throw new Error("Encrypted payload must be a non-empty string");
+/** Maximum length of each optional metadata field, in characters. */
+export const MEMO_METADATA_FIELD_MAX_LENGTH = 128;
+
+/**
+ * Validates a memo input before any encryption is attempted.
+ *
+ * Fails early (throws) so malformed memos never reach the encryption or
+ * commitment pipeline. Error messages deliberately never echo the plaintext.
+ *
+ * @param input - The memo input to validate.
+ * @throws {ValidationError} If the input shape is invalid.
+ */
+export function validateMemoInput(input: MemoInput): void {
+  if (typeof input !== "object" || input === null) {
+    throw new ValidationError("Memo input must be an object", "input", "MEMO_INPUT_INVALID");
   }
-  const hex = createHash("sha256").update(encryptedPayload, "utf8").digest("hex");
-  return `${MEMO_COMMITMENT_PREFIX}${hex}`;
-}
 
-export function isValidMemoCommitment(value: unknown): value is string {
-  return (
-    typeof value === "string" &&
-    value.startsWith(MEMO_COMMITMENT_PREFIX) &&
-    HEX64.test(value.slice(MEMO_COMMITMENT_PREFIX.length))
-  );
-}
+  if (typeof input.plaintext !== "string") {
+    throw new ValidationError(
+      "Memo plaintext is required and must be a string",
+      "plaintext",
+      "MEMO_PLAINTEXT_REQUIRED"
+    );
+  }
 
-function validateMemoInput(input: MemoInput, maxLength: number): string {
-  if (!input || typeof input !== "object") throw new Error("Memo input must be an object");
-  if (typeof input.text !== "string" || input.text.trim() === "") {
-    throw new Error("Memo text must be a non-empty string");
+  if (input.plaintext.length === 0) {
+    throw new ValidationError("Memo plaintext must not be empty", "plaintext", "MEMO_PLAINTEXT_EMPTY");
   }
-  if (input.text.length > maxLength) {
-    throw new Error(`Memo text exceeds maximum length of ${maxLength} characters`);
+
+  if (input.plaintext.length > MEMO_PLAINTEXT_MAX_LENGTH) {
+    throw new ValidationError(
+      `Memo plaintext must be at most ${MEMO_PLAINTEXT_MAX_LENGTH} characters (got ${input.plaintext.length})`,
+      "plaintext",
+      "MEMO_PLAINTEXT_TOO_LONG"
+    );
   }
-  for (const field of ["employeeId", "periodId", "asset"] as const) {
-    const v = input[field];
-    if (v !== undefined && (typeof v !== "string" || v.trim() === "")) {
-      throw new Error(`Memo ${field} must be a non-empty string when provided`);
-    }
-  }
-  return input.text;
+
+  validateMetadataField(input.recipientId, "recipientId");
+  validateMetadataField(input.asset, "asset");
+  validateMetadataField(input.periodId, "periodId");
 }
 
 /**
- * Encrypt `input.text` and return the contract-safe {@link PreparedMemo}.
- * Raw text is never included in the output.
+ * Prepares an encrypted memo payload and hash commitment for contract
+ * registration.
+ *
+ * The safe path: the plaintext is encrypted locally with the supplied
+ * provider, the commitment is derived from the encrypted payload (never the
+ * plaintext), and the returned object contains no plaintext fields at all.
+ *
+ * @param input - The memo input (plaintext + optional context).
+ * @param provider - An initialized encryption provider. There is no
+ *   plaintext fallback: preparation fails if no capable provider is given.
+ * @returns A `PreparedMemo` ready for `buildMemoRegistrationRequest`.
+ * @throws {ValidationError} If the input is invalid or the provider is
+ *   missing / unable to encrypt.
+ *
+ * @example
+ * ```typescript
+ * const prepared = await prepareEncryptedMemo(
+ *   { plaintext: "August bonus", recipientId: "GABC...", asset: "native" },
+ *   provider
+ * );
+ * // prepared.encryptedPayload — ciphertext
+ * // prepared.commitment        — "memo:<hex>"
+ * // No plaintext anywhere in `prepared`.
+ * ```
  */
-export async function prepareMemo(
+export async function prepareEncryptedMemo(
   input: MemoInput,
-  options: PrepareMemoOptions = {}
+  provider: EncryptionProvider
 ): Promise<PreparedMemo> {
-  const maxLength = options.maxLength ?? DEFAULT_MEMO_MAX_LENGTH;
-  const text = validateMemoInput(input, maxLength);
-  const encrypt = options.encrypt ?? defaultEncrypt;
-  const encryptedPayload = await encrypt(text);
-  if (typeof encryptedPayload !== "string" || encryptedPayload.trim() === "") {
-    throw new Error("Encryptor must return a non-empty encrypted payload string");
+  validateMemoInput(input);
+
+  if (provider === undefined || provider === null) {
+    throw new ValidationError(
+      "An encryption provider is required to prepare a memo; raw plaintext memos cannot be prepared",
+      "provider",
+      "MEMO_PROVIDER_REQUIRED"
+    );
   }
-  // Guard: encryptor must not echo plaintext back verbatim.
-  if (encryptedPayload === text) {
-    throw new Error("Encryptor returned plaintext verbatim; refusing to prepare memo");
+
+  if (typeof provider.canEncrypt !== "function" || !provider.canEncrypt()) {
+    throw new ValidationError(
+      "The supplied encryption provider cannot encrypt; refusing to prepare an unencrypted memo",
+      "provider",
+      "MEMO_PROVIDER_UNAVAILABLE"
+    );
   }
-  const commitment = generateMemoCommitment(encryptedPayload);
+
+  const encryptedPayload = await provider.encrypt(input.plaintext);
+  if (typeof encryptedPayload !== "string" || encryptedPayload.length === 0) {
+    throw new ValidationError(
+      "Encryption provider returned an empty payload",
+      "encryptedPayload",
+      "MEMO_ENCRYPTION_FAILED"
+    );
+  }
+
+  const context: MemoCommitmentContext = {
+    encryptedPayload,
+    recipientId: input.recipientId,
+    asset: input.asset,
+    periodId: input.periodId,
+  };
+  const commitment = await computeMemoCommitment(context);
+
+  // Built field-by-field: the plaintext is intentionally not carried over.
+  const metadata: MemoMetadata = {};
+  if (input.recipientId !== undefined) metadata.recipientId = input.recipientId;
+  if (input.asset !== undefined) metadata.asset = input.asset;
+  if (input.periodId !== undefined) metadata.periodId = input.periodId;
+
   return {
     encryptedPayload,
     commitment,
-    algorithm: options.algorithm ?? (encrypt === defaultEncrypt ? TEST_ONLY_ALGORITHM : "custom"),
-    ...(input.employeeId !== undefined ? { employeeId: input.employeeId } : {}),
-    ...(input.periodId !== undefined ? { periodId: input.periodId } : {}),
-    ...(input.asset !== undefined ? { asset: input.asset } : {}),
-    preparedAt: Date.now(),
+    metadata,
   };
 }
 
-/** Keys that must never reach contract helpers. */
-const PLAINTEXT_KEYS = new Set(["text", "note", "memo", "plaintext", "message", "content"]);
-
-/**
- * Throw when `candidate` carries raw plaintext memo fields or lacks a valid
- * prepared commitment. Accepts only {@link PreparedMemo}-shaped values.
- */
-export function assertNoPlaintext(candidate: unknown): asserts candidate is PreparedMemo {
-  if (!candidate || typeof candidate !== "object") {
-    throw new Error("Expected a prepared memo object");
+/** Validates an optional metadata string field. */
+function validateMetadataField(value: string | undefined, field: string): void {
+  if (value === undefined) {
+    return;
   }
-  const record = candidate as Record<string, unknown>;
-  for (const key of Object.keys(record)) {
-    if (PLAINTEXT_KEYS.has(key)) {
-      throw new Error(
-        `Plaintext memo field "${key}" must never be sent to contract helpers; call prepareMemo() first`
-      );
-    }
+  if (typeof value !== "string") {
+    throw new ValidationError(
+      `Memo metadata field "${field}" must be a string when provided`,
+      field,
+      "MEMO_METADATA_INVALID"
+    );
   }
-  if (typeof record["encryptedPayload"] !== "string" || (record["encryptedPayload"] as string).trim() === "") {
-    throw new Error("Prepared memo must include a non-empty encryptedPayload");
+  if (value.length > MEMO_METADATA_FIELD_MAX_LENGTH) {
+    throw new ValidationError(
+      `Memo metadata field "${field}" must be at most ${MEMO_METADATA_FIELD_MAX_LENGTH} characters (got ${value.length})`,
+      field,
+      "MEMO_METADATA_TOO_LONG"
+    );
   }
-  if (!isValidMemoCommitment(record["commitment"])) {
-    throw new Error("Prepared memo must include a valid commitment (memo:<sha256-hex>)");
-  }
-}
-
-/**
- * Extract the only contract-safe args from a prepared memo. Rejects raw
- * plaintext paths by running {@link assertNoPlaintext} first.
- */
-export function toContractArgs(memo: PreparedMemo): MemoContractArgs {
-  assertNoPlaintext(memo);
-  return { encryptedPayload: memo.encryptedPayload, commitment: memo.commitment };
 }

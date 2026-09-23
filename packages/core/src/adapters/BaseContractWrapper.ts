@@ -12,7 +12,14 @@ import type { ISigner } from "../signer/types";
 import { toISigner } from "../signer/KeypairSigner";
 import { ContractExecutionError, ContractErrorCode, mapRpcError, RpcTimeoutError } from "../errors";
 import { RunIdentifier } from "../core/run-identifier";
-import { withRetry } from "../core/retry";
+import {
+  RetryOperationType,
+  RetryBudgetExhaustedError,
+  RetryCancelledError,
+  withRetryBudget,
+} from "../core/retry-budget";
+import { IdempotencyRegistry } from "../core/idempotency";
+import type { RetryBudgetsConfig } from "../config";
 
 /** How long (ms) to wait between transaction status polls */
 const POLL_INTERVAL_MS = 2_000;
@@ -57,10 +64,15 @@ export interface PreparedInvocation {
 
 export abstract class BaseContractWrapper {
   protected readonly contract: Contract;
+  /** In-memory dedup guard keyed by idempotency key for transaction submission. */
+  private readonly submissionIdempotency =
+    new IdempotencyRegistry<rpc.Api.SendTransactionResponse>();
 
   constructor(
     protected readonly server: rpc.Server,
-    protected readonly contractId: string
+    protected readonly contractId: string,
+    /** Optional per-operation retry budgets (read/write/poll). */
+    protected readonly retryBudgets?: RetryBudgetsConfig
   ) {
     this.contract = new Contract(contractId);
   }
@@ -94,9 +106,9 @@ export abstract class BaseContractWrapper {
 
     try {
       // ── 1. Load the source account ─────────────────────────────────────
-      const account = await withRetry(() => this.server.getAccount(sourcePublicKey), {
-        attempts: 3,
-        delayMs: 100,
+      const account = await withRetryBudget(() => this.server.getAccount(sourcePublicKey), {
+        operationType: RetryOperationType.READ,
+        budgets: this.retryBudgets,
       });
 
       // ── 2. Build the raw transaction ───────────────────────────────────
@@ -109,9 +121,9 @@ export abstract class BaseContractWrapper {
         .build();
 
       // ── 3. Simulate to obtain resource footprint + auth entries ────────
-      const simResult = await withRetry(() => this.server.simulateTransaction(rawTx), {
-        attempts: 3,
-        delayMs: 100,
+      const simResult = await withRetryBudget(() => this.server.simulateTransaction(rawTx), {
+        operationType: RetryOperationType.READ,
+        budgets: this.retryBudgets,
       });
 
       if (rpc.Api.isSimulationError(simResult)) {
@@ -128,6 +140,7 @@ export abstract class BaseContractWrapper {
       return { method, requestId: reqId, network, transaction };
     } catch (err) {
       if (err instanceof ContractExecutionError) throw err;
+      if (err instanceof RetryBudgetExhaustedError || err instanceof RetryCancelledError) throw err;
       throw mapRpcError(err, { requestId: reqId });
     }
   }
@@ -152,7 +165,8 @@ export abstract class BaseContractWrapper {
    */
   protected async submitInvocation(
     prepared: PreparedInvocation,
-    signer: Keypair | ISigner
+    signer: Keypair | ISigner,
+    idempotencyKey?: string
   ): Promise<xdr.ScVal> {
     const { method, requestId: reqId, transaction } = prepared;
     const iSigner = toISigner(signer);
@@ -160,9 +174,13 @@ export abstract class BaseContractWrapper {
     try {
       await iSigner.sign(transaction);
 
-      // Deliberately NOT wrapped in withRetry -- see the unsafe-write note
-      // in this method's doc comment above.
-      const sendResult = await this.server.sendTransaction(transaction);
+      // Deliberately NOT wrapped in a retry budget -- see the unsafe-write
+      // note in this method's doc comment above. Duplicate-operation
+      // protection is still enforced: when an idempotency key is supplied,
+      // concurrent submissions of the same key share a single in-flight
+      // sendTransaction call, so a retry cannot double-submit the same
+      // operation to the network.
+      const sendResult = await this.submitTransaction(transaction, idempotencyKey);
 
       if (sendResult.status === "ERROR") {
         throw new ContractExecutionError(
@@ -177,6 +195,7 @@ export abstract class BaseContractWrapper {
       return await this.pollForResult(sendResult.hash, method, reqId);
     } catch (err) {
       if (err instanceof ContractExecutionError) throw err;
+      if (err instanceof RetryBudgetExhaustedError || err instanceof RetryCancelledError) throw err;
       throw mapRpcError(err, { requestId: reqId });
     }
   }
@@ -208,6 +227,7 @@ export abstract class BaseContractWrapper {
     options?: string | InvokeOptions
   ): Promise<xdr.ScVal> {
     const requestId = typeof options === "string" ? options : undefined;
+    const idempotencyKey = typeof options === "string" ? undefined : options?.idempotencyKey;
     const reqId = requestId ?? RunIdentifier.generateRequestId(method);
     const iSigner = toISigner(signer);
 
@@ -220,10 +240,28 @@ export abstract class BaseContractWrapper {
     }
 
     const prepared = await this.buildInvocation(method, args, pubKey, network, reqId);
-    return this.submitInvocation(prepared, iSigner);
+    return this.submitInvocation(prepared, iSigner, idempotencyKey);
   }
 
   // ── Private helpers ──────────────────────────────────────────────────────
+
+  /**
+   * Broadcast a signed transaction, deduplicating in-flight submissions that
+   * share the same idempotency key. Without a key the request is sent as-is.
+   */
+  private submitTransaction(
+    transaction: Transaction,
+    idempotencyKey?: string
+  ): Promise<rpc.Api.SendTransactionResponse> {
+    if (!idempotencyKey?.trim()) {
+      return this.server.sendTransaction(transaction);
+    }
+    return this.submissionIdempotency.execute(
+      idempotencyKey,
+      () => this.server.sendTransaction(transaction),
+      { ttlMs: 0 }
+    );
+  }
 
   /**
    * Poll the RPC until the transaction reaches a terminal state.
@@ -237,9 +275,9 @@ export abstract class BaseContractWrapper {
     for (let attempt = 0; attempt < MAX_POLLS; attempt++) {
       await sleep(POLL_INTERVAL_MS);
 
-      const statusResult = await withRetry(() => this.server.getTransaction(txHash), {
-        attempts: 3,
-        delayMs: 100,
+      const statusResult = await withRetryBudget(() => this.server.getTransaction(txHash), {
+        operationType: RetryOperationType.POLL,
+        budgets: this.retryBudgets,
       });
 
       if (statusResult.status === rpc.Api.GetTransactionStatus.SUCCESS) {

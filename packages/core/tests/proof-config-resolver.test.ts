@@ -1,7 +1,4 @@
-import {
-  resolveProofConfig,
-  resolveProofConfigFromEnv,
-} from "../src/crypto/ProofConfigResolver";
+import { resolveProofConfig, resolveProofConfigFromEnv } from "../src/crypto/ProofConfigResolver";
 import { ValidationError } from "../src/errors";
 
 describe("ProofConfigResolver (Issue #229)", () => {
@@ -45,7 +42,7 @@ describe("ProofConfigResolver (Issue #229)", () => {
       resolveProofConfig({
         wasmUrl: "http://malformed url with spaces",
         zkeyUrl: "https://example.com/payroll.zkey",
-      }),
+      })
     ).toThrow(ValidationError);
   });
 });

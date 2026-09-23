@@ -124,7 +124,9 @@ describe("KeypairSigner", () => {
 describe("WalletSigner", () => {
   it("delegates signing to the injected function", async () => {
     const mockSignedTx = {} as Transaction;
-    const fromXDRSpy = jest.spyOn(TransactionBuilder, "fromXDR").mockReturnValue(mockSignedTx);
+    const fromXDRSpy = jest
+      .spyOn(TransactionBuilder, "fromXDR")
+      .mockReturnValue(mockSignedTx as unknown as Transaction);
 
     const signTx = jest.fn().mockResolvedValue("signed-xdr");
     const signer = new WalletSigner(async () => "G...", signTx, {
