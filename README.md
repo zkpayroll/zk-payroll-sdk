@@ -53,6 +53,8 @@ await service.processPayment(
 - **ZK Proof Generation**: Client-side proof generation using snarkjs for privacy.
 - **Caching**: Built-in caching for proofs and circuit artifacts.
 - **Error Handling**: Robust error typing and management.
+- **Safe Payroll Batch Submission**: Sequential batch execution with progress callbacks, guarded retries, and privacy-preserving error handling.
+- **Contract Event Decoding**: Typed decoding of contract status and lifecycle events including employee status transitions.
 - **Mock Testing Environment**: Comprehensive testing utilities for unit tests without a live network.
 
 ## Zero-Knowledge Proof Generation

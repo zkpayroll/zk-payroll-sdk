@@ -106,6 +106,8 @@ export * from "./testing";
 // ── Events ──────────────────────────────────────────────────────────────────
 export { TransactionWatcher } from "./events";
 export type { ConfirmationOptions, ConfirmationResult } from "./events";
+export * from "./events/index";
+export * from "./event-parser";
 
 // ── Assets ────────────────────────────────────────────────────────────────────
 export * from "./assets";

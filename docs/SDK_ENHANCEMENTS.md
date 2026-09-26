@@ -52,3 +52,50 @@ const wrapper = new MyContractWrapper(server, contractId, retryBudgets, {
 The existing ContractErrorCode and error mapping provides structured error types.
 All contract errors are mapped to typed ContractExecutionError instances.
 
+## Issue #472 — Safe Payroll Batch Submission Helper
+Helper to submit sequential payroll batches with guarded retries and progress tracking, without leaking sensitive payroll details.
+
+### Usage
+```typescript
+import { submitSequentialPayrollBatches, PayrollService } from '@zk-payroll/core/payroll';
+
+// Direct helper
+const result = await submitSequentialPayrollBatches(batches, {
+  maxRetries: 3,
+  initialBackoffMs: 500,
+  onProgress: (progress) => {
+    console.log(`Processing batch ${progress.batchIndex + 1}/${progress.totalBatches}`);
+  },
+  submitBatch: async (batch, index) => {
+    return await executeBatch(batch);
+  },
+});
+
+// Via PayrollService
+const service = new PayrollService(config);
+const result = await service.submitBatchPaymentsSafely(batches, {
+  maxRetries: 2,
+  onProgress: (p) => console.log(p.phase),
+});
+```
+
+## Issue #475 — Event Decoding for Employee Status Updates
+Decode contract status-change events into typed `EmployeeStatusUpdatedEvent` records.
+
+### Usage
+```typescript
+import {
+  decodeEmployeeStatusUpdatedEvent,
+  decodeEmployeeStatusUpdatedEvents,
+  isEmployeeStatusUpdatedEvent,
+} from '@zk-payroll/core/events';
+
+// Check if an event matches employee status update
+if (isEmployeeStatusUpdatedEvent(rawEvent)) {
+  const decoded = decodeEmployeeStatusUpdatedEvent(rawEvent);
+  console.log(decoded.employee, decoded.previousStatus, decoded.newStatus);
+}
+
+// Decode an array of raw contract events
+const updates = decodeEmployeeStatusUpdatedEvents(events);
+```

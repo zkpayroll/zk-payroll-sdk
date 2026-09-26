@@ -82,3 +82,55 @@ describe("Issue #469 - Employee Lifecycle Client API", () => {
     expect(result.operation).toBe("create");
   });
 });
+
+describe("Issue #472 - Safe Payroll Batch Submission Helper", () => {
+  it("exports submitSequentialPayrollBatches function and types", async () => {
+    const { submitSequentialPayrollBatches } = await import(
+      "../packages/core/src/payroll/safeBatchSubmitter"
+    );
+    expect(typeof submitSequentialPayrollBatches).toBe("function");
+
+    const dummyItems = [{ id: "1" }, { id: "2" }, { id: "3" }];
+    const progressLog: string[] = [];
+
+    const result = await submitSequentialPayrollBatches(
+      dummyItems,
+      async (items) => items.map((i) => ({ ...i, processed: true })),
+      {
+        batchSize: 2,
+        onProgress: (p) => progressLog.push(p.stage),
+      }
+    );
+
+    expect(result.success).toBe(true);
+    expect(result.totalBatches).toBe(2);
+    expect(result.batchesProcessed).toBe(2);
+    expect(result.totalItems).toBe(3);
+    expect(result.itemsProcessed).toBe(3);
+    expect(result.results).toHaveLength(3);
+    expect(progressLog).toContain("validating");
+    expect(progressLog).toContain("completed");
+  });
+});
+
+describe("Issue #475 - Event Decoding for Employee Status Updates", () => {
+  it("exports decodeEmployeeStatusUpdatedEvent and isEmployeeStatusUpdatedEvent", async () => {
+    const {
+      decodeEmployeeStatusUpdatedEvent,
+      decodeEmployeeStatusUpdatedEvents,
+      isEmployeeStatusUpdatedEvent,
+    } = await import("../packages/core/src/events/employeeStatus");
+
+    expect(typeof decodeEmployeeStatusUpdatedEvent).toBe("function");
+    expect(typeof decodeEmployeeStatusUpdatedEvents).toBe("function");
+    expect(typeof isEmployeeStatusUpdatedEvent).toBe("function");
+  });
+
+  it("checks isEmployeeStatusUpdatedEvent on events without throwing", async () => {
+    const { isEmployeeStatusUpdatedEvent } = await import(
+      "../packages/core/src/events/employeeStatus"
+    );
+    expect(isEmployeeStatusUpdatedEvent({ topics: [], data: {} as any })).toBe(false);
+  });
+});
+

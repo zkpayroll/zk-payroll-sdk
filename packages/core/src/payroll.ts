@@ -23,6 +23,23 @@ import type {
   ReceiptVerificationResult,
   CreatePayrollReceiptParams,
 } from "./receipts/types";
+import {
+  submitSequentialPayrollBatches,
+  type SafeBatchSubmissionOptions,
+  type SafeBatchSubmissionResult,
+  type SafeBatchProgressEvent,
+  type SafeBatchProgressStage,
+  type SafeBatchErrorDetail,
+} from "./payroll/safeBatchSubmitter";
+
+export {
+  submitSequentialPayrollBatches,
+  type SafeBatchSubmissionOptions,
+  type SafeBatchSubmissionResult,
+  type SafeBatchProgressEvent,
+  type SafeBatchProgressStage,
+  type SafeBatchErrorDetail,
+};
 
 import {
   filterActiveRuns,
@@ -245,6 +262,40 @@ export class PayrollService {
       }
     }
     return results;
+  }
+
+  /**
+   * Submit payroll payments in safe, sequential batches with progress callbacks
+   * and guarded retries (#472).
+   *
+   * Validates entries first, splits them into deterministic batches, and submits
+   * each batch sequentially. Emits privacy-safe progress events, guards against transient
+   * failures with exponential backoff retries, and redacts sensitive payment data on error.
+   *
+   * @param entries - Payment items to process
+   * @param options - Configuration for batch size, retries, and progress callbacks
+   * @returns Comprehensive batch submission result with execution statistics and results
+   */
+  async submitBatchPaymentsSafely(
+    entries: unknown[],
+    options?: SafeBatchSubmissionOptions<PaymentParams, PaymentResult>
+  ): Promise<SafeBatchSubmissionResult<PaymentResult>> {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { PayrollValidation } = require("./core/validation");
+    const payload: BatchPayload = PayrollValidation.assertValidBatchPayload(entries);
+
+    return submitSequentialPayrollBatches(
+      payload.entries,
+      async (batchItems: PaymentParams[]) => {
+        const batchResults: PaymentResult[] = [];
+        for (const item of batchItems) {
+          const res = await this.processPayment(item);
+          batchResults.push(res);
+        }
+        return batchResults;
+      },
+      options
+    );
   }
 
   /** Filter archived, disputed, and held runs out of active operational views. */

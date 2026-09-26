@@ -148,6 +148,20 @@ export interface PaymentCancelledEvent {
  * }
  * ```
  */
+import {
+  EmployeeStatusUpdatedEvent,
+  decodeEmployeeStatusUpdatedEvent,
+  decodeEmployeeStatusUpdatedEvents,
+  isEmployeeStatusUpdatedEvent,
+} from "./events/employeeStatus";
+
+export type { EmployeeStatusUpdatedEvent };
+export {
+  decodeEmployeeStatusUpdatedEvent,
+  decodeEmployeeStatusUpdatedEvents,
+  isEmployeeStatusUpdatedEvent,
+};
+
 export type TypedContractEvent =
   | RegisteredEvent
   | RegistryUpdatedEvent
@@ -156,7 +170,8 @@ export type TypedContractEvent =
   | SalaryRevealedEvent
   | PaymentExecutedEvent
   | PaymentScheduledEvent
-  | PaymentCancelledEvent;
+  | PaymentCancelledEvent
+  | EmployeeStatusUpdatedEvent;
 
 // ── Error Types ──────────────────────────────────────────────────────────────
 
@@ -215,6 +230,13 @@ export function parseContractEvent(event: RawContractEvent): TypedContractEvent 
       return parsePaymentScheduled(event);
     case "payment_cancelled":
       return parsePaymentCancelled(event);
+    case "employee_status_updated":
+    case "employee_status_changed":
+    case "employee_suspended":
+    case "employee_reactivated":
+    case "employee_offboarded":
+    case "employee_created":
+      return decodeEmployeeStatusUpdatedEvent(event);
     default:
       throw new EventParsingError(`Unknown event type: "${eventName}"`, event);
   }
