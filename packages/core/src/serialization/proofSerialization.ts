@@ -18,6 +18,8 @@ export const PayloadTypeTag = {
   PROOF_STRUCT: 0x02,
   COMMITMENT_ENTRY: 0x03,
   COMMIT_REQUEST: 0x04,
+  PAYROLL_COMMAND_ENTRY: 0x05,
+  PAYROLL_REQUEST: 0x06,
 } as const;
 
 export type PayloadTypeTagValue = (typeof PayloadTypeTag)[keyof typeof PayloadTypeTag];
