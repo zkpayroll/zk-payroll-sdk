@@ -94,6 +94,9 @@ export type { ProofConfigResolverOptions } from "./crypto/ProofConfigResolver";
 // Keep backward compatibility with existing adapters barrel export
 export * from "./adapters";
 
+// ── Polling Helpers ───────────────────────────────────────────────────────────
+export * from "./polling";
+
 // ── Logging ─────────────────────────────────────────────────────────────────
 export * from "./logging";
 

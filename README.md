@@ -72,6 +72,75 @@ Use an idempotency key before applying retries to a write operation.
 destinations without including rejected values in error messages. The same
 validation runs automatically before `PayrollService` submits a payment.
 
+## Configurable SDK logging
+
+Host applications can route SDK diagnostics into their own logger. All log
+context is redacted before it reaches the host, so sensitive payroll values
+never leak into application logs.
+
+```typescript
+import { setSdkLogger, createConsoleLogger, resetSdkLogger } from "@zk-payroll/core";
+
+// Forward SDK logs to your own pipeline…
+setSdkLogger((entry) => myLogger[entry.level](entry.event, entry.context));
+// …or bridge to the console, or silence the SDK entirely (the default).
+setSdkLogger(createConsoleLogger());
+resetSdkLogger();
+```
+
+Per-instance `SdkLogger` injection (`new PayrollService(..., logger)`) keeps
+working; `setSdkLogger()` additionally configures the process-wide default.
+
+## Payroll completion polling
+
+`pollPayrollCompletion()` / `waitForPayrollRunCompletion()` provide bounded
+polling with cancellation support for long-running payrolls. Timeouts throw a
+`ContractExecutionError` (`TRANSACTION_TIMEOUT`) whose message never echoes
+status values.
+
+```typescript
+import { pollPayrollCompletion, waitForPayrollRunCompletion } from "@zk-payroll/core";
+
+const controller = new AbortController();
+const { value } = await waitForPayrollRunCompletion(() => fetchRunStatus(runId), {
+  timeoutMs: 90_000,
+  intervalMs: 2_000,
+  signal: controller.signal, // abort when the user navigates away
+});
+```
+
+## Payroll run summaries
+
+`createExecutionSummary()` builds the normalized summary; pair it with
+`formatPayrollRunSummary()` (human-readable text for notifications and audits)
+or `toPayrollRunDashboardView()` (JSON-safe view with counts, success rate,
+and timing for dashboards). Recipient addresses are truncated by default and
+are only revealed in full with explicit `fullRecipients: true` in authorized
+audit contexts.
+
+```typescript
+import { createExecutionSummary, formatPayrollRunSummary } from "@zk-payroll/core";
+
+const summary = createExecutionSummary(outcomes, durationMs);
+console.log(formatPayrollRunSummary(summary));
+```
+
+## Payroll command serialization
+
+`encodePayrollCommandEntry()` / `encodePayrollRequest()` serialize payroll
+command payloads to the versioned binary wire format (tags `0x05`/`0x06`),
+validating entries against contract expectations (non-empty recipient,
+positive amount, non-empty asset) at encode time so incompatible requests
+fail fast with a clear `SerializationError` instead of an opaque on-chain
+revert.
+
+```typescript
+import { encodePayrollRequest, decodePayrollRequest } from "@zk-payroll/core";
+
+const bytes = encodePayrollRequest(request);
+const roundTripped = decodePayrollRequest(bytes);
+```
+
 ## Explicit Operation Result Types
 
 Instead of relying on thrown exceptions alone, `runSdkOperation()` returns an

@@ -16,3 +16,9 @@ export {
   encodeCommitRequest,
   decodeCommitRequest,
 } from "./commitmentSerialization";
+export {
+  encodePayrollCommandEntry,
+  decodePayrollCommandEntry,
+  encodePayrollRequest,
+  decodePayrollRequest,
+} from "./payrollCommandSerialization";
