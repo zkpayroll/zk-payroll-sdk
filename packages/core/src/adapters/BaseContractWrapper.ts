@@ -23,8 +23,18 @@ import type { RetryBudgetsConfig } from "../config";
 
 /** How long (ms) to wait between transaction status polls */
 const POLL_INTERVAL_MS = 2_000;
-/** Maximum number of polls before declaring a timeout */
-const MAX_POLLS = 15;
+/** Default maximum number of polls before declaring a timeout */
+const DEFAULT_MAX_POLLS = 15;
+
+/** Configuration for transaction timeout behavior */
+export interface TransactionTimeoutConfig {
+  /** Maximum number of polls before declaring a timeout (default: 15) */
+  maxPolls?: number;
+  /** Milliseconds between polls (default: 2000) */
+  pollIntervalMs?: number;
+  /** Timeout for the initial sendTransaction call in ms (default: 30000) */
+  submissionTimeoutMs?: number;
+}
 
 /**
  * BaseContractWrapper — Adapters layer
@@ -72,7 +82,9 @@ export abstract class BaseContractWrapper {
     protected readonly server: rpc.Server,
     protected readonly contractId: string,
     /** Optional per-operation retry budgets (read/write/poll). */
-    protected readonly retryBudgets?: RetryBudgetsConfig
+    protected readonly retryBudgets?: RetryBudgetsConfig,
+    /** Optional timeout configuration for transactions. */
+    protected readonly timeoutConfig?: TransactionTimeoutConfig
   ) {
     this.contract = new Contract(contractId);
   }
@@ -266,14 +278,19 @@ export abstract class BaseContractWrapper {
   /**
    * Poll the RPC until the transaction reaches a terminal state.
    * Returns the XDR result value on success; throws on failure or timeout.
+   * Respects configured timeout settings from timeoutConfig.
    */
   private async pollForResult(
     txHash: string,
     method: string,
     requestId: string
   ): Promise<xdr.ScVal> {
-    for (let attempt = 0; attempt < MAX_POLLS; attempt++) {
-      await sleep(POLL_INTERVAL_MS);
+    const maxPolls = this.timeoutConfig?.maxPolls ?? DEFAULT_MAX_POLLS;
+    const pollIntervalMs = this.timeoutConfig?.pollIntervalMs ?? POLL_INTERVAL_MS;
+    const startTime = Date.now();
+
+    for (let attempt = 0; attempt < maxPolls; attempt++) {
+      await sleep(pollIntervalMs);
 
       const statusResult = await withRetryBudget(() => this.server.getTransaction(txHash), {
         operationType: RetryOperationType.POLL,
@@ -299,9 +316,10 @@ export abstract class BaseContractWrapper {
       // Status is NOT_FOUND or still pending — keep polling
     }
 
+    const pollingDurationMs = Date.now() - startTime;
     throw new RpcTimeoutError(
-      `Transaction timed out after ${MAX_POLLS} polls for "${method}" (hash: ${txHash})`,
-      { requestId },
+      `Transaction timed out after ${maxPolls} polls (${pollingDurationMs}ms) for "${method}" (hash: ${txHash})`,
+      { requestId, pollingDurationMs, maxPolls },
       undefined,
       ContractErrorCode.TRANSACTION_TIMEOUT
     );
