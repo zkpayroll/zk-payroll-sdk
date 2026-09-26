@@ -57,6 +57,21 @@ await service.processPayment(
 - **Contract Event Decoding**: Typed decoding of contract status and lifecycle events including employee status transitions.
 - **Mock Testing Environment**: Comprehensive testing utilities for unit tests without a live network.
 
+## Payroll reliability helpers
+
+The core package exports stable `PayrollRunStatus` values and
+`parsePayrollRunStatus()` for untrusted API or contract responses. Large period
+histories can be consumed with `iteratePayrollPeriods()` or
+`collectPayrollPeriods()`; both support cursors, page limits, and cancellation.
+
+Wrap idempotent RPC reads with `withRpcRetry()` to retry transient failures with
+bounded exponential backoff. Validation and contract reverts are never retried.
+Use an idempotency key before applying retries to a write operation.
+
+`validatePayoutDestination()` validates Stellar account and muxed-account
+destinations without including rejected values in error messages. The same
+validation runs automatically before `PayrollService` submits a payment.
+
 ## Zero-Knowledge Proof Generation
 
 The SDK includes production-ready ZK proof generation using snarkjs:

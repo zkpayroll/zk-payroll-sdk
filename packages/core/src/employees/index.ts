@@ -6,6 +6,6 @@ export * from "./referenceId";
 export * from "./onboardingDuplicates";
 export * from "./lifecycle";
 export * from "./activeStatus";
+export * from "./payoutDestination";
 export * from "../events/employeeStatus";
 export * from "../import/resultParser";
-

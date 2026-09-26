@@ -167,6 +167,8 @@ export * from "./transactions";
 export * from "./status";
 // ── Payroll Period Summary ──────────────────────────────────────────────────
 export * from "./payroll";
+export * from "./payroll/runStatus";
+export * from "./payroll/periodPagination";
 // ── Payload Normalization ───────────────────────────────────────────────────
 export * from "./normalization";
 

@@ -20,3 +20,4 @@ export type {
   NetworkTimingOptions,
   NetworkTimingStats,
 } from "./types";
+export * from "./rpcRetry";

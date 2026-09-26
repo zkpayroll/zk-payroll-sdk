@@ -1,8 +1,10 @@
+import type { PayrollRunStatus } from "../payroll/runStatus";
+
 export type IndexedRecordId = string;
 
 export type IndexedEmployeeStatus = "active" | "inactive";
 
-export type IndexedPayrollRunStatus = "draft" | "scheduled" | "executed" | "cancelled" | "failed";
+export type IndexedPayrollRunStatus = PayrollRunStatus;
 
 export interface IndexedTreasuryReference {
   id: IndexedRecordId;
