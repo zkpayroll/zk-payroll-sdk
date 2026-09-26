@@ -30,13 +30,20 @@ function resolvePolicy(policy: RpcRetryPolicy): {
 
 function defaultSleep(delayMs: number, signal?: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
-    if (signal?.aborted) return reject(new DOMException("Retry aborted", "AbortError"));
+    const abortError = (): Error => {
+      if (typeof DOMException !== "undefined")
+        return new DOMException("Retry aborted", "AbortError");
+      const error = new Error("Retry aborted");
+      error.name = "AbortError";
+      return error;
+    };
+    if (signal?.aborted) return reject(abortError());
     const timer = setTimeout(resolve, delayMs);
     signal?.addEventListener(
       "abort",
       () => {
         clearTimeout(timer);
-        reject(new DOMException("Retry aborted", "AbortError"));
+        reject(abortError());
       },
       { once: true }
     );
@@ -52,14 +59,21 @@ export async function withRpcRetry<T>(
   const sleep = policy.sleep ?? defaultSleep;
   const random = policy.random ?? Math.random;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    if (policy.signal?.aborted) throw new DOMException("Retry aborted", "AbortError");
+    if (policy.signal?.aborted) {
+      const error = new Error("Retry aborted");
+      error.name = "AbortError";
+      throw error;
+    }
     try {
       return await operation(attempt);
     } catch (error) {
       const decision = classifyError(error);
       if (attempt === maxAttempts || decision.category !== RetryCategory.RETRYABLE) throw error;
       const ceiling = Math.min(maxDelayMs, baseDelayMs * 2 ** (attempt - 1));
-      const delayMs = policy.jitter === false ? ceiling : Math.floor(ceiling * random());
+      const sample = policy.jitter === false ? 1 : random();
+      if (!Number.isFinite(sample) || sample < 0 || sample > 1)
+        throw new RangeError("random must return a number between 0 and 1.");
+      const delayMs = Math.floor(ceiling * sample);
       policy.onRetry?.({ attempt, delayMs, decision });
       await sleep(delayMs, policy.signal);
     }

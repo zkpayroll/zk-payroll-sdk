@@ -1,5 +1,6 @@
 import {
   PayrollRunStatus,
+  PAYROLL_RUN_STATUSES,
   isPayrollRunStatus,
   isTerminalPayrollRunStatus,
   parsePayrollRunStatus,
@@ -20,5 +21,11 @@ describe("payroll run status model", () => {
     const result = parsePayrollRunStatus(secret);
     expect(result).toMatchObject({ ok: false, code: "UNKNOWN_STATUS" });
     expect(JSON.stringify(result)).not.toContain(secret);
+  });
+
+  it("exports every status once in stable lifecycle order", () => {
+    expect(PAYROLL_RUN_STATUSES).toEqual(["draft", "scheduled", "executed", "cancelled", "failed"]);
+    expect(new Set(PAYROLL_RUN_STATUSES).size).toBe(PAYROLL_RUN_STATUSES.length);
+    expect(Object.isFrozen(PAYROLL_RUN_STATUSES)).toBe(true);
   });
 });

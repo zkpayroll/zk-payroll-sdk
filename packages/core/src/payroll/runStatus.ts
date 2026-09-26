@@ -6,10 +6,19 @@ export const PayrollRunStatus = {
   FAILED: "failed",
 } as const;
 export type PayrollRunStatus = (typeof PayrollRunStatus)[keyof typeof PayrollRunStatus];
+/** Stable ordered list for filters, forms, and exhaustive SDK integrations. */
+export const PAYROLL_RUN_STATUSES: readonly PayrollRunStatus[] = Object.freeze(
+  Object.values(PayrollRunStatus)
+);
 export type PayrollRunStatusParseResult =
   | { ok: true; status: PayrollRunStatus }
   | { ok: false; code: "MISSING_STATUS" | "UNKNOWN_STATUS"; message: string };
-const VALUES = new Set<string>(Object.values(PayrollRunStatus));
+const VALUES = new Set<string>(PAYROLL_RUN_STATUSES);
+const TERMINAL_VALUES = new Set<PayrollRunStatus>([
+  PayrollRunStatus.EXECUTED,
+  PayrollRunStatus.CANCELLED,
+  PayrollRunStatus.FAILED,
+]);
 
 /** Converts an untrusted contract/API value without reflecting it in errors. */
 export function parsePayrollRunStatus(value: unknown): PayrollRunStatusParseResult {
@@ -30,9 +39,5 @@ export function isPayrollRunStatus(value: unknown): value is PayrollRunStatus {
   return parsePayrollRunStatus(value).ok;
 }
 export function isTerminalPayrollRunStatus(status: PayrollRunStatus): boolean {
-  return (
-    status === PayrollRunStatus.EXECUTED ||
-    status === PayrollRunStatus.CANCELLED ||
-    status === PayrollRunStatus.FAILED
-  );
+  return TERMINAL_VALUES.has(status);
 }
