@@ -379,6 +379,7 @@ excluded from logs, exports, telemetry, and events.
 - [Troubleshooting Guide](./docs/TROUBLESHOOTING.md) - Fixes for common install, build, and test failures
 - [API Reference](./docs/API.md) - Complete API documentation
 - [Pagination Helpers](./docs/pagination.md) - Cursor- and offset-based pagination for payroll history and audit records
+- [Payroll UX Helpers](./docs/payroll-ux-helpers.md) - Configurable logging, completion polling, run summaries, and command serialization
 - [ZK Proof Generation](./docs/ZK_PROOF_GENERATION.md) - Detailed proof generation guide
 - [Examples](./examples/README.md) - Runnable examples and setup steps
 
