@@ -7,7 +7,7 @@
  */
 
 import type { PayrollStatus } from "../payroll/types";
-import type { ReconciliationDiffResult } from "./types";
+import type { ReconciliationDiffResult } from "../reconciliation/types";
 
 /**
  * Reconciliation input summarizing a payroll run's liability state.
@@ -160,6 +160,6 @@ export const createMultiPeriodMixedLifecycleInput = (
       generatedAt: now,
     },
     isCloseable: false,
-    readinessBlockers: ["unresolved_liabilities"],
+    readinessBlockers: ["unreserved_liabilities"],
   };
 };

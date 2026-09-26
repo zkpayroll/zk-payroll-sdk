@@ -3,6 +3,12 @@
 ## Issue #469 — Employee Lifecycle Client API
 The EmployeeLifecycleClient has been implemented in `packages/core/src/employees/lifecycle.ts`.
 
+Every method returns an explicit discriminated result (issue #483):
+`{ ok: true, employeeAddress, operation, correlationId }` on success and
+`{ ok: false, error }` on failure, where `error` carries a stable code, a
+sanitized message, retryability, and remediation guidance. Failures never
+throw and never echo rejected input or sensitive payroll values.
+
 ### Usage
 ```typescript
 import { EmployeeLifecycleClient } from '@zk-payroll/core/employees';
@@ -10,7 +16,12 @@ import { EmployeeLifecycleClient } from '@zk-payroll/core/employees';
 const client = new EmployeeLifecycleClient(server, contractId);
 
 // Create employee
-await client.create(adminKeypair, employeePublicKey);
+const result = await client.create(adminKeypair, employeePublicKey);
+if (result.ok) {
+  console.log('Created', result.correlationId);
+} else {
+  console.error(result.error.code, result.error.message, result.error.remediation.action);
+}
 
 // Suspend employee
 await client.suspend(adminKeypair, employeePublicKey);
@@ -99,3 +110,40 @@ if (isEmployeeStatusUpdatedEvent(rawEvent)) {
 // Decode an array of raw contract events
 const updates = decodeEmployeeStatusUpdatedEvents(events);
 ```
+
+## Issue #483 — Explicit SDK Operation Result Types
+`runSdkOperation()` in `packages/core/src/core/operationResult.ts` wraps any
+async SDK operation and returns a discriminated result instead of throwing:
+`{ ok: true, value, correlationId, timestamp }` or
+`{ ok: false, error, correlationId, timestamp, context }`.
+
+Failure `error` detail includes:
+- `code` — stable machine-readable error code,
+- `message` — sanitized through the SDK redaction engine (no amounts, salaries, keys, or recipients),
+- `attempted` — whether the operation actually ran (false for pre-flight validation rejections),
+- `retryable` / `retryReason` — retryability classification,
+- `remediation` — audience-specific actionable next steps.
+
+### Usage
+```typescript
+import { runSdkOperation, unwrapSdkOperationResult } from '@zk-payroll/core';
+
+const result = await runSdkOperation(() => client.pay(params), {
+  operation: 'payroll_pay',
+  validate: () => (params.amount > 0n ? { ok: true } : { ok: false, message: 'Amount must be positive.' }),
+  onEvent: (event) => logger.info(event),
+});
+
+if (result.ok) {
+  console.log(result.value, result.correlationId);
+} else {
+  console.error(result.error.code, result.error.message);
+  console.error(result.error.remediation.action);
+}
+
+// Throw-on-failure variant (sanitized message, no raw cause attached by default):
+const value = unwrapSdkOperationResult(result);
+```
+
+`EmployeeLifecycleClient` returns the same explicit result shape per operation,
+with destination validation performed locally before any network call.

@@ -1,4 +1,6 @@
 export { generateReconciliationDiff } from "./ReconciliationDiffGenerator";
+export { formatReconciliationDiff } from "./format";
+export type { FormatReconciliationDiffOptions } from "./format";
 export { ReconciliationSnapshotBuilder } from "./SnapshotBuilder";
 export { ReservationReconciliationHelper } from "./ReservationReconciliationHelper";
 export * from "./statusClassifier";

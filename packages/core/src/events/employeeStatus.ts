@@ -7,12 +7,7 @@
  */
 
 import type { RawContractEvent } from "../event-parser";
-import {
-  decodeEventName,
-  decodeAddress,
-  decodeDataMap,
-  decodeU64AsNumber,
-} from "../event-parser";
+import { decodeEventName, decodeAddress, decodeDataMap, decodeU64AsNumber } from "../event-parser";
 import { EventDecodingError } from "./types";
 import type { EmployeeStatus } from "../employees/lifecycle";
 
@@ -61,10 +56,14 @@ function extractStatusString(val: unknown): string {
     if (typeof val === "object" && val !== null && "switch" in val) {
       const swName = (val as { switch: () => { name?: string } }).switch()?.name;
       if (swName === "scvSymbol") {
-        return (val as { sym: () => { toString: () => string } }).sym()?.toString() ?? "";
+        return (
+          (val as unknown as { sym: () => { toString: () => string } }).sym()?.toString() ?? ""
+        );
       }
       if (swName === "scvString") {
-        return (val as { str: () => { toString: () => string } }).str()?.toString() ?? "";
+        return (
+          (val as unknown as { str: () => { toString: () => string } }).str()?.toString() ?? ""
+        );
       }
     }
   } catch {
@@ -132,17 +131,13 @@ export function decodeEmployeeStatusUpdatedEvent(
       ? decodeAddress(data.admin) || undefined
       : undefined;
 
-  const reason = data.reason
-    ? extractStatusString(data.reason)
-    : undefined;
+  const reason = data.reason ? extractStatusString(data.reason) : undefined;
 
   const updatedAt = data.updated_at
     ? decodeU64AsNumber(data.updated_at)
     : Math.floor(Date.now() / 1000);
 
-  const effectiveDate = data.effective_date
-    ? decodeU64AsNumber(data.effective_date)
-    : undefined;
+  const effectiveDate = data.effective_date ? decodeU64AsNumber(data.effective_date) : undefined;
 
   return {
     type: "employee_status_updated",

@@ -1,4 +1,9 @@
-import { ContractErrorCode, ReconciliationErrorCode, WalletErrorCode } from "../core/errors";
+import {
+  ContractErrorCode,
+  ReconciliationErrorCode,
+  WalletErrorCode,
+  SDK_OPERATION_VALIDATION_ERROR_CODE,
+} from "../core/errors";
 import {
   RemediationAudience,
   RemediationCategory,
@@ -280,6 +285,34 @@ export const REMEDIATION_REGISTRY: Record<string, RemediationEntry> = {
           "This is a compliance-relevant event. Escalate for formal investigation and preserve the reconciliation report as evidence.",
         selfServiceable: false,
       },
+    },
+  },
+};
+
+// ── SDK operation result validation (#483) ─────────────────────────────────
+REMEDIATION_REGISTRY[SDK_OPERATION_VALIDATION_ERROR_CODE] = {
+  code: SDK_OPERATION_VALIDATION_ERROR_CODE,
+  category: RemediationCategory.POLICY,
+  summary: "The operation was rejected by local validation before any network call was made.",
+  guidance: {
+    [RemediationAudience.ADMIN]: {
+      action:
+        "Review the operation inputs against the documented field constraints; no on-chain state was changed.",
+      selfServiceable: true,
+    },
+    [RemediationAudience.CONTRIBUTOR]: {
+      action:
+        "Reproduce the failing input locally with the offline validators; no network fixtures are needed.",
+      selfServiceable: true,
+    },
+    [RemediationAudience.SDK_USER]: {
+      action:
+        "Correct the operation inputs per the failure message and retry. No transaction was submitted, so retrying is safe.",
+      selfServiceable: true,
+    },
+    [RemediationAudience.AUDITOR]: {
+      action: "No on-chain state changed — rejected pre-submission by input validation.",
+      selfServiceable: false,
     },
   },
 };
