@@ -280,3 +280,9 @@ export * from "./schedules";
 
 // ── Payroll Batch Fingerprint Helper (#273) ────────────────────────────────
 export * from "./fingerprint";
+
+// ── Compliance Hold Client Helpers (#320) ──────────────────────────────
+export * from "./compliance";
+
+// ── Payroll Request Builder ───────────────────────────────────────────────
+export * from "./request";

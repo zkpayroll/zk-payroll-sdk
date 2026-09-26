@@ -2,7 +2,6 @@
  * Tests for Employee Status Event Decoding (#475).
  */
 
-import { describe, it, expect } from "vitest";
 import { xdr, Address, Keypair } from "@stellar/stellar-sdk";
 import {
   decodeEmployeeStatusUpdatedEvent,
@@ -54,19 +53,14 @@ describe("Issue #475 - Employee Status Event Decoding", () => {
 
   describe("decodeEmployeeStatusUpdatedEvent", () => {
     it("decodes a standard employee_status_updated event with full metadata", () => {
-      const raw = makeRawEvent(
-        "employee_status_updated",
-        employeeKey,
-        employerKey,
-        {
-          new_status: xdr.ScVal.scvSymbol("suspended"),
-          previous_status: xdr.ScVal.scvSymbol("active"),
-          updated_by: Address.fromString(adminKey).toScVal(),
-          reason: xdr.ScVal.scvString("compliance_review"),
-          updated_at: xdr.ScVal.scvU64(new xdr.Uint64(1700000000)),
-          effective_date: xdr.ScVal.scvU64(new xdr.Uint64(1700003600)),
-        }
-      );
+      const raw = makeRawEvent("employee_status_updated", employeeKey, employerKey, {
+        new_status: xdr.ScVal.scvSymbol("suspended"),
+        previous_status: xdr.ScVal.scvSymbol("active"),
+        updated_by: Address.fromString(adminKey).toScVal(),
+        reason: xdr.ScVal.scvString("compliance_review"),
+        updated_at: xdr.ScVal.scvU64(new xdr.Uint64(1700000000)),
+        effective_date: xdr.ScVal.scvU64(new xdr.Uint64(1700003600)),
+      });
 
       const decoded: EmployeeStatusUpdatedEvent = decodeEmployeeStatusUpdatedEvent(raw);
 
@@ -112,7 +106,9 @@ describe("Issue #475 - Employee Status Event Decoding", () => {
       const invalidRaw = makeRawEvent("random_other_event", employeeKey);
 
       expect(() => decodeEmployeeStatusUpdatedEvent(invalidRaw)).toThrow(EventDecodingError);
-      expect(() => decodeEmployeeStatusUpdatedEvent(invalidRaw)).toThrow(/expected employee status event/i);
+      expect(() => decodeEmployeeStatusUpdatedEvent(invalidRaw)).toThrow(
+        /expected employee status event/i
+      );
     });
 
     it("throws EventDecodingError when employee address topic is missing or invalid", () => {
@@ -122,19 +118,24 @@ describe("Issue #475 - Employee Status Event Decoding", () => {
       };
 
       expect(() => decodeEmployeeStatusUpdatedEvent(rawWithBadTopic)).toThrow(EventDecodingError);
-      expect(() => decodeEmployeeStatusUpdatedEvent(rawWithBadTopic)).toThrow(/missing required employee/i);
+      expect(() => decodeEmployeeStatusUpdatedEvent(rawWithBadTopic)).toThrow(
+        /missing required employee/i
+      );
     });
 
     it("failure states do not expose sensitive payroll values", () => {
       const raw = makeRawEvent("unknown_event", employeeKey);
-      try {
-        decodeEmployeeStatusUpdatedEvent(raw);
-        expect.unreachable("should have thrown");
-      } catch (err: unknown) {
-        const message = (err as Error).message;
-        // Verify no sensitive tokens, amounts, or private keys in the error message
-        expect(message).not.toMatch(/salary|witness|amount|balance/i);
-      }
+      expect(() => decodeEmployeeStatusUpdatedEvent(raw)).toThrow();
+      const message = (() => {
+        try {
+          decodeEmployeeStatusUpdatedEvent(raw);
+          return "";
+        } catch (err: unknown) {
+          return (err as Error).message;
+        }
+      })();
+      // Verify no sensitive tokens, amounts, or private keys in the error message
+      expect(message).not.toMatch(/salary|witness|amount|balance/i);
     });
   });
 
@@ -158,10 +159,18 @@ describe("Issue #475 - Employee Status Event Decoding", () => {
 
   describe("isEmployeeStatusUpdatedEvent predicate", () => {
     it("returns true for matching event names and false otherwise", () => {
-      expect(isEmployeeStatusUpdatedEvent(makeRawEvent("employee_status_updated", employeeKey))).toBe(true);
-      expect(isEmployeeStatusUpdatedEvent(makeRawEvent("employee_suspended", employeeKey))).toBe(true);
-      expect(isEmployeeStatusUpdatedEvent(makeRawEvent("employee_offboarded", employeeKey))).toBe(true);
-      expect(isEmployeeStatusUpdatedEvent(makeRawEvent("unrelated_event", employeeKey))).toBe(false);
+      expect(
+        isEmployeeStatusUpdatedEvent(makeRawEvent("employee_status_updated", employeeKey))
+      ).toBe(true);
+      expect(isEmployeeStatusUpdatedEvent(makeRawEvent("employee_suspended", employeeKey))).toBe(
+        true
+      );
+      expect(isEmployeeStatusUpdatedEvent(makeRawEvent("employee_offboarded", employeeKey))).toBe(
+        true
+      );
+      expect(isEmployeeStatusUpdatedEvent(makeRawEvent("unrelated_event", employeeKey))).toBe(
+        false
+      );
       expect(isEmployeeStatusUpdatedEvent({ topics: [], data: xdr.ScVal.scvVoid() })).toBe(false);
     });
   });

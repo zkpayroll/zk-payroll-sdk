@@ -14,6 +14,14 @@ export interface ErrorContext {
 
 import { ERROR_CODE_REGISTRY } from "./error-codes";
 
+// ── SDK Operation Result Error Codes (#483) ─────────────────────────────────
+
+/** Stable code for SDK operations rejected by local pre-flight validation. */
+export const SDK_OPERATION_VALIDATION_ERROR_CODE = "SDK_OPERATION_VALIDATION_FAILED" as const;
+
+/** Stable code for SDK operations that failed with an unrecognized thrown value. */
+export const SDK_OPERATION_UNKNOWN_ERROR_CODE = "SDK_OPERATION_UNKNOWN_ERROR" as const;
+
 // ── Base Error ──────────────────────────────────────────────────────────────
 
 /**

@@ -72,6 +72,40 @@ Use an idempotency key before applying retries to a write operation.
 destinations without including rejected values in error messages. The same
 validation runs automatically before `PayrollService` submits a payment.
 
+## Explicit Operation Result Types
+
+Instead of relying on thrown exceptions alone, `runSdkOperation()` returns an
+explicit discriminated result: `{ ok: true, value }` on success and
+`{ ok: false, error }` on failure. Failure results carry a stable error code,
+a sanitized message, retryability classification, and actionable remediation
+guidance — with sensitive payroll values (amounts, salaries, keys, recipients)
+redacted before the result is ever returned.
+
+```typescript
+import { runSdkOperation, unwrapSdkOperationResult } from "@zk-payroll/core";
+
+const result = await runSdkOperation(() => client.pay(params), {
+  operation: "payroll_pay",
+  validate: () => (params.amount > 0n ? { ok: true } : { ok: false, message: "Amount must be positive." }),
+  onEvent: (event) => logger.info(event), // sanitized, safe to log
+});
+
+if (result.ok) {
+  console.log("Correlation ID:", result.correlationId);
+} else {
+  console.error(result.error.code, result.error.message); // never contains payroll values
+  console.error(result.error.remediation.action); // actionable next step
+  console.error("Retryable:", result.error.retryable);
+}
+
+// Or throw on failure with a sanitized, typed error:
+const value = unwrapSdkOperationResult(result);
+```
+
+`EmployeeLifecycleClient` methods (`create`, `suspend`, `reactivate`,
+`offboard`) return the same explicit result shape, validate destinations
+locally before any network call, and never throw for expected failures.
+
 ## Zero-Knowledge Proof Generation
 
 The SDK includes production-ready ZK proof generation using snarkjs:

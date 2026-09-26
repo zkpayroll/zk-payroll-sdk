@@ -13,12 +13,7 @@ export type ProofMode = "groth16" | "mock" | "plonk" | "bulletproofs";
 /**
  * Execution runtime environment types.
  */
-export type ExecutionEnvironment =
-  | "node"
-  | "browser"
-  | "web-worker"
-  | "serverless"
-  | "unknown";
+export type ExecutionEnvironment = "node" | "browser" | "web-worker" | "serverless" | "unknown";
 
 /**
  * Stellar networks supported by ZkPayroll contracts.
@@ -94,7 +89,8 @@ export type ProofModeCapabilityMap = Record<ProofMode, ProofModeCapability>;
  */
 export function detectEnvironment(): ExecutionEnvironment {
   // Safe global scope inspection without requiring DOM/WebWorker type declarations
-  const globalScope = typeof globalThis !== "undefined" ? (globalThis as Record<string, unknown>) : {};
+  const globalScope =
+    typeof globalThis !== "undefined" ? (globalThis as Record<string, unknown>) : {};
 
   // Web Worker detection
   if (
@@ -107,8 +103,8 @@ export function detectEnvironment(): ExecutionEnvironment {
   // Node.js detection
   if (
     typeof process !== "undefined" &&
-    process.versions != null &&
-    process.versions.node != null
+    process.versions !== null &&
+    process.versions.node !== null
   ) {
     if (process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.VERCEL) {
       return "serverless";
@@ -117,7 +113,10 @@ export function detectEnvironment(): ExecutionEnvironment {
   }
 
   // Browser detection
-  if (typeof globalScope.window !== "undefined" && typeof (globalScope.window as Record<string, unknown>).document !== "undefined") {
+  if (
+    typeof globalScope.window !== "undefined" &&
+    typeof (globalScope.window as Record<string, unknown>).document !== "undefined"
+  ) {
     return "browser";
   }
 
@@ -199,12 +198,14 @@ export function getProofModeCapabilities(
   if (!groth16Available) {
     if (!groth16Prereqs.artifactsAvailable) {
       groth16Reason = "Proving artifacts (.wasm, .zkey) are missing or not loaded.";
-      groth16Remediation = "Download proving artifacts via the artifact downloader before generating proofs.";
+      groth16Remediation =
+        "Download proving artifacts via the artifact downloader before generating proofs.";
     } else if (!groth16Prereqs.wasmSupported) {
       groth16Reason = "WebAssembly is not supported or enabled in the current runtime.";
       groth16Remediation = "Enable WASM in your JavaScript runtime or browser environment.";
     } else if (!groth16Prereqs.cryptoSupported) {
-      groth16Reason = "Cryptographic primitives (crypto/subtle) are unavailable in this environment.";
+      groth16Reason =
+        "Cryptographic primitives (crypto/subtle) are unavailable in this environment.";
       groth16Remediation = "Ensure globalThis.crypto or Node crypto is available.";
     }
   }
@@ -236,7 +237,8 @@ export function getProofModeCapabilities(
   let mockRemediation: string | undefined;
 
   if (isMainnet) {
-    mockReason = "Mock proof mode is strictly disabled on Stellar Mainnet to preserve security invariants.";
+    mockReason =
+      "Mock proof mode is strictly disabled on Stellar Mainnet to preserve security invariants.";
     mockRemediation = "Switch to 'groth16' proof mode for Mainnet submissions.";
   }
 
@@ -269,7 +271,8 @@ export function getProofModeCapabilities(
     available: false,
     performanceTier: "heavy",
     reason: "PLONK proving circuits are not bundled in standard SDK distributions.",
-    remediation: "Use 'groth16' for production contracts, or install the optional @zk-payroll/plonk-adapter package.",
+    remediation:
+      "Use 'groth16' for production contracts, or install the optional @zk-payroll/plonk-adapter package.",
     prerequisites: plonkPrereqs,
     permittedNetworks: ["testnet", "futurenet"],
   };
@@ -318,10 +321,7 @@ export function getProofModeCapability(
 /**
  * Checks whether a specific proof mode is supported and available in the given context.
  */
-export function isProofModeAvailable(
-  mode: string,
-  context?: ProofCapabilityContext
-): boolean {
+export function isProofModeAvailable(mode: string, context?: ProofCapabilityContext): boolean {
   const cap = getProofModeCapability(mode, context);
   return cap ? cap.available : false;
 }
@@ -329,24 +329,22 @@ export function isProofModeAvailable(
 /**
  * Returns a list of all currently available proof modes.
  */
-export function getAvailableProofModes(
-  context?: ProofCapabilityContext
-): ProofMode[] {
+export function getAvailableProofModes(context?: ProofCapabilityContext): ProofMode[] {
   const capabilities = getProofModeCapabilities(context);
-  return (Object.keys(capabilities) as ProofMode[]).filter(
-    (m) => capabilities[m].available
-  );
+  return (Object.keys(capabilities) as ProofMode[]).filter((m) => capabilities[m].available);
 }
 
 /**
  * Formats capability status into a readable diagnostic string.
  */
-export function formatProofModeCapabilities(
-  capabilities: ProofModeCapabilityMap
-): string {
+export function formatProofModeCapabilities(capabilities: ProofModeCapabilityMap): string {
   const lines: string[] = ["=== ZkPayroll Proof Mode Capabilities ==="];
   for (const [mode, cap] of Object.entries(capabilities)) {
-    const status = cap.available ? "✅ AVAILABLE" : cap.supported ? "⚠️ UNAVAILABLE" : "❌ UNSUPPORTED";
+    const status = cap.available
+      ? "✅ AVAILABLE"
+      : cap.supported
+        ? "⚠️ UNAVAILABLE"
+        : "❌ UNSUPPORTED";
     lines.push(`- [${mode.toUpperCase()}] ${cap.label}: ${status}`);
     lines.push(`  Reason: ${cap.reason}`);
     if (cap.remediation) {

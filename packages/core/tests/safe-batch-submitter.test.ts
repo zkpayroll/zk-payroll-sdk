@@ -2,7 +2,6 @@
  * Tests for Safe Payroll Batch Submission Helper (#472).
  */
 
-import { describe, it, expect, vi } from "vitest";
 import {
   submitSequentialPayrollBatches,
   SafeBatchProgressEvent,
@@ -93,7 +92,7 @@ describe("Issue #472 - Safe Payroll Batch Submission Helper", () => {
     let attemptCount = 0;
     const errorHistory: { batchIndex: number; willRetry: boolean }[] = [];
 
-    const mockSleep = vi.fn().mockResolvedValue(undefined);
+    const mockSleep = jest.fn().mockResolvedValue(undefined);
 
     const result = await submitSequentialPayrollBatches(
       dummyItems.slice(0, 2),
@@ -124,7 +123,7 @@ describe("Issue #472 - Safe Payroll Batch Submission Helper", () => {
 
   it("fails fast on non-retryable errors without executing unnecessary retries", async () => {
     let attempts = 0;
-    const mockSleep = vi.fn();
+    const mockSleep = jest.fn();
 
     const result = await submitSequentialPayrollBatches(
       dummyItems,
@@ -151,7 +150,7 @@ describe("Issue #472 - Safe Payroll Batch Submission Helper", () => {
 
   it("provides actionable remediation guidance when retries are exhausted", async () => {
     let batchIndexCounter = 0;
-    const mockSleep = vi.fn().mockResolvedValue(undefined);
+    const mockSleep = jest.fn().mockResolvedValue(undefined);
 
     const result = await submitSequentialPayrollBatches(
       dummyItems,
@@ -176,7 +175,9 @@ describe("Issue #472 - Safe Payroll Batch Submission Helper", () => {
     expect(result.error).toBeDefined();
     expect(result.error?.batchesSucceeded).toBe(1);
     expect(result.error?.itemsSucceeded).toBe(2);
-    expect(result.error?.actionableGuidance).toContain("Batch 2 failed. 1 previous batch(es) succeeded (2 items).");
+    expect(result.error?.actionableGuidance).toContain(
+      "Batch 2 failed. 1 previous batch(es) succeeded (2 items)."
+    );
     expect(result.error?.actionableGuidance).toContain("resume from batch index 1");
   });
 
