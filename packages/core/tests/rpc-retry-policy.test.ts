@@ -32,4 +32,27 @@ describe("withRpcRetry", () => {
     );
     expect(operation).toHaveBeenCalledTimes(1);
   });
+
+  it("rejects an invalid jitter source before scheduling a retry", async () => {
+    const sleep = jest.fn(async () => undefined);
+    await expect(
+      withRpcRetry(
+        async () => {
+          throw new Error("ECONNRESET");
+        },
+        { random: () => 2, sleep }
+      )
+    ).rejects.toThrow("random must return a number between 0 and 1");
+    expect(sleep).not.toHaveBeenCalled();
+  });
+
+  it("stops before starting when its signal is already aborted", async () => {
+    const controller = new AbortController();
+    controller.abort();
+    const operation = jest.fn(async () => "ok");
+    await expect(withRpcRetry(operation, { signal: controller.signal })).rejects.toMatchObject({
+      name: "AbortError",
+    });
+    expect(operation).not.toHaveBeenCalled();
+  });
 });

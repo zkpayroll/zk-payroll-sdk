@@ -28,4 +28,24 @@ describe("payroll period pagination", () => {
     };
     await expect(consume()).rejects.toThrow("repeated cursor");
   });
+
+  it("rejects malformed pages with an actionable, privacy-safe error", async () => {
+    const fetchPage = async (): Promise<never> => ({ items: null }) as never;
+    await expect(collectPayrollPeriods(fetchPage)).rejects.toThrow(
+      "Payroll period fetcher returned an invalid page."
+    );
+  });
+
+  it("does not yield a fetched page after cancellation", async () => {
+    const controller = new AbortController();
+    const fetchPage = async (): Promise<{ items: { periodId: string }[] }> => {
+      controller.abort();
+      return { items: [{ periodId: "private-period" }] };
+    };
+    await expect(
+      collectPayrollPeriods(fetchPage, { signal: controller.signal })
+    ).rejects.toMatchObject({
+      name: "AbortError",
+    });
+  });
 });

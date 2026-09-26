@@ -21,6 +21,25 @@ export type PayrollPeriodPageFetcher<T extends PayrollPeriodRecord> = (
   request: PayrollPeriodPageRequest
 ) => Promise<PayrollPeriodPage<T>>;
 
+function abortError(): Error {
+  // DOMException is not available in every supported server runtime.
+  if (typeof DOMException !== "undefined")
+    return new DOMException("Pagination aborted", "AbortError");
+  const error = new Error("Pagination aborted");
+  error.name = "AbortError";
+  return error;
+}
+
+function assertPage<T extends PayrollPeriodRecord>(
+  value: unknown
+): asserts value is PayrollPeriodPage<T> {
+  if (!value || typeof value !== "object" || !Array.isArray((value as PayrollPeriodPage<T>).items))
+    throw new TypeError("Payroll period fetcher returned an invalid page.");
+  const cursor = (value as PayrollPeriodPage<T>).nextCursor;
+  if (cursor !== undefined && (typeof cursor !== "string" || cursor.length === 0))
+    throw new TypeError("Payroll period fetcher returned an invalid next cursor.");
+}
+
 function resolveOptions(options: PayrollPeriodPaginationOptions): {
   pageSize: number;
   maxPages: number;
@@ -43,8 +62,10 @@ export async function* iteratePayrollPeriods<T extends PayrollPeriodRecord>(
   const seen = new Set<string>();
   let cursor = options.cursor;
   for (let page = 0; page < maxPages; page++) {
-    if (options.signal?.aborted) throw new DOMException("Pagination aborted", "AbortError");
+    if (options.signal?.aborted) throw abortError();
     const result = await fetchPage({ cursor, limit: pageSize, signal: options.signal });
+    if (options.signal?.aborted) throw abortError();
+    assertPage<T>(result);
     for (const period of result.items) yield period;
     if (!result.nextCursor) return;
     if (result.nextCursor === cursor || seen.has(result.nextCursor))
