@@ -8,6 +8,7 @@ export * from "./types";
 export * from "./employerOnboarding";
 export * from "./operatorRemoval";
 export * from "./draftUpdated";
+export * from "./draftExpiry";
 export * from "./auditorRole";
 export * from "./reservations";
 export * from "./treasuryDeposit";

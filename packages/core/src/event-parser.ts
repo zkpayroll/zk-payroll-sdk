@@ -154,12 +154,21 @@ import {
   decodeEmployeeStatusUpdatedEvents,
   isEmployeeStatusUpdatedEvent,
 } from "./events/employeeStatus";
+import {
+  PayrollDraftExpiryEvent,
+  parseDraftExpiryEvent,
+  parseDraftExpiryEvents,
+  isDraftExpiryEvent,
+} from "./events/draftExpiry";
 
-export type { EmployeeStatusUpdatedEvent };
+export type { EmployeeStatusUpdatedEvent, PayrollDraftExpiryEvent };
 export {
   decodeEmployeeStatusUpdatedEvent,
   decodeEmployeeStatusUpdatedEvents,
   isEmployeeStatusUpdatedEvent,
+  parseDraftExpiryEvent,
+  parseDraftExpiryEvents,
+  isDraftExpiryEvent,
 };
 
 export type TypedContractEvent =
@@ -171,7 +180,8 @@ export type TypedContractEvent =
   | PaymentExecutedEvent
   | PaymentScheduledEvent
   | PaymentCancelledEvent
-  | EmployeeStatusUpdatedEvent;
+  | EmployeeStatusUpdatedEvent
+  | PayrollDraftExpiryEvent;
 
 // ── Error Types ──────────────────────────────────────────────────────────────
 
@@ -237,6 +247,8 @@ export function parseContractEvent(event: RawContractEvent): TypedContractEvent 
     case "employee_offboarded":
     case "employee_created":
       return decodeEmployeeStatusUpdatedEvent(event);
+    case "payroll_draft_expiry":
+      return parseDraftExpiryEvent(event);
     default:
       throw new EventParsingError(`Unknown event type: "${eventName}"`, event);
   }
