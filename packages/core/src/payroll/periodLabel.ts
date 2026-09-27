@@ -6,7 +6,13 @@
  * repeated date or period logic.
  */
 
-import { formatPeriodLabel, formatPeriodCompact, formatTimestampToPeriod, getPreviousPeriod, getNextPeriod } from "../utils/date";
+import {
+  formatPeriodLabel,
+  formatPeriodCompact,
+  formatTimestampToPeriod,
+  getPreviousPeriod,
+  getNextPeriod,
+} from "../utils/date";
 
 /**
  * Formats a payroll period identifier into a human-readable label.

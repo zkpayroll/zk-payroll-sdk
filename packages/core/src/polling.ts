@@ -139,11 +139,7 @@ function sleep(ms: number, signal?: AbortSignal): Promise<void> {
 
 // ── Payroll completion polling (#477) ────────────────────────────────────────
 
-function assertBoundedPollOptions(
-  timeoutMs: number,
-  intervalMs: number,
-  method: string
-): void {
+function assertBoundedPollOptions(timeoutMs: number, intervalMs: number, method: string): void {
   if (!Number.isFinite(timeoutMs) || timeoutMs <= 0) {
     throw new RangeError(`${method} requires a positive timeoutMs (got ${String(timeoutMs)}).`);
   }
@@ -269,10 +265,7 @@ export async function pollPayrollCompletion<T>(
     }
 
     try {
-      await sleep(
-        Math.min(intervalMs, Math.max(0, timeoutMs - (Date.now() - startTime))),
-        signal
-      );
+      await sleep(Math.min(intervalMs, Math.max(0, timeoutMs - (Date.now() - startTime))), signal);
     } catch (err: unknown) {
       if ((err as Error).message === "AbortError") {
         throw new Error("Payroll completion polling was cancelled.");

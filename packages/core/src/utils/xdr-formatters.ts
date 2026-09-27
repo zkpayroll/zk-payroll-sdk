@@ -7,7 +7,9 @@ export type IntegerInput = bigint | number | string;
 
 function parseInteger(value: IntegerInput, label: string): bigint {
   if (typeof value === "number" && !Number.isSafeInteger(value)) {
-    throw new TypeError(`${label} must be a bigint or decimal string when outside Number safe-integer range`);
+    throw new TypeError(
+      `${label} must be a bigint or decimal string when outside Number safe-integer range`
+    );
   }
 
   let parsed: bigint;

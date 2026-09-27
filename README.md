@@ -72,6 +72,33 @@ Use an idempotency key before applying retries to a write operation.
 destinations without including rejected values in error messages. The same
 validation runs automatically before `PayrollService` submits a payment.
 
+## Event Stream Deduplication
+
+The SDK provides deduplication helpers to prevent processing the same payroll event more than once. This strengthens payroll workflows while keeping private salary and employee data protected.
+
+```typescript
+import { detectDuplicates, formatDeduplicationSummary } from "@zk-payroll/core";
+
+// Detect duplicate entries in a payroll batch
+const entries = [
+  { recipient: "GA1...", amount: 1000n, asset: "native" },
+  { recipient: "GB2...", amount: 2000n, asset: "native" },
+  { recipient: "GA1...", amount: 1000n, asset: "native" }, // Duplicate
+];
+
+const result = detectDuplicates(entries);
+if (result.hasDuplicates) {
+  console.log(formatDeduplicationSummary(result));
+  // Output: "Duplicate recipient: GA1... at indices [0, 2]"
+}
+```
+
+The deduplication helper:
+- Validates input data and configuration before processing
+- Provides privacy-safe error messages that don't expose sensitive payroll values
+- Supports configurable deduplication keys (recipient, amount, asset)
+- Returns detailed duplicate information for debugging without revealing full addresses or amounts
+
 ## Configurable SDK logging
 
 Host applications can route SDK diagnostics into their own logger. All log

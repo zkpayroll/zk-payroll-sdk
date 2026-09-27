@@ -1,7 +1,4 @@
-import type {
-  ReconciliationDiffCategory,
-  ReconciliationDiffResult,
-} from "./types";
+import type { ReconciliationDiffCategory, ReconciliationDiffResult } from "./types";
 
 /**
  * Human-readable label for each `ReconciliationDiffCategory`. Kept here
@@ -67,14 +64,12 @@ function formatCountSummary(counts: ReconciliationDiffResult["counts"]): string 
  */
 export function formatReconciliationDiff(
   result: ReconciliationDiffResult,
-  options: FormatReconciliationDiffOptions = {},
+  options: FormatReconciliationDiffOptions = {}
 ): string {
   const indent = options.indent ?? "  ";
   const newline = options.newline ?? "\n";
 
-  const status = result.isFullyReconciled
-    ? "fully reconciled"
-    : "needs attention";
+  const status = result.isFullyReconciled ? "fully reconciled" : "needs attention";
 
   const header = `reconciliation: ${status} \u2014 ${formatCountSummary(result.counts)}`;
 
@@ -84,10 +79,8 @@ export function formatReconciliationDiff(
 
   const lines = sortedEntries.map(
     (entry) =>
-      `${indent}${entry.recipient}: ${CATEGORY_LABELS[entry.category]} \u2014 ${entry.reason}`,
+      `${indent}${entry.recipient}: ${CATEGORY_LABELS[entry.category]} \u2014 ${entry.reason}`
   );
 
-  return lines.length > 0
-    ? [header, ...lines].join(newline)
-    : header + newline;
+  return lines.length > 0 ? [header, ...lines].join(newline) : header + newline;
 }

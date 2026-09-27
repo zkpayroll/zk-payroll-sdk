@@ -29,18 +29,12 @@ describe("Employee Import Result Parser (#283)", () => {
           { employeeId: "EMP-001", walletAddress: "GAAA1", name: "Alice" },
           { employeeId: "EMP-002", walletAddress: "GAAA2", name: "Bob" },
         ],
-        updated: [
-          { employeeId: "EMP-003", walletAddress: "GAAA3", name: "Charlie" },
-        ],
-        skipped: [
-          { employeeId: "EMP-004", reason: "Already up to date" },
-        ],
+        updated: [{ employeeId: "EMP-003", walletAddress: "GAAA3", name: "Charlie" }],
+        skipped: [{ employeeId: "EMP-004", reason: "Already up to date" }],
         duplicate: [
           { employeeId: "EMP-005", walletAddress: "GAAA1", reason: "Duplicate wallet address" },
         ],
-        failed: [
-          { employeeId: "EMP-006", error: "Invalid Stellar public key format" },
-        ],
+        failed: [{ employeeId: "EMP-006", error: "Invalid Stellar public key format" }],
       };
 
       const result = parseEmployeeImportResult(payload);
@@ -204,14 +198,32 @@ describe("Employee Import Result Parser (#283)", () => {
 
     it("returns false if there are failures or duplicates", () => {
       const withFailures = {
-        summary: { total: 1, addedCount: 0, updatedCount: 0, skippedCount: 0, duplicateCount: 0, failedCount: 1, successRate: 0, hasFailures: true },
+        summary: {
+          total: 1,
+          addedCount: 0,
+          updatedCount: 0,
+          skippedCount: 0,
+          duplicateCount: 0,
+          failedCount: 1,
+          successRate: 0,
+          hasFailures: true,
+        },
         groups: { added: [], updated: [], skipped: [], duplicate: [], failed: [] },
         parsedAt: Date.now(),
       };
       expect(isImportFullySuccessful(withFailures)).toBe(false);
 
       const withDuplicates = {
-        summary: { total: 1, addedCount: 0, updatedCount: 0, skippedCount: 0, duplicateCount: 1, failedCount: 0, successRate: 0, hasFailures: true },
+        summary: {
+          total: 1,
+          addedCount: 0,
+          updatedCount: 0,
+          skippedCount: 0,
+          duplicateCount: 1,
+          failedCount: 0,
+          successRate: 0,
+          hasFailures: true,
+        },
         groups: { added: [], updated: [], skipped: [], duplicate: [], failed: [] },
         parsedAt: Date.now(),
       };

@@ -60,7 +60,11 @@ export function validateMemoInput(input: MemoInput): void {
   }
 
   if (input.plaintext.length === 0) {
-    throw new ValidationError("Memo plaintext must not be empty", "plaintext", "MEMO_PLAINTEXT_EMPTY");
+    throw new ValidationError(
+      "Memo plaintext must not be empty",
+      "plaintext",
+      "MEMO_PLAINTEXT_EMPTY"
+    );
   }
 
   if (input.plaintext.length > MEMO_PLAINTEXT_MAX_LENGTH) {

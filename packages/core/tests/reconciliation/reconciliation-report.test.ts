@@ -230,14 +230,10 @@ describe("PayrollLiabilityReportBuilder", () => {
         "GTESTEMPLOYER1234567890abcdef",
         "2024-01",
         "draft",
-        [
-          { recipient: "GALICE1234567890abcdef", amount: 500000n },
-        ],
+        [{ recipient: "GALICE1234567890abcdef", amount: 500000n }],
         [],
         [],
-        [
-          { recipient: "GALICE1234567890abcdef", amount: 100000n },
-        ],
+        [{ recipient: "GALICE1234567890abcdef", amount: 100000n }],
         [],
         []
       );
@@ -247,12 +243,8 @@ describe("PayrollLiabilityReportBuilder", () => {
         "GTESTEMPLOYER1234567890abcdef",
         "2024-02",
         "settled",
-        [
-          { recipient: "GALICE1234567890abcdef", amount: 300000n },
-        ],
-        [
-          { recipient: "GALICE1234567890abcdef", amount: 300000n },
-        ],
+        [{ recipient: "GALICE1234567890abcdef", amount: 300000n }],
+        [{ recipient: "GALICE1234567890abcdef", amount: 300000n }],
         [],
         [],
         [],
@@ -274,7 +266,7 @@ describe("PayrollLiabilityReportBuilder", () => {
       expect(report1.readiness.blockers).toContain("unreserved_liabilities");
       expect(report1.readiness.blockers).toContain("unclosed_period");
       expect(report1.readiness.blockers).toContain("missing_reservations");
-      
+
       // report2 is settled and closeable
       expect(report2.readiness.isCloseable).toBe(true);
       expect(report2.readiness.blockers).toHaveLength(0);

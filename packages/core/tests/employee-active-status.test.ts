@@ -6,7 +6,14 @@
  * employee can be used in payroll drafts.
  */
 
-import { isEmployeeActive, checkEmployeesActive, formatActiveStatus, EmployeeActiveStatusResult, EmployeeProfile, sampleEmployeeProfiles } from "../src/employees/activeStatus";
+import {
+  isEmployeeActive,
+  checkEmployeesActive,
+  formatActiveStatus,
+  EmployeeActiveStatusResult,
+  EmployeeProfile,
+  sampleEmployeeProfiles,
+} from "../src/employees/activeStatus";
 
 const EMPLOYER = "GTESTEMPLOYER1234567890abcdef";
 

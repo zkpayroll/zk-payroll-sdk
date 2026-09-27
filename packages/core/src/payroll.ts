@@ -434,9 +434,9 @@ export class PayrollService {
     } catch (error) {
       this.logger?.error("configuration_cache_invalidation_failed", {
         error: error instanceof Error ? redactError(error).message : String(error),
-        employerAddress
+        employerAddress,
       });
-      // Clear failure handling: we throw a safe ZkPayrollError if invalidation fails, 
+      // Clear failure handling: we throw a safe ZkPayrollError if invalidation fails,
       // avoiding leakage of sensitive values.
       throw new PayrollError(
         `Failed to invalidate configuration cache: ${error instanceof Error ? error.message : String(error)}`,

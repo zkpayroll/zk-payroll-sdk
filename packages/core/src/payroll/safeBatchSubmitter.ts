@@ -225,7 +225,8 @@ export async function submitSequentialPayrollBatches<T, R>(
     message: string,
     retryAttempt?: number
   ) => {
-    const percentage = totalItems > 0 ? Math.min(100, Math.round((itemsProcessed / totalItems) * 100)) : 100;
+    const percentage =
+      totalItems > 0 ? Math.min(100, Math.round((itemsProcessed / totalItems) * 100)) : 100;
     const event: SafeBatchProgressEvent = {
       stage,
       batchIndex,
@@ -242,7 +243,12 @@ export async function submitSequentialPayrollBatches<T, R>(
   };
 
   // Validation stage
-  emitProgress("validating", 0, 0, `Validating ${totalItems} payroll item(s) across ${totalBatches} batch(es)...`);
+  emitProgress(
+    "validating",
+    0,
+    0,
+    `Validating ${totalItems} payroll item(s) across ${totalBatches} batch(es)...`
+  );
 
   const allResults: R[] = [];
   let itemsProcessedCount = 0;
@@ -250,9 +256,10 @@ export async function submitSequentialPayrollBatches<T, R>(
 
   for (const batch of batches) {
     if (signal?.aborted) {
-      const guidance = batchesSucceededCount > 0
-        ? `Submission cancelled. ${batchesSucceededCount} of ${totalBatches} batches succeeded (${itemsProcessedCount} items). Resume from batch index ${batch.index}.`
-        : `Submission cancelled before batch ${batch.index} started. No items were submitted.`;
+      const guidance =
+        batchesSucceededCount > 0
+          ? `Submission cancelled. ${batchesSucceededCount} of ${totalBatches} batches succeeded (${itemsProcessedCount} items). Resume from batch index ${batch.index}.`
+          : `Submission cancelled before batch ${batch.index} started. No items were submitted.`;
       const errDetail: SafeBatchErrorDetail = {
         message: "Batch submission was cancelled via AbortSignal.",
         code: "BATCH_SUBMISSION_CANCELLED",
@@ -313,7 +320,9 @@ export async function submitSequentialPayrollBatches<T, R>(
         const decision = classifyError(rawError);
         const isNonRetryable =
           decision.category === RetryCategory.NON_RETRYABLE ||
-          /validation|invalid|unauthorized|forbidden|signature.*fail|schema/i.test(rawError.message);
+          /validation|invalid|unauthorized|forbidden|signature.*fail|schema/i.test(
+            rawError.message
+          );
         const willRetry = !isNonRetryable && attempt < maxAttempts && !signal?.aborted;
 
         options.onBatchError?.(batch.index, redacted, willRetry);
@@ -355,9 +364,10 @@ export async function submitSequentialPayrollBatches<T, R>(
         `Batch ${batch.index + 1} of ${totalBatches} completed successfully.`
       );
     } else {
-      const guidance = batchesSucceededCount > 0
-        ? `Batch ${batch.index + 1} failed. ${batchesSucceededCount} previous batch(es) succeeded (${itemsProcessedCount} items). Verify the failure reason and resume from batch index ${batch.index}.`
-        : `Batch 1 failed. No items were committed on-chain. Verify input parameters and permissions before retrying.`;
+      const guidance =
+        batchesSucceededCount > 0
+          ? `Batch ${batch.index + 1} failed. ${batchesSucceededCount} previous batch(es) succeeded (${itemsProcessedCount} items). Verify the failure reason and resume from batch index ${batch.index}.`
+          : `Batch 1 failed. No items were committed on-chain. Verify input parameters and permissions before retrying.`;
 
       const errDetail: SafeBatchErrorDetail = {
         message: lastError?.message || "Batch submission failed.",

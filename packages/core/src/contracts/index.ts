@@ -6,7 +6,4 @@
  * merely discouraged but structurally blocked.
  */
 
-export {
-  assertPreparedMemo,
-  buildMemoRegistrationRequest,
-} from "./memoRegistration";
+export { assertPreparedMemo, buildMemoRegistrationRequest } from "./memoRegistration";

@@ -32,7 +32,12 @@ export function createHookLogger(hook: LoggerHook): SdkLogger {
 
   function emit(level: LogLevel, event: string, context?: Record<string, unknown>) {
     const safeContext = context === undefined ? undefined : redactSensitive(context);
-    const logEntry: LogEvent = { event, level, context: safeContext, timestamp: new Date().toISOString() };
+    const logEntry: LogEvent = {
+      event,
+      level,
+      context: safeContext,
+      timestamp: new Date().toISOString(),
+    };
     hook(logEntry);
     emitter.emit("log", logEntry);
     emitter.emit(event, logEntry);

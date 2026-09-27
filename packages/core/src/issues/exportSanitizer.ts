@@ -102,8 +102,7 @@ export class PayrollIssueExportSanitizer {
         "i"
       );
     } else {
-      this.sensitivePattern =
-        options.sensitiveKeyPattern ?? DEFAULT_SENSITIVE_KEY_PATTERN;
+      this.sensitivePattern = options.sensitiveKeyPattern ?? DEFAULT_SENSITIVE_KEY_PATTERN;
     }
   }
 
@@ -130,9 +129,7 @@ export class PayrollIssueExportSanitizer {
       );
     }
 
-    const sanitizedContext = issue.context
-      ? this.sanitizeContextObject(issue.context)
-      : undefined;
+    const sanitizedContext = issue.context ? this.sanitizeContextObject(issue.context) : undefined;
 
     return {
       ...issue,
@@ -153,10 +150,7 @@ export class PayrollIssueExportSanitizer {
   /**
    * Sanitizes and exports issues into the requested format.
    */
-  export(
-    issues: PayrollIssueItem[],
-    format: IssueExportFormat = "json"
-  ): SanitizedExportResult {
+  export(issues: PayrollIssueItem[], format: IssueExportFormat = "json"): SanitizedExportResult {
     const sanitizedIssues = this.sanitizeIssues(issues);
     const sanitizedAt = Date.now();
 
@@ -228,7 +222,12 @@ export class PayrollIssueExportSanitizer {
     const header = "| Severity | Code | Message | Employee | Recipient | Field |";
     const separator = "| :---: | :--- | :--- | :---: | :---: | :--- |";
     const rows = issues.map((i) => {
-      const sevBadge = i.severity === "blocker" ? "🛑 Blocker" : i.severity === "warning" ? "⚠️ Warning" : "ℹ️ Info";
+      const sevBadge =
+        i.severity === "blocker"
+          ? "🛑 Blocker"
+          : i.severity === "warning"
+            ? "⚠️ Warning"
+            : "ℹ️ Info";
       const emp = i.employeeId ?? "-";
       const rec = i.recipient ?? "-";
       const fld = i.field ?? "-";

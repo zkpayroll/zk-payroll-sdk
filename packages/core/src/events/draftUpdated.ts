@@ -66,9 +66,10 @@ export function parseDraftUpdatedEvent(event: RawContractEvent): PayrollDraftUpd
     employer,
     draftId: data.draft_id?.str()?.toString() ?? "",
     entryCount: decodeU64AsNumber(data.entry_count),
-    submittedForApproval: data.submitted_for_approval?.switch()?.name === "scvBool"
-      ? data.submitted_for_approval.b()
-      : false,
+    submittedForApproval:
+      data.submitted_for_approval?.switch()?.name === "scvBool"
+        ? data.submitted_for_approval.b()
+        : false,
     contractId: event.contractId,
     ledger: event.ledger,
     timestamp: event.ledgerClosedAt,

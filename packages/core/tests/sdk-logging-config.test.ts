@@ -75,7 +75,11 @@ describe("configurable SDK logging interface (Issue #476)", () => {
 
     it("accepts a bare { info, warn, error } object", () => {
       const calls: Array<{ event: string; context?: Record<string, unknown> }> = [];
-      const bareLogger: { info: (event: string, context?: Record<string, unknown>) => void; warn: (event: string, context?: Record<string, unknown>) => void; error: (event: string, context?: Record<string, unknown>) => void } = {
+      const bareLogger: {
+        info: (event: string, context?: Record<string, unknown>) => void;
+        warn: (event: string, context?: Record<string, unknown>) => void;
+        error: (event: string, context?: Record<string, unknown>) => void;
+      } = {
         info: (event, context) => calls.push({ event, context }),
         warn: (event, context) => calls.push({ event, context }),
         error: (event, context) => calls.push({ event, context }),

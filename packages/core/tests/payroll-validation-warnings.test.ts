@@ -88,7 +88,9 @@ describe("Payroll Validation Warning Collector (#282)", () => {
     });
 
     it("filters warnings by warning code", () => {
-      const highAmountWarnings = collector.getWarningsByCode(PayrollWarningCode.UNUSUAL_HIGH_AMOUNT);
+      const highAmountWarnings = collector.getWarningsByCode(
+        PayrollWarningCode.UNUSUAL_HIGH_AMOUNT
+      );
       expect(highAmountWarnings).toHaveLength(2);
 
       const periodDriftWarnings = collector.getWarningsByCode(PayrollWarningCode.PERIOD_DRIFT);
@@ -107,7 +109,9 @@ describe("Payroll Validation Warning Collector (#282)", () => {
     });
 
     it("filters errors by code and employee ID", () => {
-      const invalidAddressErrors = collector.getErrorsByCode(PayrollErrorCode.INVALID_RECIPIENT_ADDRESS);
+      const invalidAddressErrors = collector.getErrorsByCode(
+        PayrollErrorCode.INVALID_RECIPIENT_ADDRESS
+      );
       expect(invalidAddressErrors).toHaveLength(1);
       expect(invalidAddressErrors[0].employeeId).toBe("EMP-C");
 
@@ -139,7 +143,10 @@ describe("Payroll Validation Warning Collector (#282)", () => {
 
     it("merges issues from another collector", () => {
       const other = new PayrollValidationWarningCollector();
-      other.addWarning({ code: PayrollWarningCode.ROUNDING_ADJUSTMENT, message: "Stroop rounding applied" });
+      other.addWarning({
+        code: PayrollWarningCode.ROUNDING_ADJUSTMENT,
+        message: "Stroop rounding applied",
+      });
       other.addError({ code: PayrollErrorCode.UNAUTHORIZED_SIGNER, message: "Unauthorized key" });
 
       collector.addWarning({ code: PayrollWarningCode.MEMO_NOT_SET, message: "No memo" });
@@ -169,7 +176,9 @@ describe("Payroll Validation Warning Collector (#282)", () => {
 
     it("formats human-readable diagnostic reports for all states", () => {
       // 1. Clean
-      expect(collector.formatDiagnosticSummary()).toContain("[Payroll Validation Status: PASS_CLEAN]");
+      expect(collector.formatDiagnosticSummary()).toContain(
+        "[Payroll Validation Status: PASS_CLEAN]"
+      );
 
       // 2. Pass with warnings
       collector.addWarning({

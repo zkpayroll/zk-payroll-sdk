@@ -70,9 +70,7 @@ describe("Batch Creator Permission Error Mapper (#431)", () => {
 
   describe("Remediation Generation", () => {
     it("returns specific remediation for unauthorized creator", () => {
-      const remediation = getBatchCreatorRemediation(
-        new Error("unauthorized batch creator")
-      );
+      const remediation = getBatchCreatorRemediation(new Error("unauthorized batch creator"));
       expect(remediation).toContain("BATCH_CREATOR or PAYROLL_ADMIN");
     });
 
@@ -84,27 +82,19 @@ describe("Batch Creator Permission Error Mapper (#431)", () => {
     });
 
     it("returns specific remediation for organization mismatch", () => {
-      const remediation = getBatchCreatorRemediation(
-        new Error("department unauthorized")
-      );
+      const remediation = getBatchCreatorRemediation(new Error("department unauthorized"));
       expect(remediation).toContain("specified organization");
     });
 
     it("returns specific remediation for quorum required", () => {
-      const remediation = getBatchCreatorRemediation(
-        new Error("insufficient signers for batch")
-      );
+      const remediation = getBatchCreatorRemediation(new Error("insufficient signers for batch"));
       expect(remediation).toContain("quorum session");
     });
 
     it("supports custom message overrides", () => {
-      const remediation = getBatchCreatorRemediation(
-        new Error("unauthorized batch creator"),
-        {
-          [BatchCreatorPermissionErrorCode.UNAUTHORIZED_CREATOR]:
-            "Custom team remediation message",
-        }
-      );
+      const remediation = getBatchCreatorRemediation(new Error("unauthorized batch creator"), {
+        [BatchCreatorPermissionErrorCode.UNAUTHORIZED_CREATOR]: "Custom team remediation message",
+      });
       expect(remediation).toBe("Custom team remediation message");
     });
 

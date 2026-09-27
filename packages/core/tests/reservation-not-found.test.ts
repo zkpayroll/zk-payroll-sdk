@@ -90,7 +90,9 @@ describe("getReservationErrorMessage", () => {
 
   it("returns user-friendly message for finalized error", () => {
     const msg = getReservationErrorMessage(new Error("reservation already finalized"));
-    expect(msg).toBe(RESERVATION_ERROR_MESSAGES[ReservationErrorCode.RESERVATION_ALREADY_FINALIZED]);
+    expect(msg).toBe(
+      RESERVATION_ERROR_MESSAGES[ReservationErrorCode.RESERVATION_ALREADY_FINALIZED]
+    );
   });
 
   it("returns generic message for unrecognized errors", () => {

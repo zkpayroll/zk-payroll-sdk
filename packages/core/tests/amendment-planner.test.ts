@@ -7,11 +7,11 @@ describe("PayrollAmendmentPlanner", () => {
     const current = [{ recipient: "A", amount: 100n, asset: "XLM" }];
     const input = {
       payrollId: "1",
-      proposedCommitments: [{ recipient: "A", amount: 200n, asset: "XLM" }]
+      proposedCommitments: [{ recipient: "A", amount: 200n, asset: "XLM" }],
     };
-    
+
     const plan = await planner.planAmendment(current, input);
-    
+
     expect(plan.diffs).toHaveLength(1);
     expect(plan.diffs[0].type).toBe("modified");
     expect(plan.approvalRequired).toBe(true);

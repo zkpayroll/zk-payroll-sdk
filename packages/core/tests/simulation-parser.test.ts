@@ -21,7 +21,11 @@ const FIXTURE_SUCCESS: SimulationResult = {
 const FIXTURE_SUCCESS_WITH_POLICY_WARNING: SimulationResult = {
   status: "success",
   findings: [
-    { code: "POLICY_LIMIT_APPROACHED", message: "Batch total is near the policy capacity limit", severity: "warning" },
+    {
+      code: "POLICY_LIMIT_APPROACHED",
+      message: "Batch total is near the policy capacity limit",
+      severity: "warning",
+    },
   ],
   canProceed: true,
 };
@@ -30,8 +34,16 @@ const FIXTURE_SUCCESS_WITH_POLICY_WARNING: SimulationResult = {
 const FIXTURE_FUNDING_FAILURE: SimulationResult = {
   status: "error",
   findings: [
-    { code: "INSUFFICIENT_TREASURY", message: "Treasury has insufficient funds for asset native", severity: "error" },
-    { code: "BATCH_TOTAL", message: "Required 1250000 stroops but only 1000000 available", severity: "error" },
+    {
+      code: "INSUFFICIENT_TREASURY",
+      message: "Treasury has insufficient funds for asset native",
+      severity: "error",
+    },
+    {
+      code: "BATCH_TOTAL",
+      message: "Required 1250000 stroops but only 1000000 available",
+      severity: "error",
+    },
   ],
   canProceed: false,
 };
@@ -40,7 +52,11 @@ const FIXTURE_FUNDING_FAILURE: SimulationResult = {
 const FIXTURE_AUTH_FAILURE: SimulationResult = {
   status: "error",
   findings: [
-    { code: "UNAUTHORIZED_SIGNER", message: "Signer is not authorized to execute this payroll batch", severity: "error" },
+    {
+      code: "UNAUTHORIZED_SIGNER",
+      message: "Signer is not authorized to execute this payroll batch",
+      severity: "error",
+    },
   ],
   canProceed: false,
 };
@@ -49,7 +65,11 @@ const FIXTURE_AUTH_FAILURE: SimulationResult = {
 const FIXTURE_PROOF_FAILURE: SimulationResult = {
   status: "error",
   findings: [
-    { code: "MISSING_PROOF", message: "Proof verification failed: no valid payroll proof attached", severity: "error" },
+    {
+      code: "MISSING_PROOF",
+      message: "Proof verification failed: no valid payroll proof attached",
+      severity: "error",
+    },
   ],
   canProceed: false,
 };

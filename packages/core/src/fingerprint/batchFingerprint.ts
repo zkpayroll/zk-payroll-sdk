@@ -78,7 +78,10 @@ export interface BatchFingerprintResult {
  */
 export class BatchFingerprintError extends Error {
   public readonly code = "INVALID_FINGERPRINT_INPUT";
-  constructor(message: string, public readonly field?: string) {
+  constructor(
+    message: string,
+    public readonly field?: string
+  ) {
     super(message);
     this.name = "BatchFingerprintError";
   }
@@ -101,12 +104,18 @@ export function computeBatchFingerprint(
 
   const employer = (input.employer ?? "").trim();
   if (!employer) {
-    throw new BatchFingerprintError("Employer address is required for batch fingerprint", "employer");
+    throw new BatchFingerprintError(
+      "Employer address is required for batch fingerprint",
+      "employer"
+    );
   }
 
   const period = (input.period ?? "").trim();
   if (!period) {
-    throw new BatchFingerprintError("Period identifier is required for batch fingerprint", "period");
+    throw new BatchFingerprintError(
+      "Period identifier is required for batch fingerprint",
+      "period"
+    );
   }
 
   if (!Array.isArray(input.entries)) {

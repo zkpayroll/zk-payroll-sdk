@@ -1,6 +1,9 @@
-import { validateEmployeeReferenceId } from '../employees/referenceId';
+import { validateEmployeeReferenceId } from "../employees/referenceId";
 
-export function validatePayrollDraftEmployeeRefs(employeeIds: string[]): { isValid: boolean; invalidIds: string[] } {
+export function validatePayrollDraftEmployeeRefs(employeeIds: string[]): {
+  isValid: boolean;
+  invalidIds: string[];
+} {
   const invalidIds: string[] = [];
   for (const id of employeeIds) {
     const res = validateEmployeeReferenceId(id);

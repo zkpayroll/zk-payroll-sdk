@@ -1,7 +1,4 @@
-import {
-  pollPayrollCompletion,
-  waitForPayrollRunCompletion,
-} from "../src/polling";
+import { pollPayrollCompletion, waitForPayrollRunCompletion } from "../src/polling";
 import { ContractExecutionError, ContractErrorCode } from "../src/errors";
 
 function deferred<T>() {
@@ -100,9 +97,7 @@ describe("pollPayrollCompletion (Issue #477)", () => {
   });
 
   it("validates its arguments with clear failures", async () => {
-    await expect(
-      pollPayrollCompletion("nope" as never, () => true)
-    ).rejects.toThrow(TypeError);
+    await expect(pollPayrollCompletion("nope" as never, () => true)).rejects.toThrow(TypeError);
     await expect(
       pollPayrollCompletion(jest.fn().mockResolvedValue(1), "nope" as never)
     ).rejects.toThrow(TypeError);

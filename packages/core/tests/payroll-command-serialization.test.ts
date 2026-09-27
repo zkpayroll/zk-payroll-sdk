@@ -109,16 +109,16 @@ describe("Payroll command serialization — contract-expectation validation", ()
   });
 
   it("rejects an empty request", () => {
-    expect(() =>
-      encodePayrollRequest({ entries: [], idempotencyKeys: [], context: {} })
-    ).toThrow(/at least one payment entry/i);
+    expect(() => encodePayrollRequest({ entries: [], idempotencyKeys: [], context: {} })).toThrow(
+      /at least one payment entry/i
+    );
   });
 
   it("rejects idempotency keys that do not line up with entries", () => {
     const request = new PayrollRequestBuilder().add(SINGLE_ENTRY).build();
-    expect(() =>
-      encodePayrollRequest({ ...request, idempotencyKeys: ["a", "b"] })
-    ).toThrow(/one-to-one/i);
+    expect(() => encodePayrollRequest({ ...request, idempotencyKeys: ["a", "b"] })).toThrow(
+      /one-to-one/i
+    );
   });
 
   it("rejects a non-string memo", () => {

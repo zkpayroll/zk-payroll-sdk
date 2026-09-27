@@ -65,10 +65,7 @@ export function parseAuditorAssignedEvent(event: RawContractEvent): AuditorAssig
 
   const auditor = decodeAddress(event.topics[1]);
   if (!auditor) {
-    throw new EventDecodingError(
-      "Missing required auditor topic in auditor_assigned event",
-      event
-    );
+    throw new EventDecodingError("Missing required auditor topic in auditor_assigned event", event);
   }
 
   const data = decodeDataMap(event.data);
@@ -108,10 +105,7 @@ export function parseAuditorRemovedEvent(event: RawContractEvent): AuditorRemove
 
   const auditor = decodeAddress(event.topics[1]);
   if (!auditor) {
-    throw new EventDecodingError(
-      "Missing required auditor topic in auditor_removed event",
-      event
-    );
+    throw new EventDecodingError("Missing required auditor topic in auditor_removed event", event);
   }
 
   const data = decodeDataMap(event.data);

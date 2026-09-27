@@ -5,7 +5,16 @@
  * and event summaries.
  */
 
-import { formatPeriod, formatPeriodCompactLabel, formatTimestamp, getEarlierPeriod, getLaterPeriod, isValidPeriod, formatPeriodWithOptions, samplePeriodLabels } from "../src/payroll/periodLabel";
+import {
+  formatPeriod,
+  formatPeriodCompactLabel,
+  formatTimestamp,
+  getEarlierPeriod,
+  getLaterPeriod,
+  isValidPeriod,
+  formatPeriodWithOptions,
+  samplePeriodLabels,
+} from "../src/payroll/periodLabel";
 
 describe("PayrollPeriodLabelFormatter", () => {
   describe("formatPeriod", () => {

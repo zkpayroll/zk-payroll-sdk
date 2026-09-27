@@ -2,11 +2,7 @@ import { BinaryWriter } from "./BinaryWriter";
 import { BinaryReader } from "./BinaryReader";
 import { SerializationError } from "./errors";
 import { PayloadTypeTag, SERIALIZATION_FORMAT_VERSION } from "./proofSerialization";
-import type {
-  PayrollRequest,
-  PayrollRequestEntry,
-  SubmissionContext,
-} from "../request/types";
+import type { PayrollRequest, PayrollRequestEntry, SubmissionContext } from "../request/types";
 
 function writeHeader(writer: BinaryWriter, tag: number): void {
   writer.writeUint8(SERIALIZATION_FORMAT_VERSION).writeUint8(tag);
@@ -152,7 +148,10 @@ export function encodePayrollRequest(request: PayrollRequest): Uint8Array {
       "SERIALIZATION_VALIDATION_FAILED"
     );
   }
-  if (!Array.isArray(request.idempotencyKeys) || request.idempotencyKeys.length !== request.entries.length) {
+  if (
+    !Array.isArray(request.idempotencyKeys) ||
+    request.idempotencyKeys.length !== request.entries.length
+  ) {
     throw new SerializationError(
       "Payroll request idempotencyKeys must line up one-to-one with entries.",
       "SERIALIZATION_VALIDATION_FAILED"

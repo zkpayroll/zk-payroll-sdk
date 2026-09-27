@@ -11,23 +11,24 @@ const REF_ID_REGEX = /^[a-zA-Z0-9_-]{3,64}$/;
  * Ensures format constraints (alphanumeric, hyphens, underscores, length 3-64).
  */
 export function validateEmployeeReferenceId(refId: unknown): EmployeeReferenceIdValidationResult {
-  if (typeof refId !== 'string') {
-    return { isValid: false, error: 'Employee reference ID must be a string' };
+  if (typeof refId !== "string") {
+    return { isValid: false, error: "Employee reference ID must be a string" };
   }
 
   const trimmed = refId.trim();
   if (trimmed.length < 3) {
-    return { isValid: false, error: 'Employee reference ID must be at least 3 characters long' };
+    return { isValid: false, error: "Employee reference ID must be at least 3 characters long" };
   }
 
   if (trimmed.length > 64) {
-    return { isValid: false, error: 'Employee reference ID cannot exceed 64 characters' };
+    return { isValid: false, error: "Employee reference ID cannot exceed 64 characters" };
   }
 
   if (!REF_ID_REGEX.test(trimmed)) {
     return {
       isValid: false,
-      error: 'Employee reference ID must contain only alphanumeric characters, hyphens, or underscores',
+      error:
+        "Employee reference ID must contain only alphanumeric characters, hyphens, or underscores",
     };
   }
 

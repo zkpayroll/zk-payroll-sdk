@@ -66,7 +66,10 @@ function truncateAddress(address: string): string {
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
-function renderRecipient(recipient: string, options: Required<Pick<PayrollRunSummaryFormatOptions, "fullRecipients" | "hideRecipients">>): string {
+function renderRecipient(
+  recipient: string,
+  options: Required<Pick<PayrollRunSummaryFormatOptions, "fullRecipients" | "hideRecipients">>
+): string {
   if (options.hideRecipients) return "[hidden]";
   if (options.fullRecipients) return recipient || "Unknown";
   return truncateAddress(recipient);

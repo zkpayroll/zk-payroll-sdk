@@ -159,7 +159,9 @@ describe("Payroll Issue Export Sanitizer (#279)", () => {
       const result = sanitizer.export(sampleIssues, "csv");
 
       expect(result.format).toBe("csv");
-      expect(result.content).toContain('"id","severity","code","message","employeeId","recipient","field"');
+      expect(result.content).toContain(
+        '"id","severity","code","message","employeeId","recipient","field"'
+      );
       expect(result.content).toContain('"ISSUE-01","blocker","NEGATIVE_AMOUNT"');
       expect(result.content).toContain('"GBBD...PABC"');
     });

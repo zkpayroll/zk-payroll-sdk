@@ -41,19 +41,19 @@ describe("audit attestation digests", () => {
   });
 
   it("rejects missing and ambiguous fields clearly", () => {
-    expect(() => validateAuditAttestationDigestInput({ ...input, scope: "" })).toThrow(
-      "scope"
-    );
-    expect(() => validateAuditAttestationDigestInput({ ...input, periodStart: "2026-08-01" })).toThrow(
-      "periodStart must be before periodEnd"
-    );
+    expect(() => validateAuditAttestationDigestInput({ ...input, scope: "" })).toThrow("scope");
+    expect(() =>
+      validateAuditAttestationDigestInput({ ...input, periodStart: "2026-08-01" })
+    ).toThrow("periodStart must be before periodEnd");
     expect(() => validateAuditAttestationDigestInput(null)).toThrow("must be an object");
   });
 
   it("verifies valid digests and rejects malformed or mismatched values", async () => {
     const digest = await computeAuditAttestationDigest(input);
     await expect(verifyAuditAttestationDigest(input, digest)).resolves.toBe(true);
-    await expect(verifyAuditAttestationDigest({ ...input, scope: "all" }, digest)).resolves.toBe(false);
+    await expect(verifyAuditAttestationDigest({ ...input, scope: "all" }, digest)).resolves.toBe(
+      false
+    );
     await expect(verifyAuditAttestationDigest(input, "not-a-digest")).resolves.toBe(false);
   });
 });

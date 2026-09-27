@@ -144,17 +144,11 @@ describe("Payroll Role Capability Matrix (#281)", () => {
     });
 
     it("checks hasAnyCapability and hasAllCapabilities", () => {
-      expect(
-        matrix.hasAnyCapability("auditor", ["submit", "configure", "audit"])
-      ).toBe(true);
+      expect(matrix.hasAnyCapability("auditor", ["submit", "configure", "audit"])).toBe(true);
 
-      expect(
-        matrix.hasAllCapabilities("auditor", ["audit", "export", "review"])
-      ).toBe(true);
+      expect(matrix.hasAllCapabilities("auditor", ["audit", "export", "review"])).toBe(true);
 
-      expect(
-        matrix.hasAllCapabilities("auditor", ["audit", "submit"])
-      ).toBe(false);
+      expect(matrix.hasAllCapabilities("auditor", ["audit", "submit"])).toBe(false);
     });
   });
 

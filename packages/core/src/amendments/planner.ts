@@ -11,17 +11,17 @@ export class PayrollAmendmentPlanner {
   ): Promise<AmendmentPlan> {
     const diffs = comparePayrollCommitments(currentCommitments, input);
     const { authorized, warnings } = await this.validator.validate(input);
-    
+
     const approvalRequired = diffs.length > 0;
-    
+
     return {
       diffs: diffs as any,
       approvalRequired,
       warnings,
-      executionSteps: diffs.map(d => ({
+      executionSteps: diffs.map((d) => ({
         action: "update",
-        description: `Update commitment for ${d.recipient}`
-      }))
+        description: `Update commitment for ${d.recipient}`,
+      })),
     };
   }
 }

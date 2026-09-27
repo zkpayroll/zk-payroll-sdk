@@ -18,9 +18,7 @@ describe("Treasury Readiness Result Type (#276)", () => {
       const result = evaluateTreasuryReadiness({
         employerAddress: EMPLOYER,
         batchId: "BATCH-2026-09",
-        obligations: [
-          { asset: NATIVE_ASSET, requiredAmount: 100000000n, allowlisted: true },
-        ],
+        obligations: [{ asset: NATIVE_ASSET, requiredAmount: 100000000n, allowlisted: true }],
         treasuryBalances: [
           { asset: NATIVE_ASSET, availableBalance: 150000000n, reservedAmount: 100000000n },
         ],
@@ -40,9 +38,7 @@ describe("Treasury Readiness Result Type (#276)", () => {
       // 100 required, 105 available, 10% buffer requested (needs 110 for sufficient)
       const result = evaluateTreasuryReadiness({
         defaultBufferPercent: 10,
-        obligations: [
-          { asset: NATIVE_ASSET, requiredAmount: 100000000n },
-        ],
+        obligations: [{ asset: NATIVE_ASSET, requiredAmount: 100000000n }],
         treasuryBalances: [
           { asset: NATIVE_ASSET, availableBalance: 105000000n, reservedAmount: 100000000n },
         ],
@@ -58,12 +54,8 @@ describe("Treasury Readiness Result Type (#276)", () => {
 
     it("blocks execution when treasury balance is insufficient", () => {
       const result = evaluateTreasuryReadiness({
-        obligations: [
-          { asset: USDC_ASSET, requiredAmount: 500000000n },
-        ],
-        treasuryBalances: [
-          { asset: USDC_ASSET, availableBalance: 200000000n },
-        ],
+        obligations: [{ asset: USDC_ASSET, requiredAmount: 500000000n }],
+        treasuryBalances: [{ asset: USDC_ASSET, availableBalance: 200000000n }],
       });
 
       expect(result.isReady).toBe(false);

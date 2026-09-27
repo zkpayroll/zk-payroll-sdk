@@ -6,7 +6,12 @@
  * Provides both markdown (safe to share) and JSON-friendly output formats.
  */
 
-import { ReconciliationInput, ReconciliationReport, EmployerLiabilitySummary, AssetLiabilityBreakdown } from "../reports/types";
+import {
+  ReconciliationInput,
+  ReconciliationReport,
+  EmployerLiabilitySummary,
+  AssetLiabilityBreakdown,
+} from "../reports/types";
 import { ReadinessBlocker } from "../reports/types";
 import { PaymentExecutionOutcome } from "../summary/types";
 import { PayrollStatus } from "../payroll/types";
@@ -50,10 +55,7 @@ export class PayrollLiabilityReportBuilder {
     const totalReserved = reservations.reduce((sum, r) => sum + r.amount, BigInt(0));
     const totalSettled = settled.reduce((sum, s) => sum + s.amount, BigInt(0));
     const totalRefunded = refunded.reduce((sum, r) => sum + r.amount, BigInt(0));
-    const totalUnresolvedHolds = unresolvedHolds.reduce(
-      (sum, h) => sum + h.amount,
-      BigInt(0)
-    );
+    const totalUnresolvedHolds = unresolvedHolds.reduce((sum, h) => sum + h.amount, BigInt(0));
     const totalDisputed = disputes.reduce((sum, d) => sum + d.amount, BigInt(0));
 
     // Generate reconciliation diff
@@ -189,10 +191,7 @@ export class PayrollLiabilityReportBuilder {
     if (blockedRecipients.size > 0) {
       blockers.push("disputed_hold");
     }
-    const totalUnresolved = unresolvedHolds.reduce(
-      (sum, h) => sum + h.amount,
-      BigInt(0)
-    );
+    const totalUnresolved = unresolvedHolds.reduce((sum, h) => sum + h.amount, BigInt(0));
     if (totalUnresolved > 0n) {
       blockers.push("unreserved_liabilities");
     }
@@ -202,10 +201,7 @@ export class PayrollLiabilityReportBuilder {
       totalReserved: reservations.reduce((sum, r) => sum + r.amount, BigInt(0)),
       totalSettled: settled.reduce((sum, s) => sum + s.amount, BigInt(0)),
       totalRefunded: refunded.reduce((sum, r) => sum + r.amount, BigInt(0)),
-      totalUnresolvedHolds: unresolvedHolds.reduce(
-        (sum, h) => sum + h.amount,
-        BigInt(0)
-      ),
+      totalUnresolvedHolds: unresolvedHolds.reduce((sum, h) => sum + h.amount, BigInt(0)),
       totalDisputed: disputes.reduce((sum, d) => sum + d.amount, BigInt(0)),
       recipientCount: recipientSet.size,
       blockers,
@@ -223,13 +219,16 @@ export class PayrollLiabilityReportBuilder {
     disputes: { recipient: string; amount: bigint }[]
   ): AssetLiabilityBreakdown[] {
     // Group by asset (currently only "native" is supported, but we structure for extensibility)
-    const assetMap = new Map<string, {
-      reserved: bigint;
-      settled: bigint;
-      refunded: bigint;
-      unresolvedHolds: bigint;
-      disputed: bigint;
-    }>();
+    const assetMap = new Map<
+      string,
+      {
+        reserved: bigint;
+        settled: bigint;
+        refunded: bigint;
+        unresolvedHolds: bigint;
+        disputed: bigint;
+      }
+    >();
 
     // Initialize "native" asset
     const nativeKey = "native";
@@ -325,9 +324,7 @@ export class PayrollLiabilityReportBuilder {
     diff: ReconciliationDiffResult
   ): string {
     const blockedStatus = blockers.length > 0 ? "BLOCKED" : "CLEAR";
-    const blockerList = blockers.length > 0
-      ? blockers.map((b) => `- ${b}`).join("\n")
-      : "None";
+    const blockerList = blockers.length > 0 ? blockers.map((b) => `- ${b}`).join("\n") : "None";
 
     return [
       `# Payroll Liability Reconciliation Report`,
@@ -358,14 +355,16 @@ export class PayrollLiabilityReportBuilder {
       `- **Unexpected:** ${diff.counts.unexpected}`,
       ``,
       `## Asset Breakdown`,
-      ...assetBreakdowns.map((ab) => [
-        `- **Asset:** ${ab.asset}`,
-        `  - Reserved: ${this.totalReservedToString(ab.reserved)}`,
-        `  - Settled: ${this.totalReservedToString(ab.settled)}`,
-        `  - Refunded: ${this.totalReservedToString(ab.refunded)}`,
-        `  - Unresolved Holds: ${this.totalReservedToString(ab.unresolvedHolds)}`,
-        `  - Disputed: ${this.totalReservedToString(ab.disputed)}`,
-      ].join("\n")),
+      ...assetBreakdowns.map((ab) =>
+        [
+          `- **Asset:** ${ab.asset}`,
+          `  - Reserved: ${this.totalReservedToString(ab.reserved)}`,
+          `  - Settled: ${this.totalReservedToString(ab.settled)}`,
+          `  - Refunded: ${this.totalReservedToString(ab.refunded)}`,
+          `  - Unresolved Holds: ${this.totalReservedToString(ab.unresolvedHolds)}`,
+          `  - Disputed: ${this.totalReservedToString(ab.disputed)}`,
+        ].join("\n")
+      ),
       ``,
       `_Generated at: ${new Date().toISOString()}_`,
     ].join("\n");
@@ -391,15 +390,17 @@ export class PayrollLiabilityReportBuilder {
     isCloseable: boolean
   ): string {
     if (blockers.length === 0) {
-      return isCloseable ? "Period is closeable - all liabilities resolved." : "Period is clear for operations.";
+      return isCloseable
+        ? "Period is closeable - all liabilities resolved."
+        : "Period is clear for operations.";
     }
 
     const blockerDescriptions: Record<ReadinessBlocker | string, string> = {
-      "unresolved_liabilities": "Unresolved liabilities preventing close",
-      "pending_settlement": "Pending settlement on-chain",
-      "disputed_hold": "Disputed holds requiring resolution",
-      "unclosed_period": "Period not yet closed - pending payments exist",
-      "missing_reservations": "Missing reservation records",
+      unresolved_liabilities: "Unresolved liabilities preventing close",
+      pending_settlement: "Pending settlement on-chain",
+      disputed_hold: "Disputed holds requiring resolution",
+      unclosed_period: "Period not yet closed - pending payments exist",
+      missing_reservations: "Missing reservation records",
     };
 
     const descriptions = blockers

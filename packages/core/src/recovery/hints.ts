@@ -15,12 +15,7 @@ import {
  * Common operational domains for SDK error recovery (#286).
  */
 export type ErrorRecoveryCategory =
-  | "validation"
-  | "network"
-  | "wallet"
-  | "proof"
-  | "contract"
-  | "unknown";
+  "validation" | "network" | "wallet" | "proof" | "contract" | "unknown";
 
 /**
  * Structured actionable guidance attached to errors to reduce support burden
@@ -49,14 +44,16 @@ const CANONICAL_RECOVERY_HINTS: Record<string, Omit<RecoveryHint, "code">> = {
   VALIDATION_ERROR: {
     category: "validation",
     hint: "One or more input parameters failed local validation checks.",
-    suggestedAction: "Check the 'field' property of the error, verify address format, and ensure amounts are positive integers.",
+    suggestedAction:
+      "Check the 'field' property of the error, verify address format, and ensure amounts are positive integers.",
     retryable: false,
     docTopic: "troubleshooting/validation",
   },
   BATCH_VALIDATION_FAILED: {
     category: "validation",
     hint: "The payroll batch contains invalid items or format violations.",
-    suggestedAction: "Run client-side batch schema verification with validateBatch() before submitting.",
+    suggestedAction:
+      "Run client-side batch schema verification with validateBatch() before submitting.",
     retryable: false,
     docTopic: "troubleshooting/batch-validation",
   },
@@ -72,21 +69,24 @@ const CANONICAL_RECOVERY_HINTS: Record<string, Omit<RecoveryHint, "code">> = {
   NETWORK_ERROR: {
     category: "network",
     hint: "Failed to establish a network connection to the RPC or API endpoint.",
-    suggestedAction: "Check your internet connection, verify the RPC endpoint status, or configure a fallback RPC URL.",
+    suggestedAction:
+      "Check your internet connection, verify the RPC endpoint status, or configure a fallback RPC URL.",
     retryable: true,
     docTopic: "network/rpc-failover",
   },
   [ContractErrorCode.RPC_TIMEOUT]: {
     category: "network",
     hint: "The Soroban RPC node did not respond before the configured timeout elapsed.",
-    suggestedAction: "Retry the request with exponential backoff or increase the client timeout limit.",
+    suggestedAction:
+      "Retry the request with exponential backoff or increase the client timeout limit.",
     retryable: true,
     docTopic: "network/timeouts",
   },
   [ContractErrorCode.INVALID_RESPONSE]: {
     category: "network",
     hint: "The RPC endpoint returned an invalid or unparseable response.",
-    suggestedAction: "Verify your RPC URL is pointing to a compatible Soroban Horizon node version.",
+    suggestedAction:
+      "Verify your RPC URL is pointing to a compatible Soroban Horizon node version.",
     retryable: true,
     docTopic: "network/rpc-compatibility",
   },
@@ -95,14 +95,16 @@ const CANONICAL_RECOVERY_HINTS: Record<string, Omit<RecoveryHint, "code">> = {
   [WalletErrorCode.NOT_INSTALLED]: {
     category: "wallet",
     hint: "No compatible Stellar wallet extension (e.g. Freighter, xBull) was detected.",
-    suggestedAction: "Install the Freighter browser extension from https://www.freighter.app and reload the page.",
+    suggestedAction:
+      "Install the Freighter browser extension from https://www.freighter.app and reload the page.",
     retryable: false,
     docTopic: "wallet/installation",
   },
   [WalletErrorCode.NOT_CONNECTED]: {
     category: "wallet",
     hint: "The wallet extension is not connected to this application.",
-    suggestedAction: "Call connectWallet() and approve the connection modal in your wallet extension.",
+    suggestedAction:
+      "Call connectWallet() and approve the connection modal in your wallet extension.",
     retryable: true,
     docTopic: "wallet/connection",
   },
@@ -116,14 +118,16 @@ const CANONICAL_RECOVERY_HINTS: Record<string, Omit<RecoveryHint, "code">> = {
   [WalletErrorCode.SIGNING_REJECTED]: {
     category: "wallet",
     hint: "The transaction signing request was declined in the wallet.",
-    suggestedAction: "Re-initiate the transaction and click 'Approve' or 'Sign' in your wallet window.",
+    suggestedAction:
+      "Re-initiate the transaction and click 'Approve' or 'Sign' in your wallet window.",
     retryable: true,
     docTopic: "wallet/signing",
   },
   [WalletErrorCode.NETWORK_MISMATCH]: {
     category: "wallet",
     hint: "The connected wallet is on a different network than the SDK configuration.",
-    suggestedAction: "Open your wallet settings and switch network to match the target network (Testnet or Mainnet).",
+    suggestedAction:
+      "Open your wallet settings and switch network to match the target network (Testnet or Mainnet).",
     retryable: false,
     docTopic: "wallet/network-selection",
   },
@@ -132,14 +136,16 @@ const CANONICAL_RECOVERY_HINTS: Record<string, Omit<RecoveryHint, "code">> = {
   PROOF_GENERATION_FAILED: {
     category: "proof",
     hint: "Zero-knowledge proof synthesis failed or encountered a circuit error.",
-    suggestedAction: "Check that proving artifacts (.wasm, .zkey) are downloaded and uncorrupted, and witness inputs are complete.",
+    suggestedAction:
+      "Check that proving artifacts (.wasm, .zkey) are downloaded and uncorrupted, and witness inputs are complete.",
     retryable: false,
     docTopic: "proofs/troubleshooting",
   },
   MISSING_PROOF: {
     category: "proof",
     hint: "A required ZK proof is missing from the transaction invocation payload.",
-    suggestedAction: "Generate the zero-knowledge proof before invoking settlement or claim functions.",
+    suggestedAction:
+      "Generate the zero-knowledge proof before invoking settlement or claim functions.",
     retryable: false,
     docTopic: "proofs/generation",
   },
@@ -155,28 +161,32 @@ const CANONICAL_RECOVERY_HINTS: Record<string, Omit<RecoveryHint, "code">> = {
   [ContractErrorCode.SIMULATION_FAILED]: {
     category: "contract",
     hint: "Soroban transaction simulation failed before submission to the network.",
-    suggestedAction: "Inspect the contract simulation logs to verify required authorizations, balances, and preconditions.",
+    suggestedAction:
+      "Inspect the contract simulation logs to verify required authorizations, balances, and preconditions.",
     retryable: false,
     docTopic: "contract/simulation",
   },
   [ContractErrorCode.CONTRACT_REVERT]: {
     category: "contract",
     hint: "The smart contract rejected the transaction with a revert code.",
-    suggestedAction: "Check contract error codes (e.g. paused contract, unauthorized caller, expired reservation).",
+    suggestedAction:
+      "Check contract error codes (e.g. paused contract, unauthorized caller, expired reservation).",
     retryable: false,
     docTopic: "contract/errors",
   },
   [ContractErrorCode.INSUFFICIENT_FEE]: {
     category: "contract",
     hint: "The transaction resource fee was below the network minimum inclusion rate.",
-    suggestedAction: "Fetch current fee estimates with estimateFee() and increase the base fee ceiling.",
+    suggestedAction:
+      "Fetch current fee estimates with estimateFee() and increase the base fee ceiling.",
     retryable: true,
     docTopic: "contract/fees",
   },
   [ContractErrorCode.TRANSACTION_TIMEOUT]: {
     category: "contract",
     hint: "The transaction did not confirm within the maximum expected ledger window.",
-    suggestedAction: "Check Horizon network status; verify if transaction confirmed or resubmit with higher sequence/fee.",
+    suggestedAction:
+      "Check Horizon network status; verify if transaction confirmed or resubmit with higher sequence/fee.",
     retryable: true,
     docTopic: "contract/timeouts",
   },
@@ -212,12 +222,16 @@ export function getRecoveryHint(
   // Heuristic analysis based on instance type and error message
   const msg = error instanceof Error ? error.message : String(error);
 
-  if (error instanceof ValidationError || /validation|invalid.*recipient|invalid.*amount/i.test(msg)) {
+  if (
+    error instanceof ValidationError ||
+    /validation|invalid.*recipient|invalid.*amount/i.test(msg)
+  ) {
     return {
       category: "validation",
       code: code !== "UNKNOWN_ERROR" ? code : "VALIDATION_ERROR",
       hint: "Input validation error detected.",
-      suggestedAction: "Verify parameter types, addresses, and non-negative amounts before submitting.",
+      suggestedAction:
+        "Verify parameter types, addresses, and non-negative amounts before submitting.",
       retryable: false,
       docTopic: "troubleshooting/validation",
       ...customOverride,
@@ -229,19 +243,25 @@ export function getRecoveryHint(
       category: "wallet",
       code: code !== "UNKNOWN_ERROR" ? code : "WALLET_ERROR",
       hint: "Wallet interaction was interrupted or failed.",
-      suggestedAction: "Check wallet extension status, network connection, and approve the pending signing prompt.",
+      suggestedAction:
+        "Check wallet extension status, network connection, and approve the pending signing prompt.",
       retryable: true,
       docTopic: "wallet/troubleshooting",
       ...customOverride,
     };
   }
 
-  if (error instanceof NetworkError || error instanceof RpcTimeoutError || /network|socket|econn|timeout|fetch/i.test(msg)) {
+  if (
+    error instanceof NetworkError ||
+    error instanceof RpcTimeoutError ||
+    /network|socket|econn|timeout|fetch/i.test(msg)
+  ) {
     return {
       category: "network",
       code: code !== "UNKNOWN_ERROR" ? code : "NETWORK_ERROR",
       hint: "Network communication issue with the blockchain RPC node.",
-      suggestedAction: "Verify your internet connectivity and retry the request after a short backoff delay.",
+      suggestedAction:
+        "Verify your internet connectivity and retry the request after a short backoff delay.",
       retryable: true,
       docTopic: "network/troubleshooting",
       ...customOverride,
@@ -253,19 +273,24 @@ export function getRecoveryHint(
       category: "proof",
       code: code !== "UNKNOWN_ERROR" ? code : "PROOF_ERROR",
       hint: "ZK proof generation or verification failure.",
-      suggestedAction: "Confirm proof artifacts are accessible and witness parameters match the circuit definition.",
+      suggestedAction:
+        "Confirm proof artifacts are accessible and witness parameters match the circuit definition.",
       retryable: false,
       docTopic: "proofs/troubleshooting",
       ...customOverride,
     };
   }
 
-  if (error instanceof ContractExecutionError || /revert|trap|contract|simulation|soroban/i.test(msg)) {
+  if (
+    error instanceof ContractExecutionError ||
+    /revert|trap|contract|simulation|soroban/i.test(msg)
+  ) {
     return {
       category: "contract",
       code: code !== "UNKNOWN_ERROR" ? code : "CONTRACT_ERROR",
       hint: "Smart contract execution rejected the transaction.",
-      suggestedAction: "Inspect contract preconditions, verify caller authorization, and check instance state.",
+      suggestedAction:
+        "Inspect contract preconditions, verify caller authorization, and check instance state.",
       retryable: false,
       docTopic: "contract/troubleshooting",
       ...customOverride,
@@ -276,7 +301,8 @@ export function getRecoveryHint(
     category: "unknown",
     code,
     hint: "An unclassified error occurred during SDK execution.",
-    suggestedAction: "Inspect the full error message and context for diagnostic clues, or report to support.",
+    suggestedAction:
+      "Inspect the full error message and context for diagnostic clues, or report to support.",
     retryable: false,
     ...customOverride,
   };

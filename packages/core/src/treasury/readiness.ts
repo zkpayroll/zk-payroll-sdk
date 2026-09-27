@@ -215,14 +215,22 @@ export function evaluateTreasuryReadiness(
     let reserveStatus: TreasuryReserveStatus = "unreserved";
     if (assetState.isLocked) {
       reserveStatus = "locked";
-      assetBlockers.push(`Treasury reservation for ${ob.asset} is locked under administrative hold.`);
+      assetBlockers.push(
+        `Treasury reservation for ${ob.asset} is locked under administrative hold.`
+      );
     } else if (assetState.isExpired) {
       reserveStatus = "expired";
       assetBlockers.push(`Treasury reservation for ${ob.asset} has expired.`);
     } else {
       reserveStatus = deriveReserveStatus(assetState.reservedAmount, ob.requiredAmount);
-      if (options.requirePreReservation && reserveStatus !== "ready" && reserveStatus !== "over_reserved") {
-        assetBlockers.push(`Pre-reservation required for ${ob.asset}, but status is '${reserveStatus}'.`);
+      if (
+        options.requirePreReservation &&
+        reserveStatus !== "ready" &&
+        reserveStatus !== "over_reserved"
+      ) {
+        assetBlockers.push(
+          `Pre-reservation required for ${ob.asset}, but status is '${reserveStatus}'.`
+        );
       } else if (reserveStatus === "unreserved" || reserveStatus === "partially_reserved") {
         assetWarnings.push(`Asset ${ob.asset} has pending reservation status: '${reserveStatus}'.`);
       }
@@ -323,8 +331,8 @@ export function formatTreasuryReadinessSummary(result: TreasuryReadinessResult):
     result.readinessLevel === "ready"
       ? "✅ READY"
       : result.readinessLevel === "warning"
-      ? "⚠️ WARNING"
-      : "🛑 BLOCKED";
+        ? "⚠️ WARNING"
+        : "🛑 BLOCKED";
 
   const lines = [
     `Treasury Readiness: ${icon}`,

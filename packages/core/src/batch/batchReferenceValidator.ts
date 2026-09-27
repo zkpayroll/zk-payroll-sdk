@@ -64,7 +64,9 @@ const VALID_REFERENCE_PATTERN = /^[a-zA-Z0-9_\-\.]+$/;
  * }
  * ```
  */
-export function validateBatchReference(reference: string | undefined | null): BatchReferenceValidationResult {
+export function validateBatchReference(
+  reference: string | undefined | null
+): BatchReferenceValidationResult {
   const errors: BatchReferenceValidationError[] = [];
 
   if (reference === undefined || reference === null || typeof reference !== "string") {
@@ -106,7 +108,8 @@ export function validateBatchReference(reference: string | undefined | null): Ba
   if (!VALID_REFERENCE_PATTERN.test(trimmed)) {
     errors.push({
       code: "INVALID_CHARACTERS",
-      message: "Batch reference contains invalid characters. Only letters, numbers, hyphens, underscores, and dots are allowed",
+      message:
+        "Batch reference contains invalid characters. Only letters, numbers, hyphens, underscores, and dots are allowed",
       field: "reference",
     });
   }

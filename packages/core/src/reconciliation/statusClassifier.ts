@@ -10,12 +10,7 @@ import type {
  * Aligns SDK, dashboard, and backend reconciliation reporting.
  */
 export type ReconciliationStatus =
-  | "matched"
-  | "partial"
-  | "mismatched"
-  | "pending"
-  | "failed"
-  | "manually_reviewed";
+  "matched" | "partial" | "mismatched" | "pending" | "failed" | "manually_reviewed";
 
 /**
  * Audit trail metadata for manually reviewed reconciliations.
@@ -81,41 +76,39 @@ export interface ReconciliationClassification {
 /**
  * Badges mapped to reconciliation statuses.
  */
-export const RECONCILIATION_STATUS_BADGES: Record<
-  ReconciliationStatus,
-  ReconciliationStatusBadge
-> = {
-  matched: {
-    label: "MATCHED",
-    color: "success",
-    description: "All expected payroll transactions match on-chain ledger records.",
-  },
-  partial: {
-    label: "PARTIAL",
-    color: "warning",
-    description: "Some transactions are reconciled while remaining items are still pending.",
-  },
-  mismatched: {
-    label: "MISMATCHED",
-    color: "danger",
-    description: "Discrepancies detected between expected payouts and on-chain state.",
-  },
-  pending: {
-    label: "PENDING",
-    color: "info",
-    description: "Reconciliation is pending completion of on-chain transactions.",
-  },
-  failed: {
-    label: "FAILED",
-    color: "danger",
-    description: "One or more transactions failed or rejected on-chain.",
-  },
-  manually_reviewed: {
-    label: "MANUALLY REVIEWED",
-    color: "neutral",
-    description: "Reconciliation discrepancies reviewed and approved by an authorized auditor.",
-  },
-};
+export const RECONCILIATION_STATUS_BADGES: Record<ReconciliationStatus, ReconciliationStatusBadge> =
+  {
+    matched: {
+      label: "MATCHED",
+      color: "success",
+      description: "All expected payroll transactions match on-chain ledger records.",
+    },
+    partial: {
+      label: "PARTIAL",
+      color: "warning",
+      description: "Some transactions are reconciled while remaining items are still pending.",
+    },
+    mismatched: {
+      label: "MISMATCHED",
+      color: "danger",
+      description: "Discrepancies detected between expected payouts and on-chain state.",
+    },
+    pending: {
+      label: "PENDING",
+      color: "info",
+      description: "Reconciliation is pending completion of on-chain transactions.",
+    },
+    failed: {
+      label: "FAILED",
+      color: "danger",
+      description: "One or more transactions failed or rejected on-chain.",
+    },
+    manually_reviewed: {
+      label: "MANUALLY REVIEWED",
+      color: "neutral",
+      description: "Reconciliation discrepancies reviewed and approved by an authorized auditor.",
+    },
+  };
 
 /**
  * Classifies a reconciliation diff result or entry collection into one of the 6 canonical states:
@@ -126,7 +119,12 @@ export const RECONCILIATION_STATUS_BADGES: Record<
  * @returns Standardized ReconciliationClassification object
  */
 export function classifyReconciliationStatus(
-  input: ReconciliationDiffResult | ReconciliationDiffEntry[] | ReconciliationInputPayload | null | undefined,
+  input:
+    | ReconciliationDiffResult
+    | ReconciliationDiffEntry[]
+    | ReconciliationInputPayload
+    | null
+    | undefined,
   options?: { manualReview?: ManualReviewRecord }
 ): ReconciliationClassification {
   const classifiedAt = Date.now();
@@ -314,7 +312,12 @@ function sanitizeIdentifier(id: string): string {
 }
 
 function extractBreakdown(
-  input: ReconciliationDiffResult | ReconciliationDiffEntry[] | ReconciliationInputPayload | null | undefined
+  input:
+    | ReconciliationDiffResult
+    | ReconciliationDiffEntry[]
+    | ReconciliationInputPayload
+    | null
+    | undefined
 ): ReconciliationClassification["breakdown"] {
   const breakdown = {
     total: 0,

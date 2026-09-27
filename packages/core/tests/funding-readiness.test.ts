@@ -1,8 +1,5 @@
 import { ValidationError } from "../src/core/errors";
-import {
-  checkFundingReadiness,
-  groupObligationsByAsset,
-} from "../src/funding";
+import { checkFundingReadiness, groupObligationsByAsset } from "../src/funding";
 import type { AssetBalanceSnapshot, FundingObligation } from "../src/funding";
 
 const NATIVE = "native";
@@ -38,7 +35,10 @@ describe("groupObligationsByAsset", () => {
   it("fails early on malformed obligations", () => {
     expect(() => groupObligationsByAsset([{ asset: "", amount: 1n }])).toThrow(ValidationError);
     expect(() =>
-      groupObligationsByAsset([{ asset: NATIVE, amount: 1n }, { asset: NATIVE, amount: -5n }])
+      groupObligationsByAsset([
+        { asset: NATIVE, amount: 1n },
+        { asset: NATIVE, amount: -5n },
+      ])
     ).toThrow(/negative/);
     expect(() =>
       groupObligationsByAsset([{ asset: NATIVE, amount: 1.5 as unknown as bigint }])
@@ -193,25 +193,29 @@ describe("checkFundingReadiness — imbalanced batches", () => {
 describe("checkFundingReadiness — validation", () => {
   it("rejects duplicate balance snapshots for the same asset", () => {
     expect(() =>
-      checkFundingReadiness([{ asset: NATIVE, amount: 1n }], [
-        { asset: NATIVE, available: 10n },
-        { asset: NATIVE, available: 20n },
-      ])
+      checkFundingReadiness(
+        [{ asset: NATIVE, amount: 1n }],
+        [
+          { asset: NATIVE, available: 10n },
+          { asset: NATIVE, available: 20n },
+        ]
+      )
     ).toThrow(/Duplicate balance/);
   });
 
   it("rejects reserved balances exceeding available funds", () => {
     expect(() =>
-      checkFundingReadiness([{ asset: NATIVE, amount: 1n }], [
-        { asset: NATIVE, available: 100n, reserved: 200n },
-      ])
+      checkFundingReadiness(
+        [{ asset: NATIVE, amount: 1n }],
+        [{ asset: NATIVE, available: 100n, reserved: 200n }]
+      )
     ).toThrow(ValidationError);
   });
 
   it("rejects negative or non-bigint balances", () => {
-    expect(() =>
-      checkFundingReadiness([], [{ asset: NATIVE, available: -1n }])
-    ).toThrow(ValidationError);
+    expect(() => checkFundingReadiness([], [{ asset: NATIVE, available: -1n }])).toThrow(
+      ValidationError
+    );
     expect(() =>
       checkFundingReadiness([], [{ asset: NATIVE, available: 5 as unknown as bigint }])
     ).toThrow(ValidationError);

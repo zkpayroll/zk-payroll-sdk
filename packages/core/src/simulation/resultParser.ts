@@ -90,8 +90,7 @@ const CATEGORY_HINTS: Record<ParsedSimulationCategory, string> = {
     "Re-authenticate the signer or attach the missing signatures, then re-run the simulation.",
   funding_failure:
     "Top up the treasury for the affected asset (or reduce the batch amount), then re-run the simulation.",
-  proof_failure:
-    "Generate and attach a valid ZK proof for the batch before submitting.",
+  proof_failure: "Generate and attach a valid ZK proof for the batch before submitting.",
   policy_warning:
     "Review the payroll policy limits and approvals, then adjust the batch or policy.",
   unknown:
@@ -110,13 +109,23 @@ const CATEGORY_HINTS: Record<ParsedSimulationCategory, string> = {
  */
 export function classifySimulationFailure(message: string): ParsedSimulationCategory {
   const text = message.toLowerCase();
-  if (/unauthori[sz]ed|bad[_ -]?auth|missing[_ -]?sign(er|ature)|not[_ -]?signed|signature.*(invalid|fail|missing)|auth.*(fail|error|denied)|account.*frozen/.test(text)) {
+  if (
+    /unauthori[sz]ed|bad[_ -]?auth|missing[_ -]?sign(er|ature)|not[_ -]?signed|signature.*(invalid|fail|missing)|auth.*(fail|error|denied)|account.*frozen/.test(
+      text
+    )
+  ) {
     return "authorization_failure";
   }
-  if (/insufficient|not enough|shortfall|underfunded|overdraft|balance|funds|treasury|stroops|required.*(available|balance)/.test(text)) {
+  if (
+    /insufficient|not enough|shortfall|underfunded|overdraft|balance|funds|treasury|stroops|required.*(available|balance)/.test(
+      text
+    )
+  ) {
     return "funding_failure";
   }
-  if (/proof|witness|snark|groth16|circuit|verifying[_ -]?key|verification[_ -]?key|\bvk\b/.test(text)) {
+  if (
+    /proof|witness|snark|groth16|circuit|verifying[_ -]?key|verification[_ -]?key|\bvk\b/.test(text)
+  ) {
     return "proof_failure";
   }
   if (/policy|approval|allowance|capacity|limit|settlement window|reserve/.test(text)) {
@@ -338,9 +347,7 @@ function safeDescribe(value: unknown): string {
     return String(value);
   }
   if (typeof value === "object" && value !== null) {
-    const keys = Object.keys(value)
-      .slice(0, 10)
-      .join(", ");
+    const keys = Object.keys(value).slice(0, 10).join(", ");
     return `object with keys [${keys}]`;
   }
   return typeof value;

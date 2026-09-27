@@ -1,4 +1,8 @@
-import { TreasuryCheckpoint, parseTreasuryCheckpoints, RawCheckpointRecord } from '../treasury/checkpoints';
+import {
+  TreasuryCheckpoint,
+  parseTreasuryCheckpoints,
+  RawCheckpointRecord,
+} from "../treasury/checkpoints";
 
 export interface TreasuryReconciliationReport {
   totalAllocated: string;
@@ -10,7 +14,7 @@ export interface TreasuryReconciliationReport {
     allocated: string;
     disbursed: string;
     timestamp: number;
-    status: 'verified' | 'discrepancy' | 'pending';
+    status: "verified" | "discrepancy" | "pending";
   }>;
   generatedAt: number;
 }
@@ -22,9 +26,10 @@ export interface TreasuryReconciliationReport {
 export function generateTreasuryReconciliationReport(
   records: RawCheckpointRecord[] | TreasuryCheckpoint[]
 ): TreasuryReconciliationReport {
-  const checkpoints: TreasuryCheckpoint[] = Array.isArray(records) && records.length > 0 && 'allocated' in records[0]
-    ? (records as TreasuryCheckpoint[])
-    : parseTreasuryCheckpoints(records as RawCheckpointRecord[]);
+  const checkpoints: TreasuryCheckpoint[] =
+    Array.isArray(records) && records.length > 0 && "allocated" in records[0]
+      ? (records as TreasuryCheckpoint[])
+      : parseTreasuryCheckpoints(records as RawCheckpointRecord[]);
 
   let totalAllocated = 0n;
   let totalDisbursed = 0n;
@@ -42,7 +47,7 @@ export function generateTreasuryReconciliationReport(
   });
 
   const variance = totalAllocated - totalDisbursed;
-  const isReconciled = variance === 0n && checkpoints.every((c) => c.status === 'verified');
+  const isReconciled = variance === 0n && checkpoints.every((c) => c.status === "verified");
 
   return {
     totalAllocated: totalAllocated.toString(),

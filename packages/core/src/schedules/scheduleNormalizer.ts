@@ -12,12 +12,7 @@
  * Standard payroll disbursement frequencies.
  */
 export type PayrollScheduleFrequency =
-  | "monthly"
-  | "semi_monthly"
-  | "bi_weekly"
-  | "weekly"
-  | "quarterly"
-  | "custom";
+  "monthly" | "semi_monthly" | "bi_weekly" | "weekly" | "quarterly" | "custom";
 
 /**
  * Raw payroll schedule input submitted by API or UI.
@@ -84,7 +79,10 @@ export interface ScheduleNormalizerOptions {
  */
 export class ScheduleValidationError extends Error {
   public readonly code = "INVALID_SCHEDULE_INPUT";
-  constructor(message: string, public readonly field?: string) {
+  constructor(
+    message: string,
+    public readonly field?: string
+  ) {
     super(message);
     this.name = "ScheduleValidationError";
   }
@@ -124,10 +122,7 @@ export function normalizePayrollSchedule(
   }
 
   // 5. Compute Cycle Bounds
-  const { cycleStartDate, cycleEndDate } = computeCycleBounds(
-    executionTimestamp,
-    frequency
-  );
+  const { cycleStartDate, cycleEndDate } = computeCycleBounds(executionTimestamp, frequency);
 
   const timeUntilCutoffMs = cutoffTimestamp - referenceTime;
   const isCutoffPassed = timeUntilCutoffMs <= 0;
@@ -178,8 +173,18 @@ export function normalizePeriodString(periodStr: string): string {
 
   // Month names: "September 2026", "Sep 2026"
   const monthNames = [
-    "jan", "feb", "mar", "apr", "may", "jun",
-    "jul", "aug", "sep", "oct", "nov", "dec"
+    "jan",
+    "feb",
+    "mar",
+    "apr",
+    "may",
+    "jun",
+    "jul",
+    "aug",
+    "sep",
+    "oct",
+    "nov",
+    "dec",
   ];
   const words = trimmed.toLowerCase().split(/\s+/);
   if (words.length === 2) {
@@ -283,8 +288,18 @@ function formatPeriodToDisplayName(period: string): string {
   const year = m[1];
   const monthIdx = parseInt(m[2], 10) - 1;
   const monthNames = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December"
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
   ];
   return `${monthNames[monthIdx]} ${year}`;
 }

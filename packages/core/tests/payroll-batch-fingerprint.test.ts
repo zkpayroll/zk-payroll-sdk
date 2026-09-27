@@ -56,7 +56,10 @@ describe("Payroll Batch Fingerprint (#273)", () => {
     const changedPeriod = computeBatchFingerprint({ ...sampleInput, period: "2026-10" });
     expect(changedPeriod.fingerprint).not.toBe(base.fingerprint);
 
-    const changedEmployer = computeBatchFingerprint({ ...sampleInput, employer: "GOTHEREMPLOYER999" });
+    const changedEmployer = computeBatchFingerprint({
+      ...sampleInput,
+      employer: "GOTHEREMPLOYER999",
+    });
     expect(changedEmployer.fingerprint).not.toBe(base.fingerprint);
 
     const changedAmount = computeBatchFingerprint({

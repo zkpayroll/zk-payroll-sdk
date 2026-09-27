@@ -86,7 +86,12 @@ describe("computeMemoCommitment", () => {
   });
 
   it("changes when any context field changes", async () => {
-    const base = { encryptedPayload: "enc:abc", recipientId: "R1", asset: "native", periodId: "P1" };
+    const base = {
+      encryptedPayload: "enc:abc",
+      recipientId: "R1",
+      asset: "native",
+      periodId: "P1",
+    };
     const baseline = await computeMemoCommitment(base);
     const variants = [
       { ...base, recipientId: "R2" },
@@ -148,7 +153,9 @@ describe("validateMemoInput", () => {
   });
 
   it("accepts a plaintext at exactly MEMO_PLAINTEXT_MAX_LENGTH", () => {
-    expect(() => validateMemoInput({ plaintext: "x".repeat(MEMO_PLAINTEXT_MAX_LENGTH) })).not.toThrow();
+    expect(() =>
+      validateMemoInput({ plaintext: "x".repeat(MEMO_PLAINTEXT_MAX_LENGTH) })
+    ).not.toThrow();
   });
 
   it("rejects non-string and over-long metadata fields", () => {
@@ -157,7 +164,11 @@ describe("validateMemoInput", () => {
       "MEMO_METADATA_INVALID"
     );
     expectValidationError(
-      () => validateMemoInput({ plaintext: "hi", asset: "a".repeat(MEMO_METADATA_FIELD_MAX_LENGTH + 1) }),
+      () =>
+        validateMemoInput({
+          plaintext: "hi",
+          asset: "a".repeat(MEMO_METADATA_FIELD_MAX_LENGTH + 1),
+        }),
       "MEMO_METADATA_TOO_LONG"
     );
     expect(() =>
@@ -236,19 +247,17 @@ describe("prepareEncryptedMemo", () => {
 
   it("fails early before touching the provider on invalid input", async () => {
     const provider = new RecordingEncryptionProvider();
-    await expect(
-      prepareEncryptedMemo({ plaintext: "" }, provider)
-    ).rejects.toThrow(ValidationError);
+    await expect(prepareEncryptedMemo({ plaintext: "" }, provider)).rejects.toThrow(
+      ValidationError
+    );
     expect(provider.encrypted).toHaveLength(0);
   });
 
   it("rejects a missing provider — no plaintext fallback path", async () => {
-    await expect(
-      prepareEncryptedMemo(VALID_INPUT, undefined as never)
-    ).rejects.toThrow(ValidationError);
-    await expect(
-      prepareEncryptedMemo(VALID_INPUT, null as never)
-    ).rejects.toThrow(ValidationError);
+    await expect(prepareEncryptedMemo(VALID_INPUT, undefined as never)).rejects.toThrow(
+      ValidationError
+    );
+    await expect(prepareEncryptedMemo(VALID_INPUT, null as never)).rejects.toThrow(ValidationError);
   });
 
   it("rejects a provider that cannot encrypt", async () => {
@@ -308,17 +317,21 @@ describe("assertPreparedMemo", () => {
 
   it("rejects objects missing an encryptedPayload", async () => {
     const memo = await makePrepared();
-    expect(() =>
-      assertPreparedMemo({ ...memo, encryptedPayload: undefined })
-    ).toThrow(ValidationError);
+    expect(() => assertPreparedMemo({ ...memo, encryptedPayload: undefined })).toThrow(
+      ValidationError
+    );
     expect(() => assertPreparedMemo({ commitment: memo.commitment })).toThrow(ValidationError);
   });
 
   it("rejects objects with a missing or malformed commitment", async () => {
     const memo = await makePrepared();
     expect(() => assertPreparedMemo({ ...memo, commitment: undefined })).toThrow(ValidationError);
-    expect(() => assertPreparedMemo({ ...memo, commitment: "hash:deadbeef" })).toThrow(ValidationError);
-    expect(() => assertPreparedMemo({ ...memo, commitment: "memo:not-hex" })).toThrow(ValidationError);
+    expect(() => assertPreparedMemo({ ...memo, commitment: "hash:deadbeef" })).toThrow(
+      ValidationError
+    );
+    expect(() => assertPreparedMemo({ ...memo, commitment: "memo:not-hex" })).toThrow(
+      ValidationError
+    );
   });
 });
 

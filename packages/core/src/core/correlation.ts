@@ -53,11 +53,7 @@ export class CorrelationContext {
    * @param parentId - Optional parent correlation ID
    * @param metadata - Optional metadata to attach
    */
-  constructor(
-    id?: string,
-    parentId?: string,
-    metadata: Record<string, unknown> = {}
-  ) {
+  constructor(id?: string, parentId?: string, metadata: Record<string, unknown> = {}) {
     this.correlationId = id ?? CorrelationContext.generateId();
     this.parentId = parentId;
     this.metadata = metadata;
@@ -102,11 +98,10 @@ export class CorrelationContext {
    * @returns A new CorrelationContext with this context as parent
    */
   child(operationName: string, metadata?: Record<string, unknown>): CorrelationContext {
-    return new CorrelationContext(
-      undefined,
-      this.correlationId,
-      { operation: operationName, ...metadata }
-    );
+    return new CorrelationContext(undefined, this.correlationId, {
+      operation: operationName,
+      ...metadata,
+    });
   }
 
   /**

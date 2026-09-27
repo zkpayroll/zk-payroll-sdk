@@ -143,7 +143,11 @@ export function checkFundingReadiness(
 /** Validates obligations, failing early on malformed entries. */
 function validateObligations(obligations: FundingObligation[]): void {
   if (!Array.isArray(obligations)) {
-    throw new ValidationError("Obligations must be an array", "obligations", "FUNDING_OBLIGATIONS_INVALID");
+    throw new ValidationError(
+      "Obligations must be an array",
+      "obligations",
+      "FUNDING_OBLIGATIONS_INVALID"
+    );
   }
   for (let i = 0; i < obligations.length; i++) {
     const obligation = obligations[i];

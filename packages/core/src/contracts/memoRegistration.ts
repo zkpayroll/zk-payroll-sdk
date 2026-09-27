@@ -13,11 +13,7 @@
 import { isMemoCommitment } from "../crypto/memoCommitment";
 import { ValidationError } from "../core/errors";
 import { MEMO_METADATA_FIELD_MAX_LENGTH } from "../memos/prepare";
-import type {
-  MemoMetadata,
-  MemoRegistrationRequest,
-  PreparedMemo,
-} from "../memos/types";
+import type { MemoMetadata, MemoRegistrationRequest, PreparedMemo } from "../memos/types";
 
 /**
  * Object keys that indicate a raw/unprepared memo. If any of these appear on
@@ -75,7 +71,7 @@ export function assertPreparedMemo(value: unknown): asserts value is PreparedMem
 
   if (!isMemoCommitment(candidate.commitment)) {
     throw new ValidationError(
-      "Prepared memo has a missing or malformed commitment (expected \"memo:<64 hex characters>\"); use prepareEncryptedMemo() to derive it",
+      'Prepared memo has a missing or malformed commitment (expected "memo:<64 hex characters>"); use prepareEncryptedMemo() to derive it',
       "commitment",
       "MEMO_COMMITMENT_MALFORMED"
     );

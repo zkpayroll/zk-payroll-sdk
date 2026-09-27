@@ -7,7 +7,10 @@ import {
   RECONCILIATION_STATUS_BADGES,
   type ReconciliationClassification,
 } from "../src/reconciliation/statusClassifier";
-import type { ReconciliationDiffEntry, ReconciliationDiffResult } from "../src/reconciliation/types";
+import type {
+  ReconciliationDiffEntry,
+  ReconciliationDiffResult,
+} from "../src/reconciliation/types";
 
 describe("Reconciliation Status Classifier (#291)", () => {
   const createMockEntry = (
@@ -90,9 +93,7 @@ describe("Reconciliation Status Classifier (#291)", () => {
     });
 
     it("classifies as 'manually_reviewed' when manualReview option is provided", () => {
-      const entries: ReconciliationDiffEntry[] = [
-        createMockEntry("amount_mismatch", "G1"),
-      ];
+      const entries: ReconciliationDiffEntry[] = [createMockEntry("amount_mismatch", "G1")];
 
       const result = classifyReconciliationStatus(entries, {
         manualReview: {
@@ -112,10 +113,7 @@ describe("Reconciliation Status Classifier (#291)", () => {
   describe("ReconciliationDiffResult Input Support", () => {
     it("correctly classifies a ReconciliationDiffResult object", () => {
       const diffResult: ReconciliationDiffResult = {
-        entries: [
-          createMockEntry("match", "G1"),
-          createMockEntry("match", "G2"),
-        ],
+        entries: [createMockEntry("match", "G1"), createMockEntry("match", "G2")],
         counts: {
           match: 2,
           still_pending: 0,
@@ -152,9 +150,7 @@ describe("Reconciliation Status Classifier (#291)", () => {
 
   describe("applyManualReview", () => {
     it("attaches manual review record and updates classification", () => {
-      const baseResult = classifyReconciliationStatus([
-        createMockEntry("amount_mismatch", "G1"),
-      ]);
+      const baseResult = classifyReconciliationStatus([createMockEntry("amount_mismatch", "G1")]);
 
       const reviewed = applyManualReview(baseResult, {
         reviewedBy: "GADMIN999",
@@ -168,9 +164,7 @@ describe("Reconciliation Status Classifier (#291)", () => {
     });
 
     it("sets requiresAction to true if manual review escalated the issue", () => {
-      const baseResult = classifyReconciliationStatus([
-        createMockEntry("failed_mismatch", "G1"),
-      ]);
+      const baseResult = classifyReconciliationStatus([createMockEntry("failed_mismatch", "G1")]);
 
       const reviewed = applyManualReview(baseResult, {
         reviewedBy: "GADMIN999",
@@ -220,7 +214,14 @@ describe("Reconciliation Status Classifier (#291)", () => {
     });
 
     it("verifies all canonical status badges exist", () => {
-      const statuses = ["matched", "partial", "mismatched", "pending", "failed", "manually_reviewed"] as const;
+      const statuses = [
+        "matched",
+        "partial",
+        "mismatched",
+        "pending",
+        "failed",
+        "manually_reviewed",
+      ] as const;
       for (const s of statuses) {
         expect(RECONCILIATION_STATUS_BADGES[s]).toBeDefined();
         expect(RECONCILIATION_STATUS_BADGES[s].label).toBeTruthy();

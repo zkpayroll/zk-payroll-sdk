@@ -1,19 +1,20 @@
 import { Address, xdr } from "@stellar/stellar-sdk";
-import { addressToScAddress, addressToScVal, numberToI128Xdr, stringToScVal } from "../src/utils/xdr-formatters";
+import {
+  addressToScAddress,
+  addressToScVal,
+  numberToI128Xdr,
+  stringToScVal,
+} from "../src/utils/xdr-formatters";
 
 const ACCOUNT = "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF";
 
 describe("XDR formatters", () => {
   it("formats safe and large signed i128 values without Number precision loss", () => {
-    expect(numberToI128Xdr(42).toXDR("hex")).toBe(
-      numberToI128Xdr("42").toXDR("hex"),
-    );
+    expect(numberToI128Xdr(42).toXDR("hex")).toBe(numberToI128Xdr("42").toXDR("hex"));
     expect(numberToI128Xdr("90071992547409931234567890").toXDR("hex")).toBe(
-      "0000000a00000000004a817c800000029da1e6d2",
+      "0000000a00000000004a817c800000029da1e6d2"
     );
-    expect(numberToI128Xdr(-123n).toXDR("hex")).toBe(
-      numberToI128Xdr("-123").toXDR("hex"),
-    );
+    expect(numberToI128Xdr(-123n).toXDR("hex")).toBe(numberToI128Xdr("-123").toXDR("hex"));
   });
 
   it("rejects unsafe numeric input and values outside i128", () => {

@@ -5,7 +5,13 @@
  * including blank and length boundary cases.
  */
 
-import { validateDraftDescription, assertValidDraftDescription, getDescriptionStatus, DEFAULT_MIN_DESCRIPTION_LENGTH, DEFAULT_MAX_DESCRIPTION_LENGTH } from "../src/payroll/draftDescription";
+import {
+  validateDraftDescription,
+  assertValidDraftDescription,
+  getDescriptionStatus,
+  DEFAULT_MIN_DESCRIPTION_LENGTH,
+  DEFAULT_MAX_DESCRIPTION_LENGTH,
+} from "../src/payroll/draftDescription";
 import { DraftDescriptionValidationResult } from "../src/payroll/draftDescription";
 
 const EMPLOYER = "GTESTEMPLOYER1234567890abcdef";

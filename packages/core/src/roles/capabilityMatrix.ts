@@ -38,13 +38,7 @@ export const ALL_PAYROLL_ROLES: readonly PayrollRole[] = [
  * Standard SDK actions that roles can perform.
  */
 export type PayrollAction =
-  | "review"
-  | "approve"
-  | "submit"
-  | "audit"
-  | "export"
-  | "configure"
-  | "cancel";
+  "review" | "approve" | "submit" | "audit" | "export" | "configure" | "cancel";
 
 /**
  * All recognized actions as a constant array.
@@ -214,10 +208,7 @@ export class PayrollRoleCapabilityMatrix {
   /**
    * Gets the exact permission level ("allowed" | "denied" | "conditional") for a role and action.
    */
-  getPermission(
-    role: PayrollRole | string,
-    action: PayrollAction | string
-  ): CapabilityPermission {
+  getPermission(role: PayrollRole | string, action: PayrollAction | string): CapabilityPermission {
     const roleMap = this.matrix[role];
     if (!roleMap) return "denied";
     return roleMap[action] ?? "denied";
@@ -239,10 +230,7 @@ export class PayrollRoleCapabilityMatrix {
   /**
    * Returns all actions that a given role is permitted to perform.
    */
-  getCapabilitiesForRole(
-    role: PayrollRole | string,
-    allowConditional = true
-  ): PayrollAction[] {
+  getCapabilitiesForRole(role: PayrollRole | string, allowConditional = true): PayrollAction[] {
     const roleMap = this.matrix[role];
     if (!roleMap) return [];
 
@@ -255,10 +243,7 @@ export class PayrollRoleCapabilityMatrix {
   /**
    * Returns all roles that possess the given action capability.
    */
-  getRolesWithCapability(
-    action: PayrollAction | string,
-    allowConditional = true
-  ): PayrollRole[] {
+  getRolesWithCapability(action: PayrollAction | string, allowConditional = true): PayrollRole[] {
     return (Object.keys(this.matrix) as PayrollRole[]).filter((role) =>
       this.hasCapability(role, action, allowConditional)
     );

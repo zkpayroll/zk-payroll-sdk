@@ -75,9 +75,7 @@ export function decodeEmployerUpdatedEvent(event: RawContractEvent): EmployerUpd
  * @returns Array of decoded `EmployerUpdatedEvent` objects
  * @throws EventDecodingError if any event fails to decode
  */
-export function decodeEmployerUpdatedEvents(
-  events: RawContractEvent[]
-): EmployerUpdatedEvent[] {
+export function decodeEmployerUpdatedEvents(events: RawContractEvent[]): EmployerUpdatedEvent[] {
   return events.map(decodeEmployerUpdatedEvent);
 }
 

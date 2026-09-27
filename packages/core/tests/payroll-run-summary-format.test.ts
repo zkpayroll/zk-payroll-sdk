@@ -16,10 +16,7 @@ const CHARLIE = "GCHARLIE1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ12";
 describe("formatPayrollRunSummary (Issue #474)", () => {
   it("formats a successful run for dashboards and notifications", () => {
     const summary = createExecutionSummary(
-      [
-        successOutcome(ALICE, 1000n, "native", "0x1"),
-        successOutcome(BOB, 2000n, "native", "0x2"),
-      ],
+      [successOutcome(ALICE, 1000n, "native", "0x1"), successOutcome(BOB, 2000n, "native", "0x2")],
       500
     );
 
@@ -63,7 +60,11 @@ describe("formatPayrollRunSummary (Issue #474)", () => {
 
   it("collapses long runs with an 'and N more' line (audit edge case)", () => {
     const outcomes = Array.from({ length: 12 }, (_, i) =>
-      successOutcome(`GRECIPIENT${String(i).padStart(4, "0")}ABCDEFGHIJKLMNOP`, BigInt(i + 1), "native")
+      successOutcome(
+        `GRECIPIENT${String(i).padStart(4, "0")}ABCDEFGHIJKLMNOP`,
+        BigInt(i + 1),
+        "native"
+      )
     );
     const summary = createExecutionSummary(outcomes, 100);
 

@@ -196,7 +196,11 @@ export function diffPayrollBatches(
   const metadataChanges: DraftMetadataChange[] = [];
   if (original.draftId !== modified.draftId) {
     changedFields.add("draftId");
-    metadataChanges.push({ field: "draftId", previous: original.draftId, current: modified.draftId });
+    metadataChanges.push({
+      field: "draftId",
+      previous: original.draftId,
+      current: modified.draftId,
+    });
   }
   if (original.totalAmount !== modified.totalAmount) {
     changedFields.add("totalAmount");
@@ -241,7 +245,14 @@ export function diffPayrollBatches(
   const previousCommitment = computeDraftMetadataCommitment(original);
   const currentCommitment = computeDraftMetadataCommitment(modified);
 
-  const orderedFields = ["draftId", "totalAmount", "asset", "scheduleTimestamp", "policy", "approvals"]
+  const orderedFields = [
+    "draftId",
+    "totalAmount",
+    "asset",
+    "scheduleTimestamp",
+    "policy",
+    "approvals",
+  ]
     .filter((f) => changedFields.has(f))
     .concat([...changedFields].filter((f) => f.startsWith("recipients")).sort());
 
@@ -311,12 +322,14 @@ export function comparePayrollDrafts(
 }
 
 /** Indexes recipients by stable id (first occurrence wins on duplicates). */
-function indexRecipients(
-  recipients: PayrollDraftRecipient[]
-): Map<string, PayrollDraftRecipient> {
+function indexRecipients(recipients: PayrollDraftRecipient[]): Map<string, PayrollDraftRecipient> {
   const byKey = new Map<string, PayrollDraftRecipient>();
   for (const recipient of recipients ?? []) {
-    if (recipient && typeof recipient.recipientId === "string" && !byKey.has(recipient.recipientId)) {
+    if (
+      recipient &&
+      typeof recipient.recipientId === "string" &&
+      !byKey.has(recipient.recipientId)
+    ) {
       byKey.set(recipient.recipientId, recipient);
     }
   }

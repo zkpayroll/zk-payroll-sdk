@@ -48,22 +48,19 @@ export function validateAuditAttestationDigestInput(
   const candidate = input as Record<string, unknown>;
   for (const field of REQUIRED_FIELDS) {
     if (typeof candidate[field] !== "string" || candidate[field].trim() === "") {
-      throw new TypeError(`Audit attestation digest field '${field}' is required and must be non-empty.`);
+      throw new TypeError(
+        `Audit attestation digest field '${field}' is required and must be non-empty.`
+      );
     }
   }
 
-  if (
-    (candidate.periodStart as string).trim() >=
-    (candidate.periodEnd as string).trim()
-  ) {
+  if ((candidate.periodStart as string).trim() >= (candidate.periodEnd as string).trim()) {
     throw new RangeError("Audit attestation digest periodStart must be before periodEnd.");
   }
 }
 
 /** Returns the exact stable JSON payload hashed by the contract-compatible helper. */
-export function serializeAuditAttestationDigestInput(
-  input: AuditAttestationDigestInput
-): string {
+export function serializeAuditAttestationDigestInput(input: AuditAttestationDigestInput): string {
   validateAuditAttestationDigestInput(input);
   const payload: SerializedAuditAttestationDigestInput = {
     domain: AUDIT_ATTESTATION_DIGEST_DOMAIN,

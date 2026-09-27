@@ -36,9 +36,7 @@ export interface EmployeeActiveStatusResult {
  * @param employee - Employee profile to check
  * @returns EmployeeActiveStatusResult with status and usability info
  */
-export function isEmployeeActive(
-  employee: EmployeeProfile
-): EmployeeActiveStatusResult {
+export function isEmployeeActive(employee: EmployeeProfile): EmployeeActiveStatusResult {
   // Use employeeId and status from the EmployeeProfile/EmployeeEligibilityRecord
   const employeeId = employee.employeeId;
   const employeeStatus = employee.status;

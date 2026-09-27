@@ -1,14 +1,15 @@
-import { ZkPayrollError, type ErrorContext, ContractExecutionError, ContractErrorCode } from "../core/errors";
+import {
+  ZkPayrollError,
+  type ErrorContext,
+  ContractExecutionError,
+  ContractErrorCode,
+} from "../core/errors";
 
 /**
  * Supported roles capable of initiating or managing batch creation in ZkPayroll.
  */
 export type BatchCreatorRole =
-  | "BATCH_CREATOR"
-  | "PAYROLL_ADMIN"
-  | "EMPLOYER"
-  | "AUTHORIZED_OPERATOR"
-  | "MULTISIG_SIGNER";
+  "BATCH_CREATOR" | "PAYROLL_ADMIN" | "EMPLOYER" | "AUTHORIZED_OPERATOR" | "MULTISIG_SIGNER";
 
 /**
  * Standard error codes for batch creation authorization and permission failures.
@@ -106,7 +107,11 @@ export function isBatchCreatorPermissionError(error: unknown): boolean {
   if (error instanceof BatchCreatorPermissionError) return true;
   if (typeof error === "object" && error !== null && "code" in error) {
     const code = String((error as { code: unknown }).code);
-    if (Object.values(BatchCreatorPermissionErrorCode).includes(code as BatchCreatorPermissionErrorCodeType)) {
+    if (
+      Object.values(BatchCreatorPermissionErrorCode).includes(
+        code as BatchCreatorPermissionErrorCodeType
+      )
+    ) {
       return true;
     }
   }

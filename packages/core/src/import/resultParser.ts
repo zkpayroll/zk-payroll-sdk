@@ -103,8 +103,8 @@ export function parseEmployeeImportResult<T = Record<string, unknown>>(
   // 1. Check if raw is already grouped by key: { added: [...], updated: [...], ... }
   if (typeof raw === "object" && !Array.isArray(raw)) {
     const rawObj = raw as Record<string, unknown>;
-    const hasGroupKeys = ["added", "updated", "skipped", "duplicate", "failed"].some(
-      (k) => Array.isArray(rawObj[k])
+    const hasGroupKeys = ["added", "updated", "skipped", "duplicate", "failed"].some((k) =>
+      Array.isArray(rawObj[k])
     );
 
     if (hasGroupKeys) {
@@ -167,8 +167,15 @@ export function isImportFullySuccessful(result: ParsedImportResult): boolean {
  * Formats a clean diagnostic summary string for logging or notifications.
  */
 export function formatImportResultSummary(result: ParsedImportResult): string {
-  const { total, addedCount, updatedCount, skippedCount, duplicateCount, failedCount, successRate } =
-    result.summary;
+  const {
+    total,
+    addedCount,
+    updatedCount,
+    skippedCount,
+    duplicateCount,
+    failedCount,
+    successRate,
+  } = result.summary;
   return (
     `Import Summary: ${total} total records | ` +
     `Added: ${addedCount}, Updated: ${updatedCount}, Skipped: ${skippedCount}, ` +
@@ -179,7 +186,10 @@ export function formatImportResultSummary(result: ParsedImportResult): string {
 
 // ── Internal Helpers ────────────────────────────────────────────────────────
 
-function resolveRowOutcome(item: unknown, defaultOutcome: ImportRowOutcome = "added"): ImportRowOutcome {
+function resolveRowOutcome(
+  item: unknown,
+  defaultOutcome: ImportRowOutcome = "added"
+): ImportRowOutcome {
   if (typeof item !== "object" || item === null) {
     return "failed";
   }
@@ -187,27 +197,53 @@ function resolveRowOutcome(item: unknown, defaultOutcome: ImportRowOutcome = "ad
   const record = item as Record<string, unknown>;
 
   // Check explicit error flags first
-  if (record.error || record.failed === true || record.status === "failed" || record.status === "error") {
+  if (
+    record.error ||
+    record.failed === true ||
+    record.status === "failed" ||
+    record.status === "error"
+  ) {
     return "failed";
   }
 
   // Check duplicate flags
-  if (record.isDuplicate === true || record.duplicate === true || record.status === "duplicate" || record.status === "conflict") {
+  if (
+    record.isDuplicate === true ||
+    record.duplicate === true ||
+    record.status === "duplicate" ||
+    record.status === "conflict"
+  ) {
     return "duplicate";
   }
 
   // Check skipped flags
-  if (record.skipped === true || record.status === "skipped" || record.status === "ignored" || record.action === "skipped") {
+  if (
+    record.skipped === true ||
+    record.status === "skipped" ||
+    record.status === "ignored" ||
+    record.action === "skipped"
+  ) {
     return "skipped";
   }
 
   // Check updated flags
-  if (record.updated === true || record.status === "updated" || record.action === "update" || record.action === "updated") {
+  if (
+    record.updated === true ||
+    record.status === "updated" ||
+    record.action === "update" ||
+    record.action === "updated"
+  ) {
     return "updated";
   }
 
   // Check added flags
-  if (record.added === true || record.status === "added" || record.status === "created" || record.action === "create" || record.action === "added") {
+  if (
+    record.added === true ||
+    record.status === "added" ||
+    record.status === "created" ||
+    record.action === "create" ||
+    record.action === "added"
+  ) {
     return "added";
   }
 
@@ -232,10 +268,20 @@ function normalizeRow<T>(
 
   const rec = item as Record<string, unknown>;
   const rowNumber = typeof rec.rowNumber === "number" ? rec.rowNumber : fallbackRowNumber;
-  const employeeId = typeof rec.employeeId === "string" ? rec.employeeId : (rec.id ? String(rec.id) : undefined);
-  const walletAddress = typeof rec.walletAddress === "string" ? rec.walletAddress : (rec.wallet ? String(rec.wallet) : undefined);
-  const reason = rec.reason ? String(rec.reason) : (rec.message ? String(rec.message) : undefined);
-  const error = rec.error ? String(rec.error) : (outcome === "failed" ? (reason ?? "Unknown row failure") : undefined);
+  const employeeId =
+    typeof rec.employeeId === "string" ? rec.employeeId : rec.id ? String(rec.id) : undefined;
+  const walletAddress =
+    typeof rec.walletAddress === "string"
+      ? rec.walletAddress
+      : rec.wallet
+        ? String(rec.wallet)
+        : undefined;
+  const reason = rec.reason ? String(rec.reason) : rec.message ? String(rec.message) : undefined;
+  const error = rec.error
+    ? String(rec.error)
+    : outcome === "failed"
+      ? (reason ?? "Unknown row failure")
+      : undefined;
 
   // Redact private salary or sensitive fields in data
   const data = { ...rec };

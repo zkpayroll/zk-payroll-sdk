@@ -1,10 +1,7 @@
 /**
  * Tests for formatReconciliationDiff (#214).
  */
-import {
-  generateReconciliationDiff,
-  formatReconciliationDiff,
-} from "../src/reconciliation";
+import { generateReconciliationDiff, formatReconciliationDiff } from "../src/reconciliation";
 import type { ObservedPaymentState } from "../src/reconciliation/types";
 import {
   createExecutionSummary,
@@ -16,8 +13,7 @@ const ALICE = "GALICE1234567890abcdef";
 const BOB = "GBOB1234567890abcdef";
 
 function observed(
-  partial: Partial<ObservedPaymentState> &
-    Pick<ObservedPaymentState, "recipient" | "onChainStatus">,
+  partial: Partial<ObservedPaymentState> & Pick<ObservedPaymentState, "recipient" | "onChainStatus">
 ): ObservedPaymentState {
   return { observedAt: Date.now(), ...partial };
 }
@@ -29,7 +25,7 @@ describe("formatReconciliationDiff", () => {
         successOutcome(ALICE, 1000n, "native", "0xhash1"),
         failedOutcome(BOB, 2000n, "native", "timeout"),
       ],
-      500,
+      500
     );
     const observedState = [
       observed({ recipient: ALICE, asset: "native", amount: 1000n, onChainStatus: "confirmed" }),
@@ -51,7 +47,7 @@ describe("formatReconciliationDiff", () => {
         successOutcome(ALICE, 1000n, "native", "0xhash1"),
         successOutcome(BOB, 2000n, "native", "0xhash2"),
       ],
-      500,
+      500
     );
     const observedState = [
       observed({ recipient: ALICE, asset: "native", amount: 1000n, onChainStatus: "confirmed" }),
@@ -72,7 +68,7 @@ describe("formatReconciliationDiff", () => {
   it("uses 'fully reconciled' status when every entry is routine", () => {
     const expected = createExecutionSummary(
       [successOutcome(ALICE, 1000n, "native", "0xhash1")],
-      500,
+      500
     );
     const observedState = [
       observed({ recipient: ALICE, asset: "native", amount: 1000n, onChainStatus: "confirmed" }),
@@ -97,7 +93,7 @@ describe("formatReconciliationDiff", () => {
   it("respects custom indent and newline options", () => {
     const expected = createExecutionSummary(
       [successOutcome(ALICE, 1000n, "native", "0xhash1")],
-      500,
+      500
     );
     const observedState = [
       observed({ recipient: ALICE, asset: "native", amount: 1000n, onChainStatus: "confirmed" }),
@@ -116,7 +112,7 @@ describe("formatReconciliationDiff", () => {
   it("is a pure function (calling twice yields identical output)", () => {
     const expected = createExecutionSummary(
       [successOutcome(ALICE, 1000n, "native", "0xhash1")],
-      500,
+      500
     );
     const observedState = [
       observed({ recipient: ALICE, asset: "native", amount: 1000n, onChainStatus: "confirmed" }),
