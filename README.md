@@ -109,6 +109,37 @@ const { value } = await waitForPayrollRunCompletion(() => fetchRunStatus(runId),
 });
 ```
 
+## Request identifier propagation
+
+Pass a `requestId` to correlate one payroll operation across transaction
+confirmation polling, emitted events, error messages, network timing records
+and outbound HTTP artifact requests.
+
+```typescript
+import { RunIdentifier, TransactionWatcher, timeAxiosRequest } from "@zk-payroll/core";
+
+const runId = RunIdentifier.generate();
+const requestId = RunIdentifier.generateCorrelationId(runId, "private_pay");
+
+const watcher = new TransactionWatcher(server);
+watcher.on("timeout", ({ txHash, requestId }) => log.warn({ txHash, requestId }));
+await watcher.waitForConfirmation(txHash, { requestId });
+
+// HTTP(S) requests carry it as an `X-Request-Id` header and on their timing record
+const { timing } = await timeAxiosRequest({ url: artifactUrl }, onTiming, requestId);
+```
+
+- `polling`, `confirmed`, `timeout` and `cancelled` events, the
+  `ConfirmationResult`, and failure/timeout/cancellation error messages all
+  include the `requestId`.
+- With `installAxiosTiming()`, an `X-Request-Id` header already set on a
+  request is recorded on its timing record.
+- IDs must be 1–128 characters of letters, digits, `.`, `_`, `:` or `-`
+  (all `RunIdentifier` formats and UUIDs qualify). Anything else throws a
+  `ValidationError` with code `INVALID_REQUEST_ID` **before** any network
+  call, and the error never echoes the rejected value — so free-form text
+  such as names or salary amounts can't leak into logs or telemetry.
+
 ## Payroll run summaries
 
 `createExecutionSummary()` builds the normalized summary; pair it with

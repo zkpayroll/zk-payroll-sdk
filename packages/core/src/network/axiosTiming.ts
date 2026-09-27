@@ -22,6 +22,7 @@
 import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
 import { attachTiming, epochMs, now, roundDuration, safeErrorMessage } from "./timing";
 import type { NetworkRequestTiming, NetworkTimingListener } from "./types";
+import { REQUEST_ID_HEADER, normalizeRequestId, withRequestIdHeader } from "../core/request-id";
 
 /** Symbol used to attach timing metadata to axios responses/errors. */
 export const AXIOS_TIMING = Symbol("axios.network.timing");
@@ -37,6 +38,22 @@ interface AxiosStartMeta {
 }
 
 type ConfigWithStart = AxiosRequestConfig & { [AXIOS_START]?: AxiosStartMeta };
+
+/**
+ * Reads a valid request id from an outgoing request's `X-Request-Id` header
+ * (any casing). Invalid or absent values yield `undefined`; never throws.
+ */
+function requestIdFromConfig(config: AxiosRequestConfig | undefined): string | undefined {
+  const headers = config?.headers as Record<string, unknown> | undefined;
+  if (!headers) return undefined;
+  const key = Object.keys(headers).find((k) => k.toLowerCase() === REQUEST_ID_HEADER.toLowerCase());
+  const value = key ? headers[key] : undefined;
+  try {
+    return typeof value === "string" ? normalizeRequestId(value) : undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 function operationFor(config: AxiosRequestConfig): string {
   const method = (config.method ?? "get").toUpperCase();
@@ -56,8 +73,21 @@ function operationFor(config: AxiosRequestConfig): string {
  */
 export async function timeAxiosRequest<T = unknown>(
   config: AxiosRequestConfig,
-  onRequest?: NetworkTimingListener
+  onRequest?: NetworkTimingListener,
+  requestId?: string
 ): Promise<{ response: AxiosResponse<T>; timing: NetworkRequestTiming }> {
+  // Propagate the caller's request id as an X-Request-Id header and onto the
+  // timing record so HTTP artifact fetches correlate with the payroll run.
+  const id = normalizeRequestId(requestId);
+  if (id) {
+    config = {
+      ...config,
+      headers: withRequestIdHeader(
+        config.headers as Record<string, unknown> | undefined,
+        id
+      ) as AxiosRequestConfig["headers"],
+    };
+  }
   const startedAt = epochMs();
   const startedAtMonotonic = now();
   const operation = operationFor(config);
@@ -70,6 +100,7 @@ export async function timeAxiosRequest<T = unknown>(
       startedAt,
       durationMs: roundDuration(now() - startedAtMonotonic),
       status: "success",
+      ...(id ? { requestId: id } : {}),
     };
     attachTiming(response, timing, { symbol: AXIOS_TIMING });
     onRequest?.(timing);
@@ -82,6 +113,7 @@ export async function timeAxiosRequest<T = unknown>(
       durationMs: roundDuration(now() - startedAtMonotonic),
       status: "error",
       error: safeErrorMessage(err),
+      ...(id ? { requestId: id } : {}),
     };
     attachTiming(err, timing, { symbol: AXIOS_TIMING });
     onRequest?.(timing);
@@ -127,6 +159,7 @@ export function installAxiosTiming(options: InstallAxiosTimingOptions = {}): () 
         startedAt: start?.epoch ?? Date.now(),
         durationMs: roundDuration(now() - (start?.monotonic ?? now())),
         status: "success",
+        requestId: requestIdFromConfig(response.config),
       };
       if (attachToResponse) {
         attachTiming(response, timing, { symbol: AXIOS_TIMING });
@@ -143,6 +176,7 @@ export function installAxiosTiming(options: InstallAxiosTimingOptions = {}): () 
         durationMs: roundDuration(now() - (start?.monotonic ?? now())),
         status: "error",
         error: safeErrorMessage(error),
+        requestId: requestIdFromConfig(error?.config),
       };
       if (attachToResponse) {
         attachTiming(error, timing, { symbol: AXIOS_TIMING });
