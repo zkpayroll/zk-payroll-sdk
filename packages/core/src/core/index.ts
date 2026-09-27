@@ -15,3 +15,4 @@ export * from "./retry";
 export * from "./idempotency";
 export * from "./concurrency";
 export * from "./retry-budget";
+export * from "./request-id";
