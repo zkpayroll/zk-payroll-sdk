@@ -1,4 +1,5 @@
 import { ZkPayrollError } from "../core/errors";
+import { normalizeEmployeeId } from "../normalization/normalizer";
 import type { BatchPaymentEntry } from "./BatchPayloadBuilder";
 
 export interface EmployeeRecord {
@@ -57,7 +58,10 @@ export class EmployeeBatchSchemaValidator {
   private readonly employees: EmployeeRecord[] = [];
 
   add(employee: EmployeeRecord): this {
-    this.employees.push({ ...employee });
+    this.employees.push({
+      ...employee,
+      employeeId: normalizeEmployeeId(employee.employeeId) ?? "",
+    });
     return this;
   }
 

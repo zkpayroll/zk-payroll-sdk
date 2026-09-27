@@ -23,6 +23,14 @@ describe("EmployeeBatchSchemaValidator", () => {
       expect(batch.totalSalary).toBe(1000n);
     });
 
+    it("trims employee IDs in the built batch", () => {
+      const batch = new EmployeeBatchSchemaValidator()
+        .add({ ...validEmployee, employeeId: "  EMP-001  " })
+        .build();
+
+      expect(batch.employees[0].employeeId).toBe("EMP-001");
+    });
+
     it("builds a multi-employee batch and sums salaries", () => {
       const batch = new EmployeeBatchSchemaValidator()
         .add({ employeeId: "EMP-001", recipient: "GA1", salary: 100n, asset: "native" })
@@ -126,6 +134,15 @@ describe("EmployeeBatchSchemaValidator", () => {
           .add({ employeeId: "EMP-001", recipient: "GB2", salary: 200n, asset: "native" })
           .build()
       ).toThrow(EmployeeBatchValidationFailedError);
+    });
+
+    it("treats whitespace variants of an employee ID as duplicates", () => {
+      const errors = new EmployeeBatchSchemaValidator()
+        .add({ ...validEmployee, employeeId: "EMP-001" })
+        .add({ ...validEmployee, employeeId: " EMP-001 " })
+        .validate();
+
+      expect(errors.some((error) => error.code === "DUPLICATE_EMPLOYEE_ID")).toBe(true);
     });
 
     it("throws on duplicate recipients", () => {
