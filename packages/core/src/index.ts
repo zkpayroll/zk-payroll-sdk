@@ -97,6 +97,9 @@ export * from "./adapters";
 // ── Polling Helpers ───────────────────────────────────────────────────────────
 export * from "./polling";
 
+// ── Contract Error Remediation ───────────────────────────────────────────────
+export * from "./remediation";
+
 // ── Logging ─────────────────────────────────────────────────────────────────
 export * from "./logging";
 

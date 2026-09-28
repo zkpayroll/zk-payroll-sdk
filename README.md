@@ -360,6 +360,40 @@ const value = unwrapSdkOperationResult(result);
 `offboard`) return the same explicit result shape, validate destinations
 locally before any network call, and never throw for expected failures.
 
+## Contract error remediation hints
+
+`toUserFriendlyErrorWithGuidance()` combines the SDK's existing
+`toUserFriendlyError()` message mapping with audience-specific "what do I do
+now" guidance, so applications can surface an actionable next step alongside
+any contract, wallet, network, or validation error without building their own
+error-code lookup table.
+
+```typescript
+import { toUserFriendlyErrorWithGuidance } from "@zk-payroll/core";
+
+try {
+  await payroll.processPayment(params);
+} catch (err) {
+  const { friendlyMessage, remediation } = toUserFriendlyErrorWithGuidance(err);
+  showToast(friendlyMessage, remediation.action);
+  // remediation.selfServiceable tells you whether to show a "retry" action
+  // or a "contact your administrator" action.
+}
+```
+
+Guidance is tailored per audience via `RemediationAudience` (`"admin"`,
+`"contributor"`, `"sdk-user"` (default), `"auditor"`) — the same error can
+tell an SDK-integrating application to "contact your payroll administrator"
+while telling an admin to "verify the calling account holds the required
+contract role." Use `mapErrorToRemediation(error, audience)` directly (from
+the same module) when you only need the guidance, not the friendly message.
+
+Guidance text is static, curated copy keyed by stable error code — never
+interpolated from the underlying error — so it cannot leak recipient
+addresses, amounts, or other private payroll values even if the original
+error message contains them. Unrecognized error codes always resolve to a
+safe, generic fallback (`remediation.known === false`) instead of throwing.
+
 ## Zero-Knowledge Proof Generation
 
 The SDK includes production-ready ZK proof generation using snarkjs:
