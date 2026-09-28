@@ -15,7 +15,7 @@
  * free text so callers can branch on them, and no message ever carries a signer
  * address or any payroll value.
  */
-import type { AuthorizationRequest, SignerInfo } from "./types";
+import type { SignerInfo } from "./types";
 
 /**
  * Stable identifiers for each way an approval request's timestamps can be wrong.
@@ -117,11 +117,19 @@ export interface ApprovalTimestampValidationResult {
   clockSkewMs: number;
 }
 
-/** The subset of an authorization request this module needs. */
-export type TimestampedApprovalRequest = Pick<
-  AuthorizationRequest,
-  "createdAt" | "expiresAt" | "signers"
-> & { signers?: readonly Pick<SignerInfo, "state" | "signedAt" | "rejectedAt">[] };
+/**
+ * The subset of an authorization request this module needs. Declared explicitly
+ * rather than derived from `AuthorizationRequest` so a caller can pass a partial
+ * record from an untrusted source and have the missing fields reported.
+ */
+export interface TimestampedApprovalRequest {
+  /** Epoch ms the request was created. Validated; must be a real timestamp. */
+  createdAt: number;
+  /** Epoch ms the approval window closes, when the policy sets one. */
+  expiresAt?: number;
+  /** Signers whose outcome timestamps should be cross-checked. */
+  signers?: readonly Pick<SignerInfo, "state" | "signedAt" | "rejectedAt">[];
+}
 
 function isUsableTimestamp(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value) && value >= 0 && Number.isInteger(value);
