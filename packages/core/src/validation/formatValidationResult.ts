@@ -28,14 +28,21 @@ function maskAddress(value: string): string {
   return `${value.slice(0, 4)}...${value.slice(-4)}`;
 }
 
-/** Returns a privacy-safe version of a field value. */
-function redactValue(field: string | undefined, value: unknown): unknown {
-  if (field && SENSITIVE_FIELD_PATTERN.test(field)) return "[redacted]";
-  if (typeof value === "string") {
-    // Mask anything that looks like a Stellar/Soroban address (G… / C…, 56 chars)
-    if (/^[GC][A-Z2-7]{55}$/.test(value)) return maskAddress(value);
+/**
+ * Redacts sensitive values that validators may embed inside free-text
+ * message/suggestedFix strings before they reach the envelope or field map.
+ *
+ * - Stellar/Soroban addresses (G… / C…, 56 chars) are masked wherever they appear.
+ * - When the affected field is sensitive (amount, salary, token, …), numeric
+ *   literals in the text are replaced with `[redacted]` so raw payroll values
+ *   cannot leak through message text.
+ */
+function redactEmbeddedValues(field: string | undefined, text: string): string {
+  let out = text.replace(/\b[GC][A-Z2-7]{55}\b/g, (m) => maskAddress(m));
+  if (field && SENSITIVE_FIELD_PATTERN.test(field)) {
+    out = out.replace(/\d[\d.,]*/g, "[redacted]");
   }
-  return value;
+  return out;
 }
 
 // ── Output types ─────────────────────────────────────────────────────────────
@@ -118,11 +125,14 @@ function toFormattedIssue(issue: ValidationIssue): FormattedIssue {
   return {
     severity: issue.severity,
     code: issue.code,
-    message: issue.message,
+    message: redactEmbeddedValues(issue.field, issue.message),
     category: issue.category,
     field: issue.field,
     recordIndex: issue.recordIndex,
-    suggestedFix: issue.suggestedFix,
+    suggestedFix:
+      issue.suggestedFix !== undefined
+        ? redactEmbeddedValues(issue.field, issue.suggestedFix)
+        : undefined,
     // relatedData is intentionally dropped — it may contain raw payroll values
   };
 }
@@ -143,10 +153,8 @@ export function formatValidationSummary(result: DraftValidationResult): SummaryL
   const { totalRecords, validRecords, totalBlockers, totalWarnings } = result.summary;
 
   const parts: string[] = [];
-  if (totalBlockers > 0)
-    parts.push(`${totalBlockers} blocker${totalBlockers !== 1 ? "s" : ""}`);
-  if (totalWarnings > 0)
-    parts.push(`${totalWarnings} warning${totalWarnings !== 1 ? "s" : ""}`);
+  if (totalBlockers > 0) parts.push(`${totalBlockers} blocker${totalBlockers !== 1 ? "s" : ""}`);
+  if (totalWarnings > 0) parts.push(`${totalWarnings} warning${totalWarnings !== 1 ? "s" : ""}`);
 
   const suffix = parts.length > 0 ? ` — ${parts.join(", ")}` : "";
   const icon = totalBlockers > 0 ? "❌ " : totalWarnings > 0 ? "⚠️  " : "✅ ";
@@ -237,9 +245,7 @@ export interface FormattedValidationResult {
   envelope: ValidationResultEnvelope;
 }
 
-export function formatValidationResult(
-  result: DraftValidationResult
-): FormattedValidationResult {
+export function formatValidationResult(result: DraftValidationResult): FormattedValidationResult {
   return {
     summary: formatValidationSummary(result),
     fieldMap: buildFieldIssueMap(result),

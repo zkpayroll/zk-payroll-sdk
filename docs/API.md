@@ -300,6 +300,51 @@ Returns the total number of payments scheduled by an employer.
 
 ---
 
+### `AuditHoldClient`
+
+Typed client for the audit / compliance hold contract methods (`#527`). Extends the
+compliance hold helpers documented in the [Compliance Hold Client Helpers](#compliance-hold-client-helpers)
+section of the SDK (see `parseHoldStatus`, `buildReleaseHoldRequest`, `isPayrollActionBlocked`).
+
+#### `constructor(server: rpc.Server, contractId: string, options?: ClientOptions)`
+
+Same constructor pattern as the other typed clients.
+
+#### `getAuditHoldStatus(holdId: string, signer: Keypair | ISigner, network?: string): Promise<ComplianceHold>`
+
+Fetches and parses the current status of a hold. Malformed or incomplete responses
+parse to `state: "unknown"` (never `active` or `released`), so callers fail closed.
+
+```typescript
+const hold = await client.getAuditHoldStatus("hold-1", signer);
+if (hold.state === "unknown") {
+  // treat payroll as blocked until the status is confirmed
+}
+```
+
+#### `releaseAuditHold(request: ReleaseHoldRequest, signer: Keypair | ISigner, network?: string): Promise<ReleaseAuditHoldResponse>`
+
+Releases an audit hold after validating the release authorization **locally, before
+any network call**: a missing `holdId`, `releasedBy`, or too-short `authorizationToken`
+throws `HoldReleaseAuthorizationError` without broadcasting a transaction. The raw
+authorization token is never echoed into the thrown error's context.
+
+```typescript
+interface ReleaseAuditHoldResponse {
+  holdId: string;
+  /** Post-release hold state; the free-text `note` is stripped for safe rendering. */
+  hold: ComplianceHold;
+  /** Dashboards-safe explanation (never includes the hold's note). */
+  explanation: string;
+}
+```
+
+Assumes the contract exposes:
+- `get_audit_hold_status(hold_id)` → hold status struct
+- `release_audit_hold(hold_id, released_by, authorization_token, release_reason?)` → updated hold struct
+
+---
+
 ### `PayrollService`
 
 Main entry point for payroll operations.
@@ -528,6 +573,27 @@ await client.cancel(scheduleResult.paymentId, signer);
 
 // List pending payments
 const pending = await client.getPendingPayments("GEMPLOYER...", 0n, 20, signer);
+```
+
+### Typed Client — AuditHoldClient
+
+```typescript
+import { AuditHoldClient } from "@zk-payroll/sdk";
+
+const holds = new AuditHoldClient(server, "CCONTRACT_ID...");
+
+// Check a hold's status before running payroll (fail closed on "unknown")
+const hold = await holds.getAuditHoldStatus("hold-1", signer);
+
+// Release a hold once compliance clears it — authorization is validated
+// locally first, and the token is never surfaced in errors
+const release = await holds.releaseAuditHold({
+  holdId: "hold-1",
+  releasedBy: "GCOMPLIANCE_OFFICER...",
+  authorizationToken: process.env.HOLD_RELEASE_TOKEN!,
+  releaseReason: "KYC review completed",
+}, signer);
+console.log(release.explanation); // safe to render in dashboards
 ```
 
 ### Basic Proof Generation

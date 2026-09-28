@@ -49,7 +49,7 @@ await service.processPayment(
 
 ## Features
 
-- **Typed Contract Clients**: Fully typed client wrappers for PayrollRegistry, SalaryCommitment, ProofVerifier, and PaymentExecutor contracts.
+- **Typed Contract Clients**: Fully typed client wrappers for PayrollRegistry, SalaryCommitment, ProofVerifier, PaymentExecutor, and AuditHold contracts.
 - **ZK Proof Generation**: Client-side proof generation using snarkjs for privacy.
 - **Caching**: Built-in caching for proofs and circuit artifacts.
 - **Error Handling**: Robust error typing and management.
@@ -415,6 +415,33 @@ await client.cancel(scheduled.paymentId, signer);
 
 // Get pending payments
 const payments = await client.getPendingPayments("G...", 0n, 20, signer);
+```
+
+### AuditHoldClient
+
+Query and release compliance holds. Release authorization is validated locally
+before any network call, and the authorization token and hold notes are never
+exposed in errors or dashboard-facing output.
+
+```typescript
+import { AuditHoldClient } from "@zk-payroll/sdk";
+
+const client = new AuditHoldClient(server, "CCONTRACT_ID...");
+
+// Check a hold's status (malformed responses parse to state: "unknown", fail closed)
+const hold = await client.getAuditHoldStatus("hold-1", signer);
+
+// Release a hold once compliance clears it
+const release = await client.releaseAuditHold(
+  {
+    holdId: "hold-1",
+    releasedBy: "G...",
+    authorizationToken: process.env.HOLD_RELEASE_TOKEN!,
+    releaseReason: "KYC review completed",
+  },
+  signer
+);
+console.log(release.explanation); // dashboards-safe summary
 ```
 
 ## Environment Variables
