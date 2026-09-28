@@ -211,3 +211,6 @@ export * from "./employees/referenceId";
 
 // Typed payroll approval request builder
 export * from "./approval";
+
+// Request cancellation support
+export * from "./cancellation";

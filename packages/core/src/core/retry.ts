@@ -8,6 +8,11 @@ import {
   ErrorContext,
 } from "./errors";
 import { BatchValidationFailedError } from "../batch/BatchPayloadBuilder";
+import {
+  OperationCancelledError,
+  cancellableDelay,
+  throwIfAborted,
+} from "../cancellation";
 
 export const RetryCategory = {
   RETRYABLE: "RETRYABLE",
@@ -32,6 +37,15 @@ function decision(category: RetryCategoryType, reason: string): RetryDecision {
 }
 
 export function classifyError(error: unknown, _context?: ErrorContext): RetryDecision {
+  // Caller-initiated cancellation is never retryable — retrying would
+  // defeat the point of the abort and risks duplicate submission.
+  if (error instanceof OperationCancelledError) {
+    return decision(
+      RetryCategory.NON_RETRYABLE,
+      "Operation was cancelled by the caller — do not retry"
+    );
+  }
+
   if (error instanceof NetworkError) {
     return classifyNetworkError(error);
   }
@@ -173,8 +187,15 @@ function classifyGenericError(error: Error): RetryDecision {
     }
   }
 
-  if (error.name === "AbortError" || error.name === "TimeoutError") {
-    return decision(RetryCategory.RETRYABLE, "Request aborted or timed out — retryable");
+  if (error.name === "AbortError") {
+    return decision(
+      RetryCategory.NON_RETRYABLE,
+      "Request was cancelled by the caller — do not retry"
+    );
+  }
+
+  if (error.name === "TimeoutError") {
+    return decision(RetryCategory.RETRYABLE, "Request timed out — retryable");
   }
 
   return decision(
@@ -200,6 +221,12 @@ export interface RetryOptions {
    * coming). Not called before the first attempt or after the final one.
    */
   onRetry?: (attempt: number, error: unknown, decision: RetryDecision) => void;
+  /**
+   * Optional AbortSignal. When aborted, `withRetry` stops scheduling new
+   * attempts and the returned promise rejects with `OperationCancelledError`.
+   * Aborts are checked before each attempt and during each backoff delay.
+   */
+  signal?: AbortSignal;
 }
 
 /**
@@ -219,27 +246,34 @@ export class RetryTimeoutError extends Error {
  *
  * Retry continuation is gated by `classifyError`: a NON_RETRYABLE error
  * (e.g. a contract revert, a validation error, an insufficient-fee
- * rejection) stops the loop immediately and rethrows, regardless of
- * remaining attempts — retrying those can never succeed and, for unsafe
- * write/signing operations in particular, risks duplicate submission for
- * no benefit. RETRYABLE and UNKNOWN classifications continue retrying as
- * before.
+ * rejection, or a caller-initiated cancellation) stops the loop immediately
+ * and rethrows, regardless of remaining attempts — retrying those can never
+ * succeed and, for unsafe write/signing operations in particular, risks
+ * duplicate submission for no benefit. RETRYABLE and UNKNOWN classifications
+ * continue retrying as before.
  *
  * Passing `attempts: 1` effectively disables retrying (the loop runs `fn`
  * once and rethrows on failure without ever consulting classifyError,
  * since there is no further attempt to gate).
+ *
+ * Passing a `signal` lets callers cancel the loop cleanly. The promise
+ * rejects with `OperationCancelledError` (code `OPERATION_CANCELLED`) and
+ * never emits sensitive payroll values.
  */
 export async function withRetry<T>(fn: () => Promise<T>, options: RetryOptions = {}): Promise<T> {
   const attempts = options.attempts ?? 3;
   const delayMs = options.delayMs ?? 100;
   const backoffFactor = options.backoffFactor ?? 2;
   const timeoutMs = options.timeoutMs;
+  const signal = options.signal;
 
   const startedAt = Date.now();
   let currentDelay = delayMs;
   let lastError: unknown;
 
   for (let attempt = 1; attempt <= attempts; attempt++) {
+    throwIfAborted(signal, "withRetry");
+
     if (timeoutMs !== undefined && Date.now() - startedAt >= timeoutMs) {
       throw lastError ?? new RetryTimeoutError(timeoutMs);
     }
@@ -263,7 +297,7 @@ export async function withRetry<T>(fn: () => Promise<T>, options: RetryOptions =
         throw lastError;
       }
 
-      await new Promise((res) => setTimeout(res, currentDelay));
+      await cancellableDelay(currentDelay, signal, "withRetry");
       currentDelay *= backoffFactor;
     }
   }

@@ -591,3 +591,9 @@ npm run lint
 ```
 
 > Having trouble? See the [Troubleshooting Guide](./docs/TROUBLESHOOTING.md).
+
+## Request cancellation
+
+SDK polling and long-running network operations accept an optional `AbortSignal`, letting callers cancel cleanly. Cancellation rejects with `OperationCancelledError` (code `OPERATION_CANCELLED`), is never retried, and never echoes sensitive payroll values.
+
+See `packages/core/src/cancellation/` for the API (`withCancellation`, `cancellableDelay`, `throwIfAborted`, `OperationCancelledError`). Passing no `signal` preserves existing behavior, so this is fully backward compatible.
