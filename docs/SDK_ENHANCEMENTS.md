@@ -193,3 +193,69 @@ Also available on `PayrollService` (instance and static) as
 `validateSettlementReceipt(receipt, options?)`, and
 `extractSettlementReceiptTxHash(receipt)` returns the normalized on-chain
 transaction hash for reconciliation pipelines.
+
+## Issue #508 — Transaction Fee Estimate Wrapper
+
+`packages/core/src/fee-estimation/transactionFeeEstimator.ts` provides a
+documented wrapper for estimating transaction fees **before** payroll
+submission. It never signs or broadcasts anything, and the returned estimate
+contains only fee figures and operation counts — never recipients, amounts,
+proofs, or other sensitive payroll values.
+
+Exports:
+- `TransactionFeeEstimator` — wraps an `rpc.Server`; `estimate(transaction)`
+  simulates an unsigned Soroban transaction and returns a
+  `TransactionFeeEstimate` (`baseFee`, `resourceFee`, `bufferFee`, `totalFee`,
+  `operationCount`, `exact`, `breakdown`).
+- `estimateTransactionFee(server, transaction, options?)` — one-off convenience
+  wrapper.
+- `estimatePreparedTransactionFee(transaction, options?)` — deterministic
+  extraction from a transaction already assembled by simulation (no network
+  call); splits the resource fee back out of `transaction.fee` so it is never
+  double-counted.
+- `FeeEstimationErrorCode` — stable codes
+  (`FEE_ESTIMATION_INVALID_TRANSACTION`, `FEE_ESTIMATION_INVALID_BUFFER`).
+
+Options: `bufferBps` adds a safety buffer (basis points, `0`–`10000`, so
+`1000` = +10%); `requestId` correlates the operation through logs.
+
+Failure handling is actionable and privacy-safe:
+- Non-Soroban, empty, or multi-operation transactions throw a `ValidationError`
+  with a stable `FEE_ESTIMATION_INVALID_TRANSACTION` code.
+- A rejected simulation throws `ContractExecutionError` with
+  `SIMULATION_FAILED`; the underlying detail is redacted (`recipient=…`,
+  `amount=…`, secrets) and truncated before it is included.
+- A response missing a resource fee throws `InvalidResponseError`.
+- RPC transport failures are normalized through the shared `mapRpcError`.
+
+Integration: `PayrollContractWrapper.estimatePrivatePayFee(recipient, amount,
+asset, proof, sourcePublicKey, network?, options?)` builds and simulates a
+`private_pay` invocation via `buildPrivatePayInvocation` (no signer required)
+and returns the exact fee the assembled transaction would carry.
+
+### Usage
+```typescript
+import {
+  TransactionFeeEstimator,
+  estimatePreparedTransactionFee,
+} from '@zk-payroll/core';
+
+// Preview the cost of a payroll run before asking the user to approve it.
+const estimate = await contractWrapper.estimatePrivatePayFee(
+  recipient,
+  amount,
+  asset,
+  proof,
+  sourcePublicKey,
+  undefined,
+  { bufferBps: 1_000 } // +10% safety buffer
+);
+
+console.log(estimate.totalFee, estimate.breakdown);
+// "Base: 100, Resource: 1234, Buffer: 133, Total: 1467 stroops"
+
+// Or estimate any unsigned Soroban transaction directly:
+const estimator = new TransactionFeeEstimator(server);
+const direct = await estimator.estimate(unsignedTx);
+const reused = estimatePreparedTransactionFee(prepared.transaction);
+```

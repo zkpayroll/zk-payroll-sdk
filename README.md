@@ -183,6 +183,50 @@ const { value } = await waitForPayrollRunCompletion(() => fetchRunStatus(runId),
 });
 ```
 
+## Transaction fee estimation
+
+Estimate what a Soroban transaction will cost **before** it is signed or
+submitted. `TransactionFeeEstimator` wraps RPC simulation and returns a
+privacy-safe `TransactionFeeEstimate` — base fee, Soroban resource fee, an
+optional safety buffer, and a human-readable breakdown — never recipient
+addresses, amounts, or proofs.
+
+```typescript
+import {
+  TransactionFeeEstimator,
+  estimatePreparedTransactionFee,
+} from "@zk-payroll/core";
+
+const estimator = new TransactionFeeEstimator(server, { bufferBps: 1_000 }); // +10%
+
+// Build the unsigned transaction first — no signing, no submission.
+const prepared = await contractWrapper.buildPrivatePayInvocation(
+  recipient,
+  amount,
+  asset,
+  proof,
+  sourcePublicKey
+);
+
+// Option A: simulate an unsigned transaction
+const estimate = await estimator.estimate(prepared.transaction);
+
+// Option B: reuse the simulation already performed while building (no extra RPC)
+const same = estimatePreparedTransactionFee(prepared.transaction, { bufferBps: 1_000 });
+
+console.log(estimate.totalFee, estimate.breakdown);
+// "Base: 100, Resource: 1234, Buffer: 133, Total: 1467 stroops"
+```
+
+`PayrollContractWrapper.estimatePrivatePayFee(recipient, amount, asset, proof,
+sourcePublicKey, network?, options?)` is the payroll-specific wrapper: it builds
+and simulates a `private_pay` invocation without a signer and without
+broadcasting, then returns the exact fee the assembled transaction would carry.
+Fee-estimation failures are typed and sanitized — a `ValidationError` for
+non-Soroban/empty transactions and a `ContractExecutionError` with
+`SIMULATION_FAILED` for rejected simulations — and never echo rejected
+destination, amount, or proof values.
+
 ## Request identifier propagation
 
 Pass a `requestId` to correlate one payroll operation across transaction

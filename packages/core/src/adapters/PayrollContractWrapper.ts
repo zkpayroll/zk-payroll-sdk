@@ -4,6 +4,11 @@ import { toISigner } from "../signer/KeypairSigner";
 import { BaseContractWrapper, InvokeOptions, PreparedInvocation } from "./BaseContractWrapper";
 import { ProofPayload } from "../crypto/IProofGenerator";
 import type { RetryBudgetsConfig } from "../config";
+import {
+  estimatePreparedTransactionFee,
+  type TransactionFeeEstimate,
+  type TransactionFeeEstimatorOptions,
+} from "../fee-estimation";
 
 /**
  * PayrollContractWrapper — Concrete adapter for the ZK Payroll Soroban contract.
@@ -71,6 +76,48 @@ export class PayrollContractWrapper extends BaseContractWrapper {
   ): Promise<PreparedInvocation> {
     const args = this.encodePrivatePayArgs(recipient, amount, asset, proof);
     return this.buildInvocation("private_pay", args, sourcePublicKey, network, requestId);
+  }
+
+  /**
+   * Estimate the network fee for a `private_pay` submission without signing
+   * or broadcasting it.
+   *
+   * Builds and simulates the invocation, then reports the exact fee the
+   * assembled transaction would carry — the classic base fee plus the Soroban
+   * resource fee reported by simulation, optionally with a safety buffer
+   * (`bufferBps`). No signer is required and nothing is submitted, so it is
+   * safe to display the cost before a user approves a payroll run.
+   *
+   * The result contains only fee figures and operation counts; recipient,
+   * amount, asset, and proof values are never included, so it is safe to log.
+   *
+   * @param recipient        - Stellar address of the payment recipient
+   * @param amount           - Payment amount in stroops (i128)
+   * @param asset            - Asset identifier ("native" or a Soroban token contract address)
+   * @param proof            - ZK proof payload from IProofGenerator
+   * @param sourcePublicKey  - Public key of the account paying for and authorizing the payment
+   * @param network          - Network passphrase (defaults to TESTNET)
+   * @param options          - Optional fee buffer (basis points) and request ID for correlation
+   */
+  async estimatePrivatePayFee(
+    recipient: string,
+    amount: bigint,
+    asset: string,
+    proof: ProofPayload,
+    sourcePublicKey: string,
+    network: string = Networks.TESTNET,
+    options: TransactionFeeEstimatorOptions = {}
+  ): Promise<TransactionFeeEstimate> {
+    const prepared = await this.buildPrivatePayInvocation(
+      recipient,
+      amount,
+      asset,
+      proof,
+      sourcePublicKey,
+      network,
+      options.requestId
+    );
+    return estimatePreparedTransactionFee(prepared.transaction, options);
   }
 
   /**
