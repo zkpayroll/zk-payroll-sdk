@@ -74,35 +74,57 @@ The ZK Payroll SDK is designed to work in both Node.js and browser environments.
 
 ## CI/CD Coverage
 
-The SDK's continuous integration pipeline tests against the following runtime matrix:
-
-### Node.js CI Matrix
+The `compat-matrix` job in `.github/workflows/ci.yml` runs the SDK against every runtime this
+document declares, so a supported release cannot silently stop being tested:
 
 ```yaml
-node: [20, 22, 24]
+node: [20.x, 22.x, 24.x]
 target: [node, browser]
 ```
 
 **Coverage:**
-- ✅ Node.js 20.x (LTS) - Node environment tests
-- ✅ Node.js 22.x (LTS) - Node environment tests
-- ✅ Node.js 24.x (Current) - Node environment tests
-- ✅ Node.js 20.x - Browser environment tests (jsdom)
-- ✅ Node.js 22.x - Browser environment tests (jsdom)
-- ✅ Node.js 24.x - Browser environment tests (jsdom)
+- ✅ Node.js 20.x (LTS) — node and browser (jsdom) environments
+- ✅ Node.js 22.x (LTS) — node and browser (jsdom) environments
+- ✅ Node.js 24.x (Current) — node and browser (jsdom) environments
+
+Each matrix job installs with `npm ci` against the committed `package-lock.json` (lockfile
+version 3, npm 9+), runs the runtime compatibility guard, and then runs either the Node
+environment suite or the browser (jsdom) suite.
 
 ### Test Commands
 
 ```bash
+# Runtime compatibility guard — engines, documented matrix, CI coverage, runtime features
+npm run test:compat
+
 # Node environment tests
-npm run test
+npm test
 
 # Browser environment tests (jsdom)
-npm run test:browser
+npm run test:browser -w @zk-payroll/core
 
 # Full environment matrix
-npm run test:env-matrix
+npm run test:env-matrix -w @zk-payroll/core
 ```
+
+### Declared Runtime Requirements
+
+The range above is also declared as an `engines` constraint in `package.json` and
+`packages/core/package.json`:
+
+```json
+{
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=9.0.0"
+  }
+}
+```
+
+`packages/core/tests/runtime-compatibility.test.ts` keeps the documentation, the engine
+declarations, the workflow matrix and the runtime executing the tests in agreement. It fails with
+an actionable report naming the unsupported version or the missing runtime feature, and it never
+prints environment values, witness payloads or payroll data.
 
 ## Upgrade Policy
 
@@ -288,5 +310,5 @@ For questions about runtime support or upgrade policies:
 
 ---
 
-**Last Updated**: July 2026  
+**Last Updated**: September 2026  
 **Next Review**: October 2026 (quarterly review of browser minimum versions)
