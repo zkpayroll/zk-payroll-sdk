@@ -79,6 +79,29 @@ apply to `iteratePayrollPeriods()` / `collectPayrollPeriods()`.
 destinations without including rejected values in error messages. The same
 validation runs automatically before `PayrollService` submits a payment.
 
+### Safe Payout Batch Chunking
+
+`chunkPayoutBatches()` splits raw payout entries into validated batches according to a configured maximum batch size (safety limit). This helps developers ensure that large payroll runs are safely grouped before processing or signing.
+
+```typescript
+import { chunkPayoutBatches } from "@zk-payroll/core";
+
+const { chunks, errors } = chunkPayoutBatches(entries, { maxBatchSize: 100 });
+
+if (errors.length > 0) {
+  // validation failed before chunking.
+  // errors are privacy-safe and never leak sensitive values.
+  console.error("Batch validation failed", errors);
+} else {
+  // process the valid chunks
+  for (const chunk of chunks) {
+    await processBatch(chunk);
+  }
+}
+```
+
+The chunking helper validates all entries first, returning structured `BatchValidationError` objects if any recipient, amount, or asset is invalid. If validation fails, no chunks are produced. Error messages are actionable but carefully avoid echoing sensitive values like amounts.
+
 ### Resuming an interrupted batch submission
 
 `submitSequentialPayrollBatches()` (and `PayrollService#submitBatchPaymentsSafely()`)
