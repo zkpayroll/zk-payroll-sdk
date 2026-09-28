@@ -24,3 +24,6 @@ export type {
 
 // ── Employee Import Result Parser (#283) ──────────────────────────────────
 export * from "./resultParser";
+
+// ── Payroll Import Source Validator ────────────────────────────────────────
+export * from "./payrollImportSourceValidator";
