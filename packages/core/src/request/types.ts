@@ -3,6 +3,11 @@ export interface PayrollRequestEntry {
   amount: bigint;
   asset: string;
   memo?: string;
+  /**
+   * Optional stable employee identifier. When supplied, `PayrollRequestBuilder`
+   * rejects requests that reference the same employee more than once.
+   */
+  employeeId?: string;
 }
 
 export interface SubmissionContext {
@@ -34,4 +39,5 @@ export type PayrollRequestErrorCode =
   | "INVALID_RECIPIENT"
   | "INVALID_AMOUNT"
   | "MISSING_ASSET"
-  | "DUPLICATE_RECIPIENT";
+  | "DUPLICATE_RECIPIENT"
+  | "DUPLICATE_EMPLOYEE_ID";

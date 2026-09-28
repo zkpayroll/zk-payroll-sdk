@@ -1,4 +1,5 @@
 import { createPaymentIdempotencyKey } from "../core/idempotency";
+import { buildDuplicateEmployeeValidationErrors } from "./employeeDuplicates";
 import {
   PayrollRequest,
   PayrollRequestEntry,
@@ -37,6 +38,10 @@ export function deriveIdempotencyKey(
  *
  * Derives a deterministic idempotency key per entry from payroll inputs and
  * submission context, reducing the risk of duplicate submissions during retries.
+ *
+ * `validate()` and `build()` also reject requests where the same `employeeId`
+ * appears on more than one entry, catching duplicate employee records before a
+ * payroll request is created. Entries without an `employeeId` are unaffected.
  *
  * @example
  * ```ts
@@ -169,6 +174,10 @@ export class PayrollRequestBuilder {
         });
       }
     }
+
+    // Reject requests that would pay the same employee more than once. Entries
+    // without an employeeId are ignored, so existing flows are unaffected.
+    errors.push(...buildDuplicateEmployeeValidationErrors(this.entries));
 
     return { errors, isValid: errors.length === 0 };
   }

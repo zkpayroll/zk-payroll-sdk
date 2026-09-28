@@ -146,6 +146,35 @@ The deduplication helper:
 - Supports configurable deduplication keys (recipient, amount, asset)
 - Returns detailed duplicate information for debugging without revealing full addresses or amounts
 
+## Duplicate employee record validation
+
+`PayrollRequestBuilder` rejects payroll requests that reference the same
+employee more than once, catching accidental re-submissions and duplicated rows
+before a request is created. Detection is case-insensitive by default and
+messages expose only a masked identifier (`EMP***001`) — never the full
+employee ID.
+
+```typescript
+import { PayrollRequestBuilder, detectDuplicateEmployeeRecords } from "@zk-payroll/core";
+
+const builder = new PayrollRequestBuilder()
+  .add({ recipient: "GA1...", amount: 1000n, asset: "native", employeeId: "EMP-001" })
+  .add({ recipient: "GB2...", amount: 2000n, asset: "native", employeeId: "emp-001" });
+
+// Inspect without building — returns a structured, privacy-safe report.
+const report = builder.validate();
+// report.errors[0].code === "DUPLICATE_EMPLOYEE_ID"
+
+// build() throws when duplicates are present, naming only the masked id.
+builder.build(); // Error: ... Duplicate employee record "EMP***001" (also at index 0)
+
+// Or scan a plain list of records directly.
+detectDuplicateEmployeeRecords([{ employeeId: "EMP-001" }, { employeeId: "EMP-001" }]);
+```
+
+Entries without an `employeeId` are ignored, so existing request flows are
+unaffected.
+
 ## Configurable SDK logging
 
 Host applications can route SDK diagnostics into their own logger. All log
