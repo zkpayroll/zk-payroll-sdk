@@ -208,3 +208,6 @@ export * from "./privacy/redaction";
 
 // Employee Reference ID Validator (#388)
 export * from "./employees/referenceId";
+
+// Typed payroll approval request builder
+export * from "./approval";
