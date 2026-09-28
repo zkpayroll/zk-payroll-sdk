@@ -6,3 +6,4 @@ export * from "./auditPackage";
 export * from "./auditAccessRequestSchema";
 export * from "./auditAttestationDigest";
 export * from "./accessExpiry";
+export * from "./auditReferenceAttachment";
