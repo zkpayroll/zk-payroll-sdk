@@ -82,6 +82,31 @@ if (isRetryableErrorCode(error.code)) {
 - **Retryable errors** are typically transient (network timeouts, fee estimation, wallet user declines). The SDK's `withRetry` utility retries these automatically with exponential backoff.
 - **Non-retryable errors** indicate invalid inputs, configuration problems, or contract logic failures. These require user or developer intervention before retrying.
 
+## Recovery Classification
+
+Use `classifyRecoverablePayrollError` when an application needs one stable decision for its retry, correction, and terminal states.
+
+```typescript
+import { classifyRecoverablePayrollError } from "@zk-payroll/core";
+
+try {
+  await payroll.processPayment(params);
+} catch (error) {
+  const classification = classifyRecoverablePayrollError(error);
+
+  if (classification.category === "retryable") {
+    retryWithBackoff();
+  } else if (classification.category === "user-correctable") {
+    showCorrectionFlow(classification.suggestedMessage);
+  } else {
+    showTerminalError(classification.suggestedMessage);
+  }
+}
+```
+
+The helper returns only the stable error code and registry message.
+It does not return raw error messages, payroll values, or diagnostic context.
+
 ## User-Friendly UI Mapping
 
 Use `toUserFriendlyError(error)` to map any SDK or unknown error into a clean, human-readable format suitable for UI toasts and diagnostic logs:
