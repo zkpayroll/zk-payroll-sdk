@@ -79,6 +79,51 @@ apply to `iteratePayrollPeriods()` / `collectPayrollPeriods()`.
 destinations without including rejected values in error messages. The same
 validation runs automatically before `PayrollService` submits a payment.
 
+### Resuming an interrupted batch submission
+
+`submitSequentialPayrollBatches()` (and `PayrollService#submitBatchPaymentsSafely()`)
+accept an `onCheckpoint` callback that fires after every batch completes
+successfully, and a `resumeToken` option to continue a submission that was
+interrupted (process crash, network loss, manual cancellation) without
+resubmitting already-completed batches.
+
+```typescript
+import { submitSequentialPayrollBatches } from "@zk-payroll/core";
+
+let lastCheckpoint: string | undefined;
+
+const result = await submitSequentialPayrollBatches(entries, submitBatch, {
+  batchSize: 50,
+  onCheckpoint: (resumeToken) => {
+    lastCheckpoint = resumeToken;
+    // Persist to disk / a queue / local storage so it survives a restart.
+  },
+});
+
+// ...process crashes or is cancelled before completion...
+
+const resumed = await submitSequentialPayrollBatches(entries, submitBatch, {
+  batchSize: 50, // must match the original run
+  resumeToken: lastCheckpoint,
+});
+```
+
+A resume token is opaque and **privacy-safe**: it never contains recipient
+addresses or payment amounts, only a non-reversible commitment hash of the
+batch entries plus batch/item counters. Before skipping any batches, the SDK
+independently re-derives that commitment from the `entries` passed to the
+resumed call and rejects the token with an actionable `ValidationError` if:
+
+- the entries collection has changed since the token was issued (different
+  commitment hash),
+- `batchSize` does not match the value used to create the token, or
+- the token is malformed, corrupted, or references a batch index outside the
+  current submission plan.
+
+On failure or cancellation, `SafeBatchSubmissionResult.error.resumeToken` is
+also populated (when at least one batch already succeeded), so callers that
+don't wire up `onCheckpoint` can still resume from the returned error.
+
 ## Destination validation extension point
 
 Host applications can register a custom destination validator to add

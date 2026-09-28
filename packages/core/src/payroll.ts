@@ -35,6 +35,15 @@ import {
   type SafeBatchErrorDetail,
 } from "./payroll/safeBatchSubmitter";
 import {
+  createBatchResumeToken,
+  decodeBatchResumeToken,
+  resolveResumeStart,
+  RESUME_TOKEN_VERSION,
+  RESUME_TOKEN_ERROR_CODE,
+  type BatchResumeCheckpoint,
+  type ResumeStartPoint,
+} from "./payroll/batchResumeToken";
+import {
   validateSettlementReceipt as validateSettlementReceiptHelper,
   type SettlementReceiptValidation,
   type SettlementReceiptValidationOptions,
@@ -55,6 +64,16 @@ export {
   type SafeBatchProgressEvent,
   type SafeBatchProgressStage,
   type SafeBatchErrorDetail,
+};
+
+export {
+  createBatchResumeToken,
+  decodeBatchResumeToken,
+  resolveResumeStart,
+  RESUME_TOKEN_VERSION,
+  RESUME_TOKEN_ERROR_CODE,
+  type BatchResumeCheckpoint,
+  type ResumeStartPoint,
 };
 
 import {

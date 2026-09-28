@@ -11,6 +11,7 @@ import { assertValidPageSize, iterateBatches } from "../batch/paginate";
 import { classifyError, RetryCategory } from "../core/retry";
 import { redactError } from "../redaction/RedactionEngine";
 import type { PaymentParams, PaymentResult } from "../types";
+import { createBatchResumeToken, resolveResumeStart } from "./batchResumeToken";
 
 /** Stages of sequential batch submission lifecycle. */
 export type SafeBatchProgressStage =
@@ -63,6 +64,13 @@ export interface SafeBatchErrorDetail {
   itemsSucceeded: number;
   /** Actionable remediation guidance for the operator */
   actionableGuidance: string;
+  /**
+   * Opaque, privacy-safe resume token that can be passed back via
+   * {@link SafeBatchSubmissionOptions.resumeToken} to continue this submission
+   * from the last successfully completed batch, without resubmitting it.
+   * Omitted if no batch had completed successfully before the failure.
+   */
+  resumeToken?: string;
 }
 
 /** Configuration options for safe sequential batch submission. */
@@ -83,8 +91,24 @@ export interface SafeBatchSubmissionOptions<T = PaymentParams, R = PaymentResult
   stopOnFirstFailure?: boolean;
   /** Optional prefix for request correlation / idempotency tracking */
   idempotencyKeyPrefix?: string;
+  /**
+   * Opaque resume token (see {@link SafeBatchErrorDetail.resumeToken} and
+   * {@link createBatchResumeToken}) produced by a previous, interrupted call
+   * to {@link submitSequentialPayrollBatches} for this exact `entries`
+   * collection and `batchSize`. When provided, already-completed batches are
+   * skipped and submission continues from the checkpointed batch. Rejected
+   * with a {@link ValidationError} if it does not match `entries`/`batchSize`.
+   */
+  resumeToken?: string;
   /** Progress callback invoked at each milestone */
   onProgress?: (event: SafeBatchProgressEvent) => void;
+  /**
+   * Invoked after each batch completes successfully with a fresh resume
+   * token capturing progress up to (and including) that batch. Persist this
+   * (e.g. to disk or local storage) to survive process restarts and pass it
+   * back as `resumeToken` to continue an interrupted submission.
+   */
+  onCheckpoint?: (resumeToken: string) => void;
   /** Callback invoked when a single batch completes successfully */
   onBatchSuccess?: (batchIndex: number, results: R[]) => void;
   /** Callback invoked when a batch encounters an error (before retry or failure) */
@@ -218,6 +242,16 @@ export async function submitSequentialPayrollBatches<T, R>(
   const batches = Array.from(iterateBatches(entries, batchSize));
   const totalBatches = batches.length;
 
+  // Resolve resume point (#583): validates the token against these exact
+  // entries/batchSize before trusting it to skip any batches.
+  let startBatchIndex = 0;
+  let initialItemsProcessed = 0;
+  if (options.resumeToken) {
+    const resumePoint = resolveResumeStart(entries, batchSize, options.resumeToken);
+    startBatchIndex = resumePoint.startBatchIndex;
+    initialItemsProcessed = resumePoint.itemsAlreadyProcessed;
+  }
+
   const emitProgress = (
     stage: SafeBatchProgressStage,
     batchIndex: number,
@@ -245,16 +279,39 @@ export async function submitSequentialPayrollBatches<T, R>(
   // Validation stage
   emitProgress(
     "validating",
-    0,
-    0,
-    `Validating ${totalItems} payroll item(s) across ${totalBatches} batch(es)...`
+    startBatchIndex,
+    initialItemsProcessed,
+    options.resumeToken
+      ? `Resuming submission of ${totalItems} payroll item(s) from batch ${startBatchIndex + 1} of ${totalBatches}...`
+      : `Validating ${totalItems} payroll item(s) across ${totalBatches} batch(es)...`
   );
 
-  const allResults: R[] = [];
-  let itemsProcessedCount = 0;
-  let batchesSucceededCount = 0;
+  if (startBatchIndex >= totalBatches) {
+    // Resume token already covers the entire submission: nothing left to do.
+    emitProgress(
+      "completed",
+      totalBatches - 1,
+      initialItemsProcessed,
+      `Resume token indicates all ${totalBatches} batch(es) already completed (${initialItemsProcessed}/${totalItems} items).`
+    );
+    return {
+      success: true,
+      batchesProcessed: totalBatches,
+      totalBatches,
+      itemsProcessed: initialItemsProcessed,
+      totalItems,
+      results: [],
+    };
+  }
 
-  for (const batch of batches) {
+  const allResults: R[] = [];
+  let itemsProcessedCount = initialItemsProcessed;
+  let batchesSucceededCount = startBatchIndex;
+
+  const makeResumeToken = (nextBatchIndex: number): string =>
+    createBatchResumeToken(entries, nextBatchIndex, itemsProcessedCount, totalBatches, batchSize);
+
+  for (const batch of batches.slice(startBatchIndex)) {
     if (signal?.aborted) {
       const guidance =
         batchesSucceededCount > 0
@@ -267,6 +324,7 @@ export async function submitSequentialPayrollBatches<T, R>(
         batchesSucceeded: batchesSucceededCount,
         itemsSucceeded: itemsProcessedCount,
         actionableGuidance: guidance,
+        resumeToken: batchesSucceededCount > 0 ? makeResumeToken(batch.index) : undefined,
       };
       emitProgress("failed", batch.index, itemsProcessedCount, errDetail.message);
       return {
@@ -363,6 +421,7 @@ export async function submitSequentialPayrollBatches<T, R>(
         itemsProcessedCount,
         `Batch ${batch.index + 1} of ${totalBatches} completed successfully.`
       );
+      options.onCheckpoint?.(makeResumeToken(batch.index + 1));
     } else {
       const guidance =
         batchesSucceededCount > 0
@@ -376,6 +435,7 @@ export async function submitSequentialPayrollBatches<T, R>(
         batchesSucceeded: batchesSucceededCount,
         itemsSucceeded: itemsProcessedCount,
         actionableGuidance: guidance,
+        resumeToken: batchesSucceededCount > 0 ? makeResumeToken(batch.index) : undefined,
       };
 
       emitProgress("failed", batch.index, itemsProcessedCount, errDetail.message);
