@@ -217,7 +217,53 @@ export class AssetRegistryClass {
    *   and, when not, a human-readable `reason`.
    *
    * @example
-   * 
+   * ```ts
+   * const result = AssetRegistry.checkAvailability("usdc");
+   * if (!result.available) console.warn(result.reason);
+   * ```
+   */
+  checkAvailability(idOrSymbol: string): AssetAvailability {
+    if (typeof idOrSymbol !== "string" || idOrSymbol.trim() === "") {
+      return {
+        assetId: String(idOrSymbol),
+        available: false,
+        code: "invalid_id",
+        reason: "Asset ID must be a non-empty string.",
+      };
+    }
+
+    const metadata = this.get(idOrSymbol);
+    if (!metadata) {
+      return {
+        assetId: idOrSymbol,
+        available: false,
+        code: "unregistered",
+        reason: `Asset "${idOrSymbol}" is not registered.`,
+      };
+    }
+
+    const hasUsableText =
+      typeof metadata.symbol === "string" &&
+      metadata.symbol.trim() !== "" &&
+      typeof metadata.label === "string" &&
+      metadata.label.trim() !== "";
+    const hasUsableDecimals =
+      typeof metadata.decimals === "number" &&
+      Number.isInteger(metadata.decimals) &&
+      metadata.decimals >= 0;
+
+    if (!hasUsableText || !hasUsableDecimals) {
+      return {
+        assetId: metadata.id,
+        available: false,
+        code: "invalid_metadata",
+        reason: `Registered metadata for asset "${metadata.id}" is not usable for payroll.`,
+        metadata,
+      };
+    }
+
+    return { assetId: metadata.id, available: true, code: "ok", metadata };
+  }
 
   /**
    * Remove a registered asset.

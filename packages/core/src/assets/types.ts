@@ -1,5 +1,5 @@
 /**
- * Asset metadata types for the ZK Payroll SEA.
+ * Asset metadata types for the ZK Payroll SDK.
  *
  * These types define a consistent metadata shape for any asset (native XLM,
  * Soroban tokens, custom stablecoins) used across payroll operations.
@@ -18,7 +18,7 @@
  * The canonical identifier for an asset.
  *
  * - `"native"` — Stellar's native XLM asset.
- * - Any other string — a Soroban token contract ID (e.g. `"CTOKEN`...`).
+ * - Any other string — a Soroban token contract ID (e.g. `"CTOKEN..."`).
  */
 export type AssetId = string;
 
@@ -104,8 +104,12 @@ export type AssetMetadataInput = Pick<AssetMetadata, "id" | "symbol" | "label" |
  *
  * The SDK uses this to report whether a requested asset is usable for a
  * payroll flow before any on-chain effect is attempted.
+ *
+ * Named `AssetAvailability` rather than `...Result` to distinguish it from
+ * `supportedAssets.AssetAvailabilityResult`, which checks a symbol against a
+ * fetched supported-asset list rather than registry metadata.
  */
-export interface AssetAvailabilityResult {
+export interface AssetAvailability {
   /**
    * The asset ID that was checked.
    */

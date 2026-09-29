@@ -9,7 +9,7 @@ import type {
   EmployeeEvaluationSummary,
   EmployeeFilterOptions,
   EmployeeProfile,
-  PayoutMethodConfirmationResult,
+  PayoutMethodConfirmationRecord,
   PayoutMethodConfirmationStatus,
 } from "./types";
 
@@ -156,7 +156,7 @@ export class EmployeeRegistry {
    * This validates that the employee exists and has a usable payout destination,
    * then marks the payout method as confirmed and records the confirmation time.
    */
-  confirmPayoutMethod(employeeId: string): PayoutMethodConfirmationResult {
+  confirmPayoutMethod(employeeId: string): PayoutMethodConfirmationRecord {
     if (!employeeId || employeeId.trim().length === 0) {
       return {
         success: false,

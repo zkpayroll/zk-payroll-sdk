@@ -86,7 +86,7 @@ export const defaultDestinationValidationHook = (
  */
 export type PayoutMethodConfirmationErrorCode =
   | PayoutDestinationErrorCode
-  | "Payout_METHOD_HOOK_REJECTED"
+  | "PAYOUT_METHOD_HOOK_REJECTED"
   | "PAYOUT_METHOD_HOOK_ERROR";
 
 export type PayoutMethodConfirmationResult =
@@ -103,6 +103,12 @@ export type PayoutMethodConfirmationResult =
       ok: false;
       code: PayoutMethodConfirmationErrorCode;
       message: string;
+      /**
+       * Namespaced rejection code returned by the host hook, when it supplied
+       * one. Mirrors `hookKind` on the success branch so the public `code`
+       * union stays exhaustive while host detail remains observable.
+       */
+      hookCode?: string;
       /** True when the rejection may clear on retry. */
       retryable?: boolean;
     };
@@ -172,18 +178,20 @@ export async function confirmPayoutMethod(
     };
   }
 
-  const code =
-    typeof hookResult.code === "string" && hookResult.code !== ""
-      ? hookResult.code
-      : "PAYOUT_METHOD_HOOK_REJECTED";
+  // A host hook returns a free-form, namespaced `code`; the public error union
+  // cannot enumerate those, so the host code is carried alongside the SDK-level
+  // rejection code instead of being cast into the union.
+  const hookCode =
+    typeof hookResult.code === "string" && hookResult.code !== "" ? hookResult.code : undefined;
   const message =
     typeof hookResult.message === "string" && hookResult.message !== ""
       ? hookResult.message
       : "Payout method was rejected by the configured validator.";
   return {
     ok: false,
-    code,
+    code: "PAYOUT_METHOD_HOOK_REJECTED",
     message,
+    ...(hookCode ? { hookCode } : {}),
     ...(hookResult.retryable === true ? { retryable: true } : {}),
   };
 }

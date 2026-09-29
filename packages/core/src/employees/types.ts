@@ -78,6 +78,39 @@ export type EmployeePayoutMethodConfirmationErrorCode =
   | "already_confirmed"
   | "method_revoked";
 
+/**
+ * Outcome of an employee payout method confirmation, as tracked by the
+ * registry. Unlike {@link EmployeePayoutMethodConfirmationErrorCode} this is a
+ * coarse, non-throwing status suitable for UI and pre-flight checks.
+ */
+export type PayoutMethodConfirmationStatus =
+  | "invalid_id"
+  | "not_found"
+  | "missing_recipient"
+  | "confirmed"
+  | "unconfirmed";
+
+/**
+ * Result returned by `EmployeeRegistry.confirmPayoutMethod`.
+ *
+ * A single shape is used for both outcomes so callers can branch on `success`
+ * without a discriminated union over the status string.
+ */
+export interface PayoutMethodConfirmationRecord {
+  /** Whether the payout method is now confirmed. */
+  success: boolean;
+  /** The employee the confirmation was requested for. */
+  employeeId: string;
+  /** Coarse status describing the outcome. */
+  status: PayoutMethodConfirmationStatus;
+  /** Actionable message suitable for surfacing to users or logs. */
+  message: string;
+  /** Timestamp (ms) the confirmation was recorded, when successful. */
+  confirmedAt?: number;
+  /** The updated employee profile, when successful. */
+  profile?: EmployeeProfile;
+}
+
 export interface EmployeeProfile extends EmployeeEligibilityRecord {
   createdAt?: number;
   updatedAt?: number;
@@ -85,6 +118,10 @@ export interface EmployeeProfile extends EmployeeEligibilityRecord {
   payoutMethods?: EmployeePayoutMethod[];
   /** Identifier of the default confirmed payout method, if any. */
   defaultPayoutMethodId?: string;
+  /** Whether the employee's payout method has been confirmed. */
+  payoutMethodConfirmed?: boolean;
+  /** Timestamp (ms) when the payout method was confirmed. */
+  payoutMethodConfirmedAt?: number;
 }
 
 export interface EmployeeFilterOptions {

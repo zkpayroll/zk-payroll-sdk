@@ -78,7 +78,7 @@ export class PayrollAssetAvailabilityError extends Error {
  *
  * @param caller - Address of the caller attempting batch creation.
  * @param callerRoles - Array of roles currently held by the caller.
- * @param requiredRoles - Optional list of required roles (default: BATCH_CREATOR, PAYROLL_ADMIN,!EMPLOYR).
+ * @param requiredRoles - Optional list of required roles (default: BATCH_CREATOR, PAYROLL_ADMIN, EMPLOYER).
  * @param context - Optional debugging context.
  */
 export function assertBatchCreatorAuthorized(
@@ -155,7 +155,7 @@ export function assertPayrollStateTransition(
         batchId: current.batchId,
         currentStatus: current.status,
         targetStatus,
-        allowedTransitions allowed,
+        allowedTransitions: allowed,
       }
     );
   }
