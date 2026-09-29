@@ -5,7 +5,13 @@ import type {
   EmployeeEligibilityRecord,
   EmployeeEligibilityResult,
 } from "../eligibility/types";
-import type { EmployeeEvaluationSummary, EmployeeFilterOptions, EmployeeProfile } from "./types";
+import type {
+  EmployeeEvaluationSummary,
+  EmployeeFilterOptions,
+  EmployeeProfile,
+  PayoutMethodConfirmationResult,
+  PayoutMethodConfirmationStatus,
+} from "./types";
 
 /**
  * Local in-memory registry for managing employee profiles and evaluating eligibility.
@@ -142,6 +148,81 @@ export class EmployeeRegistry {
     }
 
     return summaries;
+  }
+
+  /**
+   * Confirms the payout method for a registered employee.
+   *
+   * This validates that the employee exists and has a usable payout destination,
+   * then marks the payout method as confirmed and records the confirmation time.
+   */
+  confirmPayoutMethod(employeeId: string): PayoutMethodConfirmationResult {
+    if (!employeeId || employeeId.trim().length === 0) {
+      return {
+        success: false,
+        employeeId,
+        status: "invalid_id",
+        message: "EmployeeID is required to confirm a payout method.",
+      };
+    }
+
+    const existing = this.employees.get(employeeId);
+    if (!existing) {
+      return {
+        success: false,
+        employeeId,
+        status: "not_found",
+        message: `No employee registered with id "${employeeId}".",
+      };
+    }
+
+    const recipient = existing.recipient;
+    if (!recipient || recipient.trim().length === 0) {
+      return {
+        success: false,
+        employeeId,
+        status: "missing_recipient",
+        message: `Employee "${employeeId}" has no payout recipient address configured.`,
+      };
+    }
+
+    const now = Date.now();
+    const updated: EmployeeProfile = {
+      ...existing,
+      payoutMethodConfirmed: true,
+      payoutMethodConfirmedAt: now,
+      updatedAt: now,
+    };
+    this.employees.set(employeeId, updated);
+
+    return {
+      success: true,
+      employeeId,
+      status: "confirmed",
+      message: `Payout method confirmed for employee "${employeeId}".`,
+      confirmedAt: now,
+      profile: { ...updated },
+    };
+  }
+
+  /**
+   * Returns the current confirmation status of an employee's payout method.
+   */
+  getPayoutMethodConfirmationStatus(employeeId: string): PayoutMethodConfirmationStatus {
+    if (!employeeId || employeeId.trim().length === 0) {
+      return "invalid_id";
+    }
+
+    const profile = this.employees.get(employeeId);
+    if (!profile) {
+      return "not_found";
+    }
+
+    if (!profile.recipient || profile.recipient.trim().length === 0) {
+      return "missing_recipient";
+    }
+
+    return profile.payoutMethodConfirmed ? "confirmed" : "unconfirmed";
   }
 
   /**

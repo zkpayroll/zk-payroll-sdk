@@ -1,6 +1,10 @@
 import { StrKey } from "@stellar/stellar-sdk";
+
 export type PayoutDestinationErrorCode =
-  "DESTINATION_REQUIRED" | "DESTINATION_WHITESPACE" | "DESTINATION_UNSUPPORTED";
+  | "DESTINATION_REQUIRED"
+  | "DESTINATION_WHITESPACE"
+  | "DESTINATION_UNSUPPORTED";
+
 export type PayoutDestinationValidation =
   | { ok: true; destination: string; kind: "account" | "muxed_account" }
   | { ok: false; code: PayoutDestinationErrorCode; message: string };
@@ -38,7 +42,7 @@ export function validatePayoutDestination(value: unknown): PayoutDestinationVali
  * through the hook, and rejection messages must not echo the rejected value.
  */
 export type DestinationValidationHook = (
-  value: string
+  value: string,
 ) => DestinationValidationHookResult | Promise<DestinationValidationHookResult>;
 
 /** Result a custom {@link DestinationValidationHook} must return. */
@@ -69,3 +73,117 @@ export const defaultDestinationValidationHook = (
   const result = validatePayoutDestination(value);
   return result.ok ? { ok: true, kind: result.kind } : result;
 };
+
+/**
+ * Confirmation of an employee's payout method destination.
+ *
+ * This is the contract the SDK exposes to host applications before a
+ * destination is used in a payroll run. It combines the built-in Stellar
+ * destination checks with an optional host-registered {@link DestinationValidationHook}
+ * and returns a normalized, actionable result. Neither the input nor the
+ * result messages echo the submitted destination, so callers can safely
+ * surface messages to end users and logs.
+ */
+export type PayoutMethodConfirmationErrorCode =
+  | PayoutDestinationErrorCode
+  | "Payout_METHOD_HOOK_REJECTED"
+  | "PAYOUT_METHOD_HOOK_ERROR";
+
+export type PayoutMethodConfirmationResult =
+  | {
+      ok: true;
+      /** Normalized destination identifier (trimmed, validated). */
+      destination: string;
+      /** Built-in classification of the destination. */
+      kind: "account" | "muxed_account";
+      /** Optional host-provided classification (never sensitive). */
+      hookKind?: string;
+    }
+  | {
+      ok: false;
+      code: PayoutMethodConfirmationErrorCode;
+      message: string;
+      /** True when the rejection may clear on retry. */
+      retryable?: boolean;
+    };
+
+/** Options for {@link confirmPayoutMethod}. */
+export type ConfirmPayoutMethodOptions = {
+  /**
+   * Optional host-registered validator. When omitted, only the built-in
+   * Stellar destination checks are applied.
+   */
+  hook?: DestinationValidationHook | null;
+};
+
+/**
+ * Confirms an employee's payout method destination before it is used in a
+ * payroll run.
+ *
+ * Validation order:
+ * 1. Built-in Stellar destination checks ({@link validatePayoutDestination}).
+ * 2. Optional host-registered {@link DestinationValidationHook}.
+ *
+ * The hook is only invoked after the built-in checks pass, so host policy
+ * code never sees invalid identifiers. Hook failures are normalized into
+ * actionable errors and never echo the submitted destination.
+ */
+export async function confirmPayoutMethod(
+  value: unknown,
+  options: ConfirmPayoutMethodOptions = {},
+): Promise<PayoutMethodConfirmationResult> {
+  const base = validatePayoutDestination(value);
+  if (!base.ok) return base;
+
+  const hook = options.hook ?? null;
+  if (!hook) return { ok: true, destination: base.destination, kind: base.kind };
+
+  let hookResult: DestinationValidationHookResult;
+  try {
+    hookResult = await hook(base.destination);
+  } catch {
+    return {
+      ok: false,
+      code: "PAYOUT_METHOD_HOOK_ERROR",
+      message: "Payout method confirmation could not be completed. Please try again.",
+      retryable: true,
+    };
+  }
+
+  if (!hookResult || typeof hookResult !== "object" || typeof hookResult.ok !== "boolean") {
+    return {
+      ok: false,
+      code: "PAYOUT_METHOD_HOOK_ERROR",
+      message: "Payout method confirmation could not be completed. Please try again.",
+      retryable: true,
+    };
+  }
+
+  if (hookResult.ok) {
+    const hookKind =
+      typeof hookResult.kind === "string" && hookResult.kind !== ""
+        ? hookResult.kind
+        : undefined;
+    return {
+      ok: true,
+      destination: base.destination,
+      kind: base.kind,
+      ...(hookKind ? { hookKind } : {}),
+    };
+  }
+
+  const code =
+    typeof hookResult.code === "string" && hookResult.code !== ""
+      ? hookResult.code
+      : "PAYOUT_METHOD_HOOK_REJECTED";
+  const message =
+    typeof hookResult.message === "string" && hookResult.message !== ""
+      ? hookResult.message
+      : "Payout method was rejected by the configured validator.";
+  return {
+    ok: false,
+    code,
+    message,
+    ...(hookResult.retryable === true ? { retryable: true } : {}),
+  };
+}

@@ -7,6 +7,7 @@ export * from "./onboardingDuplicates";
 export * from "./lifecycle";
 export * from "./activeStatus";
 export * from "./payoutDestination";
+export * from "./payoutMethodConfirmation";
 export * from "../events/employeeStatus";
 export * from "./suspensionPayoutEvaluator";
 export * from "../import/resultParser";
