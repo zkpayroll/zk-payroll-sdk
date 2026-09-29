@@ -28,14 +28,27 @@ export class PreflightClient extends BaseContractWrapper {
     sourcePublicKey: string,
     network?: string
   ): Promise<PreflightResult> {
-    const args: xdr.ScVal[] = [
-      new Address(request.recipient).toScVal(),
-      nativeToScVal(request.amount, { type: "i128" }),
-      new Address(request.asset).toScVal(),
-      nativeToScVal(request.memo ?? "", { type: "string" }),
-    ];
+    try {
+      const args: xdr.ScVal[] = [
+        new Address(request.recipient).toScVal(),
+        nativeToScVal(request.amount, { type: "i128" }),
+        new Address(request.asset).toScVal(),
+        nativeToScVal(request.memo ?? "", { type: "string" }),
+      ];
 
-    return this.runPreflight("execute", args, sourcePublicKey, network);
+      return this.runPreflight("execute", args, sourcePublicKey, network);
+    } catch (err: any) {
+      return {
+        canProceed: false,
+        findings: [
+          {
+            code: err.code || "INVALID_ARGUMENT",
+            severity: "error",
+            message: err.message || String(err),
+          },
+        ],
+      };
+    }
   }
 
   async preflightSchedule(
@@ -43,15 +56,28 @@ export class PreflightClient extends BaseContractWrapper {
     sourcePublicKey: string,
     network?: string
   ): Promise<PreflightResult> {
-    const args: xdr.ScVal[] = [
-      new Address(request.recipient).toScVal(),
-      nativeToScVal(request.amount, { type: "i128" }),
-      new Address(request.asset).toScVal(),
-      nativeToScVal(request.executeAt, { type: "u64" }),
-      nativeToScVal(request.memo ?? "", { type: "string" }),
-    ];
+    try {
+      const args: xdr.ScVal[] = [
+        new Address(request.recipient).toScVal(),
+        nativeToScVal(request.amount, { type: "i128" }),
+        new Address(request.asset).toScVal(),
+        nativeToScVal(request.executeAt, { type: "u64" }),
+        nativeToScVal(request.memo ?? "", { type: "string" }),
+      ];
 
-    return this.runPreflight("schedule", args, sourcePublicKey, network);
+      return this.runPreflight("schedule", args, sourcePublicKey, network);
+    } catch (err: any) {
+      return {
+        canProceed: false,
+        findings: [
+          {
+            code: err.code || "INVALID_ARGUMENT",
+            severity: "error",
+            message: err.message || String(err),
+          },
+        ],
+      };
+    }
   }
 
   private async runPreflight(

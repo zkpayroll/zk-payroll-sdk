@@ -23,9 +23,7 @@ function str(s: string): xdr.ScVal {
   return xdr.ScVal.scvString(s);
 }
 function map(entries: Array<[string, xdr.ScVal]>): xdr.ScVal {
-  return xdr.ScVal.scvMap(
-    entries.map(([i, v]) => new xdr.ScMapEntry({ key: sym(i), val: v }))
-  );
+  return xdr.ScVal.scvMap(entries.map(([i, v]) => new xdr.ScMapEntry({ key: sym(i), val: v })));
 }
 
 const EMPLOYER = "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGF";
@@ -124,6 +122,3 @@ describe("decodeTreasurySnapshotEvents", () => {
     expect(decodeTreasurySnapshotEvents([])).toEqual([]);
   });
 });
-
-
-

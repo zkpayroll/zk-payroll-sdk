@@ -250,12 +250,11 @@ export function readPayerAccountStatus(
 
     let shortfall: bigint | undefined;
     if (asset.requiredAmount !== undefined) {
-      shortfall = asset.availableBalance - asset.requiredAmount;
-      if (shortfall > 0n) {
+      if (asset.availableBalance < asset.requiredAmount) {
+        shortfall = asset.requiredAmount - asset.availableBalance;
         assetBlockers.push(
           `Payer balance for ${asset.asset} is short by ${shortfall.toString()} stroops.`
         );
-        shortfall = undefined;
       } else {
         shortfall = 0n;
       }
@@ -342,15 +341,9 @@ export function formatPayerAccountStatusSummary(input: {
 }): string {
   const masked = input.address ? maskStellarAddress(input.address) : "payer account";
   const icon =
-    input.readinessLevel === "ready"
-      ? "✅"
-      : input.readinessLevel === "warning"
-        ? "⚠️"
-        : "🛑";
+    input.readinessLevel === "ready" ? "✅" : input.readinessLevel === "warning" ? "⚠️" : "🛑";
 
-  const lines = [
-    `Payer Account (${masked}): ${icon} ${input.accountStatus.toUpperCase()}`,
-  ];
+  const lines = [`Payer Account (${masked}): ${icon} ${input.accountStatus.toUpperCase()}`];
 
   if (input.missingTrustlineCount > 0) {
     lines.push(`Missing trustlines: ${input.missingTrustlineCount}`);

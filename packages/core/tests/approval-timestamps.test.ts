@@ -60,7 +60,10 @@ describe("Approval timestamp validation (#557)", () => {
 
     it("accepts a small forward drift within the clock-skew tolerance", () => {
       const result = validateApprovalTimestamps(
-        request({ createdAt: NOW + 5_000, signers: [signer({ state: "signed", signedAt: NOW + 5_000 })] }),
+        request({
+          createdAt: NOW + 5_000,
+          signers: [signer({ state: "signed", signedAt: NOW + 5_000 })],
+        }),
         { now: NOW }
       );
       expect(result.isValid).toBe(true);
@@ -69,17 +72,19 @@ describe("Approval timestamp validation (#557)", () => {
     it("honours a custom clock-skew tolerance", () => {
       const drifted = request({ createdAt: NOW + 5_000 });
 
-      expect(validateApprovalTimestamps(drifted, { now: NOW }).isValid).toBe(false);
-      expect(
-        validateApprovalTimestamps(drifted, { now: NOW, clockSkewMs: 10_000 }).isValid
-      ).toBe(true);
+      expect(validateApprovalTimestamps(drifted, { now: NOW, clockSkewMs: 1_000 }).isValid).toBe(
+        false
+      );
+      expect(validateApprovalTimestamps(drifted, { now: NOW, clockSkewMs: 10_000 }).isValid).toBe(
+        true
+      );
     });
   });
 
   describe("request-level timestamps", () => {
     it("rejects a missing createdAt", () => {
       const result = validateApprovalTimestamps(
-        { expiresAt: NOW + 1000, signers: [] } as TimestampedApprovalRequest,
+        { expiresAt: NOW + 1000, signers: [] } as unknown as TimestampedApprovalRequest,
         { now: NOW }
       );
 
@@ -133,7 +138,10 @@ describe("Approval timestamp validation (#557)", () => {
   describe("signer timestamps", () => {
     it("rejects a signature recorded before the request existed", () => {
       const result = validateApprovalTimestamps(
-        request({ createdAt: NOW - 10_000, signers: [signer({ state: "signed", signedAt: NOW - 20_000 })] }),
+        request({
+          createdAt: NOW - 10_000,
+          signers: [signer({ state: "signed", signedAt: NOW - 20_000 })],
+        }),
         { now: NOW }
       );
 
@@ -161,9 +169,7 @@ describe("Approval timestamp validation (#557)", () => {
     it("rejects a signature and rejection recorded together", () => {
       const result = validateApprovalTimestamps(
         request({
-          signers: [
-            signer({ state: "signed", signedAt: NOW - 1_000, rejectedAt: NOW - 2_000 }),
-          ],
+          signers: [signer({ state: "signed", signedAt: NOW - 1_000, rejectedAt: NOW - 2_000 })],
         }),
         { now: NOW }
       );
@@ -173,7 +179,10 @@ describe("Approval timestamp validation (#557)", () => {
 
     it("rejects a rejection recorded before the request existed", () => {
       const result = validateApprovalTimestamps(
-        request({ createdAt: NOW - 10_000, signers: [signer({ state: "rejected", rejectedAt: NOW - 20_000 })] }),
+        request({
+          createdAt: NOW - 10_000,
+          signers: [signer({ state: "rejected", rejectedAt: NOW - 20_000 })],
+        }),
         { now: NOW }
       );
       expect(codes(result.issues)).toContain(ApprovalTimestampCode.REJECTED_AT_BEFORE_CREATED_AT);
@@ -196,15 +205,20 @@ describe("Approval timestamp validation (#557)", () => {
       // Non-critical: the signature still verifies, only the audit trail is thin.
       expect(result.isValid).toBe(true);
       expect(result.warningCount).toBe(1);
-      expect(codes(result.issues)).toContain(ApprovalTimestampCode.SIGNER_OUTCOME_TIMESTAMP_MISSING);
+      expect(codes(result.issues)).toContain(
+        ApprovalTimestampCode.SIGNER_OUTCOME_TIMESTAMP_MISSING
+      );
       expect(result.summary).toMatch(/warning/i);
     });
 
     it("promotes that warning to an error under strict mode", () => {
-      const result = validateApprovalTimestamps(request({ signers: [signer({ state: "signed" })] }), {
-        now: NOW,
-        strict: true,
-      });
+      const result = validateApprovalTimestamps(
+        request({ signers: [signer({ state: "signed" })] }),
+        {
+          now: NOW,
+          strict: true,
+        }
+      );
 
       expect(result.isValid).toBe(false);
       expect(result.errorCount).toBe(1);
@@ -222,17 +236,12 @@ describe("Approval timestamp validation (#557)", () => {
     it("reports the offending signer index as the field", () => {
       const result = validateApprovalTimestamps(
         request({
-          signers: [
-            signer(),
-            signer({ state: "signed", signedAt: NOW + 600_000 }),
-          ],
+          signers: [signer(), signer({ state: "signed", signedAt: NOW + 600_000 })],
         }),
         { now: NOW }
       );
 
-      const issue = result.issues.find(
-        (i) => i.code === ApprovalTimestampCode.SIGNED_AT_IN_FUTURE
-      );
+      const issue = result.issues.find((i) => i.code === ApprovalTimestampCode.SIGNED_AT_IN_FUTURE);
       expect(issue?.field).toBe("signers[1].signedAt");
     });
 

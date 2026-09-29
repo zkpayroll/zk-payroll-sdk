@@ -226,10 +226,7 @@ describe("formatPartialBatchFailureSummary", () => {
   });
 
   it("includes pending count if present", () => {
-    const items = [
-      createItem({ outcome: "succeeded" }),
-      createItem({ outcome: "pending" }),
-    ];
+    const items = [createItem({ outcome: "succeeded" }), createItem({ outcome: "pending" })];
 
     const result = parsePartialBatchFailure(items);
     const summary = formatPartialBatchFailureSummary(result);
@@ -240,10 +237,7 @@ describe("formatPartialBatchFailureSummary", () => {
 
 describe("isRetryRecommended", () => {
   it("recommends retry when there are retryable failures", () => {
-    const items = [
-      createItem({ outcome: "succeeded" }),
-      createItem({ outcome: "failed" }),
-    ];
+    const items = [createItem({ outcome: "succeeded" }), createItem({ outcome: "failed" })];
 
     const result = parsePartialBatchFailure(items);
 
@@ -251,10 +245,7 @@ describe("isRetryRecommended", () => {
   });
 
   it("does not recommend retry for 100% success", () => {
-    const items = [
-      createItem({ outcome: "succeeded" }),
-      createItem({ outcome: "succeeded" }),
-    ];
+    const items = [createItem({ outcome: "succeeded" }), createItem({ outcome: "succeeded" })];
 
     const result = parsePartialBatchFailure(items);
 

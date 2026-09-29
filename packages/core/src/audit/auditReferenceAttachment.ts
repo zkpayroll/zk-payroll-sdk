@@ -68,7 +68,13 @@ export interface AuditReferenceAttachment {
 }
 
 // Constants
-const VALID_REFERENCE_TYPES: ReadonlySet<string> = new Set(["document", "receipt", "proof", "report", "external"]);
+const VALID_REFERENCE_TYPES: ReadonlySet<string> = new Set([
+  "document",
+  "receipt",
+  "proof",
+  "report",
+  "external",
+]);
 const MAX_LABEL_LENGTH = 256;
 const SHA256_HEX_REGEX = /^[a-f0-9]{64}$/i;
 const URI_REGEX = /^https?:\/\/.+/;

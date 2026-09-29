@@ -23,23 +23,23 @@ export interface TreasurySnapshotEvent {
 function decodeBigInt(scVal: xdr.ScVal | undefined): bigint {
   if (!scVal) return 0n;
   const type = scVal.switch().name;
-  if (type === 'scvI128') {
+  if (type === "scvI128") {
     const i = scVal.i128();
     return (BigInt(i.hi().toString()) << 64n) + BigInt(i.lo().toString());
   }
-  if (type === 'scvU64') return BigInt(scVal.u64().toString());
-  if (type === 'scvI64') return BigInt(scVal.i64().toString());
-  if (type === 'scvU32') return BigInt(scVal.u32());
-  if (type === 'scvI32') return BigInt(scVal.i32());
+  if (type === "scvU64") return BigInt(scVal.u64().toString());
+  if (type === "scvI64") return BigInt(scVal.i64().toString());
+  if (type === "scvU32") return BigInt(scVal.u32());
+  if (type === "scvI32") return BigInt(scVal.i32());
   return 0n;
 }
 
 function decodeString(scVal: xdr.ScVal | undefined): string {
-  if (!scVal) return '';
+  if (!scVal) return "";
   const type = scVal.switch().name;
-  if (type === 'scvSymbol') return scVal.sym().toString();
-  if (type === 'scvString') return scVal.str().toString();
-  return '';
+  if (type === "scvSymbol") return scVal.sym().toString();
+  if (type === "scvString") return scVal.str().toString();
+  return "";
 }
 
 export function decodeTreasurySnapshotEvent(raw: RawContractEvent): TreasurySnapshotEvent {
@@ -70,7 +70,14 @@ export function decodeTreasurySnapshotEvent(raw: RawContractEvent): TreasurySnap
     }
   }
 
-  console.log('DEBUG data keys:', Object.keys(data), 'employer raw:', decodeString(data.employer), 'asset raw:', decodeString(data.asset));
+  console.log(
+    "DEBUG data keys:",
+    Object.keys(data),
+    "employer raw:",
+    decodeString(data.employer),
+    "asset raw:",
+    decodeString(data.asset)
+  );
   const employer = decodeString(data.employer) || topicEmployer;
   const asset = decodeString(data.asset);
   if (!employer || !asset) {

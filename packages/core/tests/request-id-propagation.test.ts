@@ -18,7 +18,9 @@ jest.mock("axios", () => ({
 }));
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
-const NOT_FOUND = { status: rpc.Api.GetTransactionStatus.NOT_FOUND } as rpc.Api.GetMissingTransactionResponse;
+const NOT_FOUND = {
+  status: rpc.Api.GetTransactionStatus.NOT_FOUND,
+} as rpc.Api.GetMissingTransactionResponse;
 
 function serverReturning(response: rpc.Api.GetTransactionResponse): rpc.Server {
   return { getTransaction: jest.fn().mockResolvedValue(response) } as unknown as rpc.Server;
@@ -69,7 +71,12 @@ describe("timeAxiosRequest request id propagation (#535)", () => {
   beforeEach(() => jest.clearAllMocks());
 
   it("sends X-Request-Id and records it on the timing", async () => {
-    mockedAxios.request.mockResolvedValue({ status: 200, data: null, headers: {}, config: {} } as never);
+    mockedAxios.request.mockResolvedValue({
+      status: 200,
+      data: null,
+      headers: {},
+      config: {},
+    } as never);
 
     const { timing } = await timeAxiosRequest(
       { url: "https://cdn.example.com/circuit.zkey", method: "get", headers: { Accept: "*/*" } },
@@ -86,13 +93,22 @@ describe("timeAxiosRequest request id propagation (#535)", () => {
     mockedAxios.request.mockRejectedValue(new Error("503"));
     const timings: unknown[] = [];
     await expect(
-      timeAxiosRequest({ url: "https://cdn.example.com/x", method: "get" }, (t) => timings.push(t), "req_9")
+      timeAxiosRequest(
+        { url: "https://cdn.example.com/x", method: "get" },
+        (t) => timings.push(t),
+        "req_9"
+      )
     ).rejects.toThrow("503");
     expect(timings[0]).toMatchObject({ status: "error", requestId: "req_9" });
   });
 
   it("leaves requests untouched when no request id is given", async () => {
-    mockedAxios.request.mockResolvedValue({ status: 200, data: null, headers: {}, config: {} } as never);
+    mockedAxios.request.mockResolvedValue({
+      status: 200,
+      data: null,
+      headers: {},
+      config: {},
+    } as never);
     const config = { url: "https://cdn.example.com/y", method: "get" as const };
     const { timing } = await timeAxiosRequest(config);
     expect(mockedAxios.request.mock.calls[0][0]).toBe(config);

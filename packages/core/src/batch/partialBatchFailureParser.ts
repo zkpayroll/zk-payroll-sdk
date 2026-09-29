@@ -13,12 +13,7 @@
 
 /** Status classifications for individual batch items after execution */
 export type BatchItemOutcome =
-  | "succeeded"
-  | "failed"
-  | "partial"
-  | "skipped"
-  | "pending"
-  | "timeout";
+  "succeeded" | "failed" | "partial" | "skipped" | "pending" | "timeout";
 
 /** Error codes for batch failures */
 export type BatchFailureCode =
@@ -149,11 +144,13 @@ function classifyBatchFailure(
   succeededCount: number,
   failedCount: number,
   total: number,
-  pendingCount: number
+  pendingCount: number,
+  timeoutCount: number = 0
 ): BatchFailureCode {
   if (total === 0) return "UNKNOWN_ERROR";
-  if (failedCount === 0 && pendingCount === 0) return "ALL_SUCCEEDED";
-  if (succeededCount === 0 && pendingCount === 0) return "ALL_FAILED";
+  if (failedCount === 0 && pendingCount === 0 && timeoutCount === 0) return "ALL_SUCCEEDED";
+  if (succeededCount === 0 && pendingCount === 0 && timeoutCount === 0) return "ALL_FAILED";
+  if (timeoutCount > 0) return "TIMEOUT_REACHED";
   if (pendingCount > 0 && succeededCount > 0) return "PARTIAL_FAILURE";
   if (pendingCount > 0) return "TIMEOUT_REACHED";
   return "PARTIAL_FAILURE";
@@ -204,15 +201,15 @@ export function parsePartialBatchFailure(
   );
 
   const hasRetryableFailures =
-    failedCount > 0 ||
-    (treatTimeoutAsRetryable && timeoutCount > 0) ||
-    partialCount > 0;
+    failedCount > 0 || (treatTimeoutAsRetryable && timeoutCount > 0) || partialCount > 0;
 
+  const unresolvedCount = pendingCount + timeoutCount;
   const code = classifyBatchFailure(
     succeededCount,
     failedCount + partialCount,
     total,
-    pendingCount + timeoutCount
+    pendingCount,
+    timeoutCount
   );
 
   return {
@@ -221,11 +218,11 @@ export function parsePartialBatchFailure(
       total,
       succeededCount,
       failedCount: totalFailures,
-      pendingCount,
+      pendingCount: unresolvedCount,
       skippedCount,
       successRate,
-      allSucceeded: totalFailures === 0 && pendingCount === 0,
-      allFailed: succeededCount === 0 && pendingCount === 0,
+      allSucceeded: totalFailures === 0 && unresolvedCount === 0,
+      allFailed: succeededCount === 0 && unresolvedCount === 0,
       hasRetryableFailures,
       mostCommonFailureCode: primaryFailureCode,
     },

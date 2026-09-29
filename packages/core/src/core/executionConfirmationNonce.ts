@@ -211,8 +211,8 @@ export async function validateExecutionNonce(
     };
   }
 
-  // Validate random part format (basic check)
-  if (!isValidHexString(randomPart, 32)) {
+  // Validate random part format (basic check: 16 bytes = 32 hex chars)
+  if (!isValidHexString(randomPart, 16)) {
     return {
       valid: false,
       code: "INVALID_SIGNATURE",

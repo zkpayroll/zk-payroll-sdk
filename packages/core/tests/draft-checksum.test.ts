@@ -66,7 +66,9 @@ describe("computeDraftChecksum", () => {
 
   it("changes when any semantic field changes", () => {
     const a = computeDraftChecksum(draft());
-    const b = computeDraftChecksum(draft({ entries: [{ recipientId: "GBOX", amount: "100", asset: "native" }] }));
+    const b = computeDraftChecksum(
+      draft({ entries: [{ recipientId: "GBOX", amount: "100", asset: "native" }] })
+    );
     expect(a).not.toEqual(b);
   });
 });

@@ -13,10 +13,7 @@ import { EmployeeEligibilityRecord } from "../eligibility/types";
 
 /** Payout disposition for a suspended employee */
 export type SuspensionPayoutDisposition =
-  | "accrued_payout"
-  | "final_settlement"
-  | "no_payout"
-  | "review_required";
+  "accrued_payout" | "final_settlement" | "no_payout" | "review_required";
 
 /** Reason codes for payout decisions */
 export type SuspensionPayoutReasonCode =
@@ -97,9 +94,8 @@ export function evaluateSuspensionPayout(
     referenceTime,
   } = options;
 
-  const refMs = referenceTime instanceof Date
-    ? referenceTime.getTime()
-    : (referenceTime ?? Date.now());
+  const refMs =
+    referenceTime instanceof Date ? referenceTime.getTime() : (referenceTime ?? Date.now());
 
   const empId = employee.employeeId || "";
   const redactedId = redactEmpId(empId);

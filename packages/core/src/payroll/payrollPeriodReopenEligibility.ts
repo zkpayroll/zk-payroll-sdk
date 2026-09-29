@@ -211,9 +211,7 @@ export function filterEligibleReopenPeriods(
  * @param results - Array of eligibility results
  * @returns Summary statistics
  */
-export function summarizeReopenEligibility(
-  results: ReopenEligibilityResult[]
-): {
+export function summarizeReopenEligibility(results: ReopenEligibilityResult[]): {
   total: number;
   eligibleCount: number;
   ineligibleCount: number;

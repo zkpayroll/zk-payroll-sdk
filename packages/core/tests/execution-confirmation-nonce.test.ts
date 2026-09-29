@@ -125,7 +125,9 @@ describe("validateExecutionNonce", () => {
         operationType: "payroll_execution",
         validityDurationMs: DEFAULT_NONCE_VALIDITY_MS,
         checkIfUsed: async (nonce) => usedNonces.has(nonce),
-        markAsUsed: async (nonce) => usedNonces.add(nonce),
+        markAsUsed: async (nonce) => {
+          usedNonces.add(nonce);
+        },
       });
 
       expect(result.valid).toBe(true);
@@ -221,7 +223,9 @@ describe("validateExecutionNonce", () => {
         operationType: "payroll_execution",
         validityDurationMs: DEFAULT_NONCE_VALIDITY_MS,
         checkIfUsed: async (nonce) => usedNonces.has(nonce),
-        markAsUsed: async (nonce) => usedNonces.add(nonce),
+        markAsUsed: async (nonce) => {
+          usedNonces.add(nonce);
+        },
       });
 
       // Second validation (should detect reuse)
@@ -229,7 +233,9 @@ describe("validateExecutionNonce", () => {
         operationType: "payroll_execution",
         validityDurationMs: DEFAULT_NONCE_VALIDITY_MS,
         checkIfUsed: async (nonce) => usedNonces.has(nonce),
-        markAsUsed: async (nonce) => usedNonces.add(nonce),
+        markAsUsed: async (nonce) => {
+          usedNonces.add(nonce);
+        },
       });
 
       expect(result.valid).toBe(false);

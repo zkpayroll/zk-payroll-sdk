@@ -93,9 +93,7 @@ describe("validatePayoutCount", () => {
     });
 
     it("rejects negative bounds", () => {
-      expect(validatePayoutCount(3, { minCount: -1 }).violation?.code).toBe(
-        "INVALID_COUNT_BOUNDS"
-      );
+      expect(validatePayoutCount(3, { minCount: -1 }).violation?.code).toBe("INVALID_COUNT_BOUNDS");
     });
   });
 });
@@ -166,9 +164,7 @@ describe("assertValidPayoutCount", () => {
   });
 
   it("throws a privacy-preserving error with an actionable fix", () => {
-    expect(() => assertValidPayoutCount(9, { maxCount: 5 })).toThrow(
-      PayoutCountValidationError
-    );
+    expect(() => assertValidPayoutCount(9, { maxCount: 5 })).toThrow(PayoutCountValidationError);
 
     try {
       assertValidPayoutCount(9, { maxCount: 5 });

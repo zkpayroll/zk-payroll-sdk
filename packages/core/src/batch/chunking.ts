@@ -1,4 +1,8 @@
-import { BatchPaymentEntry, validateBatchPayload, BatchValidationError } from "./BatchPayloadBuilder";
+import {
+  BatchPaymentEntry,
+  validateBatchPayload,
+  BatchValidationError,
+} from "./BatchPayloadBuilder";
 
 export interface ChunkingOptions {
   /** Maximum number of entries per batch chunk. Must be a positive integer. */
@@ -16,7 +20,7 @@ export interface ChunkedBatchResult {
  * Splits employee payout inputs into validated batches using configured safety limits.
  * Validates entries first to ensure correctness before processing.
  * Returns privacy-safe errors without exposing sensitive payout values.
- * 
+ *
  * @param entries - The payout inputs to chunk.
  * @param options - Configuration including safety limits.
  * @returns A chunked batch result containing either valid chunks or errors.
@@ -36,9 +40,9 @@ export function chunkPayoutBatches(
         {
           code: "EMPTY_BATCH",
           message: "Batch must contain at least one payment entry",
-          field: "entries"
-        }
-      ]
+          field: "entries",
+        },
+      ],
     };
   }
 

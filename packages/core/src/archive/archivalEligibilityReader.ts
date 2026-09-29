@@ -63,15 +63,10 @@ export function readArchivalEligibility(
   run: PayrollRunItem,
   options: ArchivalEligibilityReaderOptions = {}
 ): ArchivalEligibilityReadResult {
-  const {
-    minimumAgeMs = 0,
-    referenceTime,
-    redact = true,
-  } = options;
+  const { minimumAgeMs = 0, referenceTime, redact = true } = options;
 
-  const refMs = referenceTime instanceof Date
-    ? referenceTime.getTime()
-    : (referenceTime ?? Date.now());
+  const refMs =
+    referenceTime instanceof Date ? referenceTime.getTime() : (referenceTime ?? Date.now());
 
   const evaluation = evaluateArchiveEligibility(run, { redact });
 
@@ -87,7 +82,9 @@ export function readArchivalEligibility(
       meetsAgeRequirement = false;
       const remainingMs = minimumAgeMs - ageMs;
       const remainingHours = Math.ceil(remainingMs / 3_600_000);
-      const idDisplay = redact ? redactRunId(run.runId || run.id) : (run.runId || run.id || "unknown");
+      const idDisplay = redact
+        ? redactRunId(run.runId || run.id)
+        : run.runId || run.id || "unknown";
       ageBlockerReason = `Run ${idDisplay} must wait approximately ${remainingHours} more hour(s) before archival.`;
     }
   } else if (minimumAgeMs > 0 && evaluation.isEligible) {

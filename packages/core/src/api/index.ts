@@ -19,11 +19,7 @@ export {
   getCancellationReasonDescription,
   isSupportedCancellationReason,
 } from "../payroll/cancellation";
-export type {
-  CancellationReasonCode,
-  CancellationReasonInfo,
-} from "../payroll/cancellation";
-
+export type { CancellationReasonCode, CancellationReasonInfo } from "../payroll/cancellation";
 
 export {
   getContractMetadata,

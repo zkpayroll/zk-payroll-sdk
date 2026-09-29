@@ -27,9 +27,7 @@ describe("checkEmployerReadiness", () => {
         { component: "contract", status: "success", message: "Contract available" },
       ],
     });
-    getAccount = jest
-      .spyOn(rpc.Server.prototype, "getAccount")
-      .mockResolvedValue({} as never);
+    getAccount = jest.spyOn(rpc.Server.prototype, "getAccount").mockResolvedValue({} as never);
   });
 
   afterEach(() => {

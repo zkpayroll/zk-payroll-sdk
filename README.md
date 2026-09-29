@@ -895,9 +895,48 @@ See [Setup Guide](./docs/setup.md) for `.env` examples and local quick-start.
 `redactSensitive` – even when `STELLAR_SECRET_KEY` is set, the secret is
 excluded from logs, exports, telemetry, and events.
 
+## Safe Credential and Payroll Data Handling
+
+Applications interacting with private zero-knowledge payroll contracts handle highly sensitive assets: Stellar secret keys (`S...`), zero-knowledge witness secrets, private viewing keys, and confidential employee compensation amounts.
+
+The SDK includes dedicated safeguards to prevent credentials and private payroll data from leaking into persistent logs, unencrypted storage, or public telemetry:
+
+- **Runtime Credential Scanning**: `validateSafeCredentialUsage()` and `assertSafeCredentialUsage()` detect accidentally exposed secret seeds, private hex keys, seed phrases, and plaintext salaries before payloads are logged or transmitted.
+- **Deep Sanitization for Persistence**: `sanitizeForPersistence()` deeply walks complex payloads and strips or masks credentials and salary records before database persistence or caching.
+- **Safe Credential Masking**: `maskCredential()` partially masks secret seeds (e.g. `S****...****XYZ`) for safe administrative display without exposing the secret body.
+- **Leak Auditing**: `SafeCredentialAuditor` tracks operations across batch jobs to guarantee no secret leakage occurred.
+
+```typescript
+import {
+  validateSafeCredentialUsage,
+  assertSafeCredentialUsage,
+  sanitizeForPersistence,
+  maskCredential,
+  SafeCredentialAuditor,
+} from "@zk-payroll/core";
+
+// 1. Assert payload safety before logging or submitting
+assertSafeCredentialUsage(payload, { context: "logging" });
+
+// 2. Deeply sanitize before storing to database or local cache
+const safeRecord = sanitizeForPersistence(payrollDraft, {
+  removeSecrets: true,
+  redactCompensation: true,
+  maskIdentifiers: true,
+});
+await db.collection("payroll_drafts").insertOne(safeRecord);
+
+// 3. Mask keys safely for audit or administrative logs
+const displayKey = maskCredential(process.env.STELLAR_SECRET_KEY);
+console.log(`Configured signer: ${displayKey}`);
+```
+
+For complete architectural patterns, threat models, and an incident response checklist, see the [Safe Credential Handling Guide](./docs/SAFE_CREDENTIAL_HANDLING.md).
+
 ## Documentation
 
 - [Setup Guide](./docs/setup.md) - Environment variables and local development setup
+- [Safe Credential Handling](./docs/SAFE_CREDENTIAL_HANDLING.md) - Best practices for protecting secret keys, viewing keys, and employee salary data
 - [Troubleshooting Guide](./docs/TROUBLESHOOTING.md) - Fixes for common install, build, and test failures
 - [API Reference](./docs/API.md) - Complete API documentation
 - [Pagination Helpers](./docs/pagination.md) - Cursor- and offset-based pagination for payroll history and audit records
@@ -929,8 +968,4 @@ npm run test -w packages/core
 ```
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) and [docs/setup.md](./docs/setup.md) for
-full contributor workflow, pre-commit hooks, and troubleshooting. 
-
-
-
-draft pr 
+full contributor workflow, pre-commit hooks, and troubleshooting.

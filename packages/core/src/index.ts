@@ -195,3 +195,12 @@ export * from "./redaction";
 
 // ── Multi-Asset Metadata ────────────────────────────────────────────────────
 export * from "./assets";
+
+// ── Settlement & Destination Validation ──────────────────────────────────────
+export * from "./settlement";
+
+// ── Compliance Holds ─────────────────────────────────────────────────────────
+export * from "./compliance";
+
+// ── Privacy & Safe Credential Handling ─────────────────────────────────────
+export * from "./privacy";

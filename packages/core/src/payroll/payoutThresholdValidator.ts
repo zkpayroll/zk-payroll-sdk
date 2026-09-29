@@ -32,10 +32,7 @@ export interface PayoutEntry {
 
 /** Threshold violation codes */
 export type PayoutThresholdViolationCode =
-  | "BELOW_THRESHOLD"
-  | "ZERO_AMOUNT"
-  | "NEGATIVE_AMOUNT"
-  | "UNKNOWN_ASSET";
+  "BELOW_THRESHOLD" | "ZERO_AMOUNT" | "NEGATIVE_AMOUNT" | "UNKNOWN_ASSET";
 
 /** Structured violation descriptor */
 export interface PayoutThresholdViolation {
@@ -206,10 +203,18 @@ export function validatePayoutThresholdBatch(
     if (!result.isValid && result.violation) {
       violations.push(result.violation);
       switch (result.violation.code) {
-        case "BELOW_THRESHOLD": belowThresholdCount++; break;
-        case "ZERO_AMOUNT": zeroCount++; break;
-        case "NEGATIVE_AMOUNT": negativeCount++; break;
-        case "UNKNOWN_ASSET": unknownAssetCount++; break;
+        case "BELOW_THRESHOLD":
+          belowThresholdCount++;
+          break;
+        case "ZERO_AMOUNT":
+          zeroCount++;
+          break;
+        case "NEGATIVE_AMOUNT":
+          negativeCount++;
+          break;
+        case "UNKNOWN_ASSET":
+          unknownAssetCount++;
+          break;
       }
     }
   }
@@ -238,9 +243,6 @@ export function isPayoutAboveThreshold(
   thresholds?: AssetThresholdConfig[],
   defaultThreshold: bigint = 1n
 ): boolean {
-  const result = validatePayoutThreshold(
-    { amount, asset },
-    { thresholds, defaultThreshold }
-  );
+  const result = validatePayoutThreshold({ amount, asset }, { thresholds, defaultThreshold });
   return result.isValid;
 }

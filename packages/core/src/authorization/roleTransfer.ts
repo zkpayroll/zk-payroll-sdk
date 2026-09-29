@@ -39,11 +39,11 @@ export const MAX_ACCEPTANCE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 
 /** Life-cycle states of a role transfer. */
 export type RoleTransferStatus =
-  | "pending"    // proposed, waiting for acceptance
-  | "accepted"   // nominee accepted, not yet finalized
-  | "finalized"  // committed — caller should execute the on-chain assignment
-  | "cancelled"  // cancelled by the current holder before finalization
-  | "expired";   // acceptance window elapsed without an accept or cancel
+  | "pending" // proposed, waiting for acceptance
+  | "accepted" // nominee accepted, not yet finalized
+  | "finalized" // committed — caller should execute the on-chain assignment
+  | "cancelled" // cancelled by the current holder before finalization
+  | "expired"; // acceptance window elapsed without an accept or cancel
 
 /**
  * An immutable record representing one role transfer at a point in time.
@@ -87,8 +87,7 @@ export interface ProposeRoleTransferInput {
 
 /** Result discriminant for all role transfer operations. */
 export type RoleTransferResult<T> =
-  | { ok: true; value: T }
-  | { ok: false; error: RoleTransferErrorCode; message: string };
+  { ok: true; value: T } | { ok: false; error: RoleTransferErrorCode; message: string };
 
 /** Typed error codes returned instead of thrown exceptions. */
 export type RoleTransferErrorCode =
@@ -204,16 +203,10 @@ export function acceptRoleTransfer(
     return fail("expired", "Role transfer proposal has expired");
   }
   if (record.status !== "pending") {
-    return fail(
-      "not_pending",
-      `Role transfer cannot be accepted in "${record.status}" state`
-    );
+    return fail("not_pending", `Role transfer cannot be accepted in "${record.status}" state`);
   }
   if (acceptorAddress !== record.toAddress) {
-    return fail(
-      "not_nominee",
-      "Only the nominated successor may accept this role transfer"
-    );
+    return fail("not_nominee", "Only the nominated successor may accept this role transfer");
   }
 
   return ok({ ...record, status: "accepted", acceptedAt: now });
@@ -240,16 +233,10 @@ export function finalizeRoleTransfer(
     return fail("already_finalized", "Role transfer has already been finalized");
   }
   if (record.status !== "accepted") {
-    return fail(
-      "not_accepted",
-      `Role transfer cannot be finalized in "${record.status}" state`
-    );
+    return fail("not_accepted", `Role transfer cannot be finalized in "${record.status}" state`);
   }
   if (finalizerAddress !== record.fromAddress) {
-    return fail(
-      "not_current_holder",
-      "Only the original proposer may finalize this role transfer"
-    );
+    return fail("not_current_holder", "Only the original proposer may finalize this role transfer");
   }
 
   return ok({ ...record, status: "finalized", finalizedAt: now });
@@ -275,10 +262,7 @@ export function cancelRoleTransfer(
     return fail("not_pending", "Role transfer is already cancelled");
   }
   if (cancellerAddress !== record.fromAddress) {
-    return fail(
-      "not_current_holder",
-      "Only the original proposer may cancel this role transfer"
-    );
+    return fail("not_current_holder", "Only the original proposer may cancel this role transfer");
   }
 
   return ok({ ...record, status: "cancelled", cancelledAt: now });
@@ -305,10 +289,7 @@ export function resolveTransferStatus(
  * Returns a human-readable summary of a role transfer record suitable for
  * display in dashboards and audit logs. No sensitive data is included.
  */
-export function describeRoleTransfer(
-  record: RoleTransferRecord,
-  now: number = Date.now()
-): string {
+export function describeRoleTransfer(record: RoleTransferRecord, now: number = Date.now()): string {
   const effectiveStatus = resolveTransferStatus(record, now);
   const remaining =
     effectiveStatus === "pending"

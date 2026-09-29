@@ -209,11 +209,7 @@ export function resolveReceiptTransactionReference(
       ledger = reference.ledger;
     } else {
       issues.push(
-        issue(
-          ReceiptReferenceCode.LEDGER_INVALID,
-          "Ledger is not a non-negative integer.",
-          false
-        )
+        issue(ReceiptReferenceCode.LEDGER_INVALID, "Ledger is not a non-negative integer.", false)
       );
     }
   }
@@ -246,11 +242,7 @@ export function resolveReceiptTransactionReference(
     }
   }
 
-  if (
-    submittedAt !== undefined &&
-    confirmedAt !== undefined &&
-    confirmedAt < submittedAt
-  ) {
+  if (submittedAt !== undefined && confirmedAt !== undefined && confirmedAt < submittedAt) {
     issues.push(
       issue(
         ReceiptReferenceCode.CONFIRMED_BEFORE_SUBMITTED,

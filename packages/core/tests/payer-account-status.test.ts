@@ -117,7 +117,12 @@ describe("Payer account status reader (#559)", () => {
       const result = readPayerAccountStatus(
         state({
           assets: [
-            { asset: "native", availableBalance: 50_000_000n, hasTrustline: false, allowlisted: true },
+            {
+              asset: "native",
+              availableBalance: 50_000_000n,
+              hasTrustline: false,
+              allowlisted: true,
+            },
           ],
         }),
         { now: NOW }
@@ -132,7 +137,12 @@ describe("Payer account status reader (#559)", () => {
       const result = readPayerAccountStatus(
         state({
           assets: [
-            { asset: "native", availableBalance: 50_000_000n, hasTrustline: false, allowlisted: true },
+            {
+              asset: "native",
+              availableBalance: 50_000_000n,
+              hasTrustline: false,
+              allowlisted: true,
+            },
           ],
         }),
         { now: NOW, requireTrustlines: false }
@@ -145,7 +155,9 @@ describe("Payer account status reader (#559)", () => {
     it("blocks a non-allowlisted asset", () => {
       const result = readPayerAccountStatus(
         state({
-          assets: [{ asset: USDC, availableBalance: 1_000_000n, hasTrustline: true, allowlisted: false }],
+          assets: [
+            { asset: USDC, availableBalance: 1_000_000n, hasTrustline: true, allowlisted: false },
+          ],
         }),
         { now: NOW }
       );
@@ -221,7 +233,12 @@ describe("Payer account status reader (#559)", () => {
       const result = readPayerAccountStatus(
         state({
           assets: [
-            { asset: "native", availableBalance: 50_000_000n, hasTrustline: true, allowlisted: true },
+            {
+              asset: "native",
+              availableBalance: 50_000_000n,
+              hasTrustline: true,
+              allowlisted: true,
+            },
           ],
         }),
         { now: NOW }
@@ -235,7 +252,12 @@ describe("Payer account status reader (#559)", () => {
       const result = readPayerAccountStatus(
         state({
           assets: [
-            { asset: "native", availableBalance: 50_000_000n, hasTrustline: true, allowlisted: true },
+            {
+              asset: "native",
+              availableBalance: 50_000_000n,
+              hasTrustline: true,
+              allowlisted: true,
+            },
           ],
         }),
         { now: NOW, strict: true }
@@ -263,7 +285,10 @@ describe("Payer account status reader (#559)", () => {
     });
 
     it("omits the payer field entirely when no address is supplied", () => {
-      const result = readPayerAccountStatus({ exists: true, feeBalance: 10_000_000n }, { now: NOW });
+      const result = readPayerAccountStatus(
+        { exists: true, feeBalance: 10_000_000n },
+        { now: NOW }
+      );
       expect(result.payerAddress).toBeUndefined();
       expect(result.summary).toMatch(/payer account/i);
     });

@@ -6,12 +6,7 @@ import { toISigner } from "./signer/KeypairSigner";
 import type { ISigner } from "./signer/types";
 
 export type EmployerReadinessCheckId =
-  | "employer"
-  | "signer"
-  | "configuration"
-  | "rpc"
-  | "contract"
-  | "account";
+  "employer" | "signer" | "configuration" | "rpc" | "contract" | "account";
 
 export type EmployerReadinessCheckStatus = "passed" | "blocked" | "unavailable";
 
@@ -84,10 +79,7 @@ export async function checkEmployerReadiness(
 ): Promise<EmployerReadinessResult> {
   const { config, employerAddress, signer } = input;
 
-  if (
-    typeof employerAddress !== "string" ||
-    !StrKey.isValidEd25519PublicKey(employerAddress)
-  ) {
+  if (typeof employerAddress !== "string" || !StrKey.isValidEd25519PublicKey(employerAddress)) {
     return result({
       id: "employer",
       status: "blocked",
@@ -169,8 +161,7 @@ export async function checkEmployerReadiness(
       id: "contract",
       status: contractCheck?.status === "warning" ? "unavailable" : "blocked",
       code: "PAYROLL_CONTRACT_UNAVAILABLE",
-      message:
-        "Verify the payroll contract is deployed and accessible on the configured network.",
+      message: "Verify the payroll contract is deployed and accessible on the configured network.",
     });
   }
 

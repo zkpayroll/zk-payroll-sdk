@@ -30,12 +30,16 @@ export const ApprovalTimestampCode = {
   EXPIRES_AT_INVALID: "APPROVAL_EXPIRES_AT_INVALID",
   /** `expiresAt` is earlier than `createdAt`, so the window cannot be satisfied. */
   EXPIRES_AT_BEFORE_CREATED_AT: "APPROVAL_EXPIRES_AT_BEFORE_CREATED_AT",
+  /** A signer records `signedAt` that is not a valid epoch millisecond value. */
+  SIGNED_AT_INVALID: "APPROVAL_SIGNED_AT_INVALID",
   /** A signer records `signedAt` before the request was created. */
   SIGNED_AT_BEFORE_CREATED_AT: "APPROVAL_SIGNED_AT_BEFORE_CREATED_AT",
   /** A signer records `signedAt` after the request's window closed. */
   SIGNED_AT_AFTER_EXPIRY: "APPROVAL_SIGNED_AT_AFTER_EXPIRY",
   /** A signer records `signedAt` far in the future. */
   SIGNED_AT_IN_FUTURE: "APPROVAL_SIGNED_AT_IN_FUTURE",
+  /** A rejected signer records `rejectedAt` that is not a valid epoch millisecond value. */
+  REJECTED_AT_INVALID: "APPROVAL_REJECTED_AT_INVALID",
   /** A rejected signer records `rejectedAt` before the request was created. */
   REJECTED_AT_BEFORE_CREATED_AT: "APPROVAL_REJECTED_AT_BEFORE_CREATED_AT",
   /** A rejected signer records `rejectedAt` far in the future. */
@@ -132,7 +136,9 @@ export interface TimestampedApprovalRequest {
 }
 
 function isUsableTimestamp(value: unknown): value is number {
-  return typeof value === "number" && Number.isFinite(value) && value >= 0 && Number.isInteger(value);
+  return (
+    typeof value === "number" && Number.isFinite(value) && value >= 0 && Number.isInteger(value)
+  );
 }
 
 function issue(
@@ -328,11 +334,15 @@ export function validateApprovalTimestamps(
   });
 
   const enriched = options.strict
-    ? issues.map((i) => (i.severity === "warning" ? { ...i, severity: "error" as const, critical: true } : i))
+    ? issues.map((i) =>
+        i.severity === "warning" ? { ...i, severity: "error" as const, critical: true } : i
+      )
     : issues;
 
   // Stable ordering so the same bad request always reports identically.
-  enriched.sort((a, b) => (a.field ?? "").localeCompare(b.field ?? "") || a.code.localeCompare(b.code));
+  enriched.sort(
+    (a, b) => (a.field ?? "").localeCompare(b.field ?? "") || a.code.localeCompare(b.code)
+  );
 
   const errors = enriched.filter((i) => i.severity === "error");
   const warnings = enriched.filter((i) => i.severity === "warning");

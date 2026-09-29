@@ -12,7 +12,9 @@ const HASH_A = "a".repeat(64);
 const HASH_B = "b".repeat(64);
 const NOW = 1_757_000_000_000;
 
-function reference(overrides: Partial<PayrollTransactionReference> = {}): PayrollTransactionReference {
+function reference(
+  overrides: Partial<PayrollTransactionReference> = {}
+): PayrollTransactionReference {
   return { txHash: HASH_A, network: "testnet", ...overrides };
 }
 
@@ -83,14 +85,18 @@ describe("Payroll receipt reference lookup (#560)", () => {
       expect(resolved.isValidHash).toBe(false);
       expect(resolved.txHash).toBe("not-a-hash");
       expect(codes(resolved.issues)).toContain(ReceiptReferenceCode.TX_HASH_MALFORMED);
-      expect(resolved.issues.find((i) => i.code === ReceiptReferenceCode.TX_HASH_MALFORMED)?.critical).toBe(true);
+      expect(
+        resolved.issues.find((i) => i.code === ReceiptReferenceCode.TX_HASH_MALFORMED)?.critical
+      ).toBe(true);
     });
 
     it("flags an unrecognized network as a non-critical issue", () => {
       const resolved = resolveReceiptTransactionReference(reference({ network: "devnet" }));
 
       expect(resolved.network).toBeUndefined();
-      const issue = resolved.issues.find((i) => i.code === ReceiptReferenceCode.NETWORK_UNRECOGNIZED);
+      const issue = resolved.issues.find(
+        (i) => i.code === ReceiptReferenceCode.NETWORK_UNRECOGNIZED
+      );
       expect(issue?.critical).toBe(false);
     });
 
@@ -112,9 +118,7 @@ describe("Payroll receipt reference lookup (#560)", () => {
     });
 
     it("flags an unparseable timestamp as a non-critical issue", () => {
-      const resolved = resolveReceiptTransactionReference(
-        reference({ submittedAt: "not-a-date" })
-      );
+      const resolved = resolveReceiptTransactionReference(reference({ submittedAt: "not-a-date" }));
 
       expect(resolved.submittedAt).toBeUndefined();
       expect(codes(resolved.issues)).toContain(ReceiptReferenceCode.TIMESTAMP_UNPARSEABLE);
@@ -127,7 +131,8 @@ describe("Payroll receipt reference lookup (#560)", () => {
 
       expect(codes(resolved.issues)).toContain(ReceiptReferenceCode.CONFIRMED_BEFORE_SUBMITTED);
       expect(
-        resolved.issues.find((i) => i.code === ReceiptReferenceCode.CONFIRMED_BEFORE_SUBMITTED)?.critical
+        resolved.issues.find((i) => i.code === ReceiptReferenceCode.CONFIRMED_BEFORE_SUBMITTED)
+          ?.critical
       ).toBe(true);
     });
   });
@@ -135,7 +140,10 @@ describe("Payroll receipt reference lookup (#560)", () => {
   describe("findReceiptByTransactionHash", () => {
     it("finds the single receipt referencing a hash", () => {
       const result = findReceiptByTransactionHash(
-        [receipt({ receiptId: "other" }), receipt({ receiptId: "target" })],
+        [
+          receipt({ receiptId: "other", transactionReference: reference({ txHash: HASH_B }) }),
+          receipt({ receiptId: "target" }),
+        ],
         HASH_A
       );
 
@@ -217,9 +225,7 @@ describe("Payroll receipt reference lookup (#560)", () => {
     });
 
     it("masks an absent reference with the placeholder", () => {
-      const redacted = redactReceiptReferenceForLogging(
-        resolveReceiptTransactionReference(null)
-      );
+      const redacted = redactReceiptReferenceForLogging(resolveReceiptTransactionReference(null));
       expect(redacted.txHash).toBe("[REDACTED]");
     });
 

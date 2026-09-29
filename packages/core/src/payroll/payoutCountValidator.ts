@@ -183,9 +183,7 @@ export function validatePayoutCount(
   if (count < minCount) {
     const empty = count === 0;
     const missingCount = minCount - count;
-    const code: PayoutCountViolationCode = empty
-      ? "EMPTY_PAYOUT_BATCH"
-      : "BELOW_MIN_COUNT";
+    const code: PayoutCountViolationCode = empty ? "EMPTY_PAYOUT_BATCH" : "BELOW_MIN_COUNT";
     const message = empty
       ? `Payout batch is empty; at least ${minCount} payout(s) are required.`
       : `Payout batch has ${count} payout(s); at least ${minCount} are required.`;
@@ -248,9 +246,7 @@ export function validatePayoutCountForEntries(
   const offendingRecipients = entries
     .slice(result.maxCount)
     .map((entry) =>
-      redact
-        ? redactRecipientId(entry.employeeId)
-        : entry.employeeId ?? "[ANONYMOUS_RECIPIENT]"
+      redact ? redactRecipientId(entry.employeeId) : (entry.employeeId ?? "[ANONYMOUS_RECIPIENT]")
     );
 
   return {

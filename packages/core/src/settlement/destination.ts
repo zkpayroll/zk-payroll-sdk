@@ -16,9 +16,12 @@
 
 import {
   validatePayoutDestination,
+  defaultDestinationValidationHook,
   type DestinationValidationHook,
   type DestinationValidationHookResult,
 } from "../employees/payoutDestination";
+
+export { defaultDestinationValidationHook };
 
 /**
  * Operational state of a destination validation decision.

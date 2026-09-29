@@ -47,10 +47,10 @@ describe("Pending payroll obligations reader (#558)", () => {
     });
 
     it("marks an obligation with a held reservation as reserved", () => {
-      const result = readPendingObligations(
-        [obligation({ reservationIds: ["res-1"] })],
-        { reservations: [reservation()], now: NOW }
-      );
+      const result = readPendingObligations([obligation({ reservationIds: ["res-1"] })], {
+        reservations: [reservation()],
+        now: NOW,
+      });
 
       expect(result.obligations[0]!.state).toBe("reserved");
       expect(result.obligations[0]!.reservedAmount).toBe(1_000_000n);
@@ -58,10 +58,10 @@ describe("Pending payroll obligations reader (#558)", () => {
     });
 
     it("marks an obligation with a finalized reservation as settled", () => {
-      const result = readPendingObligations(
-        [obligation({ reservationIds: ["res-1"] })],
-        { reservations: [reservation({ status: "finalized" })], now: NOW }
-      );
+      const result = readPendingObligations([obligation({ reservationIds: ["res-1"] })], {
+        reservations: [reservation({ status: "finalized" })],
+        now: NOW,
+      });
 
       expect(result.obligations[0]!.state).toBe("settled");
       expect(result.obligations[0]!.isOutstanding).toBe(false);
@@ -70,18 +70,18 @@ describe("Pending payroll obligations reader (#558)", () => {
     });
 
     it("ignores released reservations when deciding state", () => {
-      const result = readPendingObligations(
-        [obligation({ reservationIds: ["res-1"] })],
-        { reservations: [reservation({ status: "released" })], now: NOW }
-      );
+      const result = readPendingObligations([obligation({ reservationIds: ["res-1"] })], {
+        reservations: [reservation({ status: "released" })],
+        now: NOW,
+      });
       expect(result.obligations[0]!.state).toBe("pending");
     });
 
     it("tolerates reservation ids that match nothing", () => {
-      const result = readPendingObligations(
-        [obligation({ reservationIds: ["missing"] })],
-        { reservations: [reservation()], now: NOW }
-      );
+      const result = readPendingObligations([obligation({ reservationIds: ["missing"] })], {
+        reservations: [reservation()],
+        now: NOW,
+      });
 
       expect(result.obligations[0]!.state).toBe("pending");
       expect(result.obligations[0]!.reservationIds).toEqual([]);
@@ -127,16 +127,16 @@ describe("Pending payroll obligations reader (#558)", () => {
     });
 
     it("flags an expired or cancelled reservation", () => {
-      const expired = readPendingObligations(
-        [obligation({ reservationIds: ["res-1"] })],
-        { reservations: [reservation({ status: "expired" })], now: NOW }
-      );
+      const expired = readPendingObligations([obligation({ reservationIds: ["res-1"] })], {
+        reservations: [reservation({ status: "expired" })],
+        now: NOW,
+      });
       expect(expired.obligations[0]!.risk).toBe("reservation_expired");
 
-      const cancelled = readPendingObligations(
-        [obligation({ reservationIds: ["res-1"] })],
-        { reservations: [reservation({ status: "cancelled" })], now: NOW }
-      );
+      const cancelled = readPendingObligations([obligation({ reservationIds: ["res-1"] })], {
+        reservations: [reservation({ status: "cancelled" })],
+        now: NOW,
+      });
       expect(cancelled.obligations[0]!.risk).toBe("reservation_cancelled");
     });
 
@@ -219,9 +219,7 @@ describe("Pending payroll obligations reader (#558)", () => {
         typeof v === "bigint" ? v.toString() : v
       );
 
-      expect(result.obligations[0]!.hashedEmployeeId).toBe(
-        hashEmployeeReferenceId("EMP-SECRET-1")
-      );
+      expect(result.obligations[0]!.hashedEmployeeId).toBe(hashEmployeeReferenceId("EMP-SECRET-1"));
       expect(serialized).not.toContain("EMP-SECRET-1");
     });
 

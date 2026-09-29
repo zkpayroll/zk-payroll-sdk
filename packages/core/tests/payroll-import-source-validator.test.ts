@@ -174,7 +174,7 @@ describe("validateImportSources", () => {
   it("validates a batch of sources", () => {
     const sources = [
       createSource({ sourceId: "source-1" }),
-      createSource({ sourceId: "source-2", authenticated: false, requireAuthentication: true }),
+      createSource({ sourceId: "source-2", authenticated: false }),
       createSource({ sourceId: "source-3" }),
     ];
 
@@ -200,11 +200,7 @@ describe("validateImportSources", () => {
   });
 
   it("marks batch as invalid if any source is invalid", () => {
-    const sources = [
-      createSource(),
-      createSource({ signature: undefined }),
-      createSource(),
-    ];
+    const sources = [createSource(), createSource({ signature: undefined }), createSource()];
 
     const result = validateImportSources(sources);
 
@@ -230,11 +226,7 @@ describe("areImportSourcesValid", () => {
   });
 
   it("returns false if any source is invalid", async () => {
-    const sources = [
-      createSource(),
-      createSource({ signature: undefined }),
-      createSource(),
-    ];
+    const sources = [createSource(), createSource({ signature: undefined }), createSource()];
 
     const result = areImportSourcesValid(sources);
 

@@ -17,7 +17,15 @@ describe("request id validation", () => {
   });
 
   it("rejects empty, oversized and free-form values", () => {
-    for (const bad of ["", " req_1", "req 1", "req\n1", "salary=5000 alice", "x".repeat(129), "-leading"]) {
+    for (const bad of [
+      "",
+      " req_1",
+      "req 1",
+      "req\n1",
+      "salary=5000 alice",
+      "x".repeat(129),
+      "-leading",
+    ]) {
       expect(isValidRequestIdentifier(bad)).toBe(false);
     }
   });

@@ -167,9 +167,9 @@ describe("auditReferenceAttachment", () => {
 
   describe("attachAuditReference throws on invalid input", () => {
     it("throws AuditReferenceAttachmentValidationError with redacted message", () => {
-      expect(() =>
-        attachAuditReference({ ...validInput, operationId: "" })
-      ).toThrow(AuditReferenceAttachmentValidationError);
+      expect(() => attachAuditReference({ ...validInput, operationId: "" })).toThrow(
+        AuditReferenceAttachmentValidationError
+      );
 
       try {
         attachAuditReference({ ...validInput, operationId: "" });

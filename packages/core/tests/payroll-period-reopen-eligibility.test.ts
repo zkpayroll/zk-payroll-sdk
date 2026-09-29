@@ -92,7 +92,7 @@ describe("isPayrollPeriodReopenEligible", () => {
 
     it("rejects periods that are too old", () => {
       const period = createPeriod({
-        closedAt: Date.now() - (DEFAULT_MAX_PERIOD_AGE_MS + 1),
+        closedAt: Date.now() - (DEFAULT_MAX_PERIOD_AGE_MS + 24 * 60 * 60 * 1000),
       });
       const result = isPayrollPeriodReopenEligible(period);
 

@@ -126,8 +126,8 @@ export interface PendingObligationInput {
   asset?: string;
   /** Destination the payment is bound for. */
   destinationAddress?: string;
-  /** Epoch ms the obligation falls due. */
-  dueAt?: number;
+  /** Epoch ms or ISO-8601 string the obligation falls due. */
+  dueAt?: number | string;
   /** Reservation ids explicitly bound to this obligation, if the caller tracks them. */
   reservationIds?: string[];
 }

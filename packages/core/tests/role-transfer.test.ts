@@ -28,9 +28,11 @@ import {
 
 const NOW = 1_000_000_000;
 const FROM = "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF";
-const TO   = "GBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBHF2";
+const TO = "GBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBHF2";
 
-function makePending(overrides: Partial<Parameters<typeof proposeRoleTransfer>[0]> = {}): RoleTransferRecord {
+function makePending(
+  overrides: Partial<Parameters<typeof proposeRoleTransfer>[0]> = {}
+): RoleTransferRecord {
   const result = proposeRoleTransfer(
     { role: "payroll_admin", fromAddress: FROM, toAddress: TO, ...overrides },
     NOW
@@ -129,7 +131,12 @@ describe("proposeRoleTransfer", () => {
 
   it("rejects an acceptance window above the maximum", () => {
     const result = proposeRoleTransfer(
-      { role: "payroll_admin", fromAddress: FROM, toAddress: TO, acceptanceWindowMs: MAX_ACCEPTANCE_WINDOW_MS + 1 },
+      {
+        role: "payroll_admin",
+        fromAddress: FROM,
+        toAddress: TO,
+        acceptanceWindowMs: MAX_ACCEPTANCE_WINDOW_MS + 1,
+      },
       NOW
     );
     expect(result.ok).toBe(false);
@@ -138,7 +145,12 @@ describe("proposeRoleTransfer", () => {
   });
 
   it("accepts all recognized signer roles", () => {
-    const roles = ["payroll_admin", "treasury_operator", "compliance_reviewer", "emergency_approver"] as const;
+    const roles = [
+      "payroll_admin",
+      "treasury_operator",
+      "compliance_reviewer",
+      "emergency_approver",
+    ] as const;
     for (const role of roles) {
       const result = proposeRoleTransfer({ role, fromAddress: FROM, toAddress: TO }, NOW);
       expect(result.ok).toBe(true);

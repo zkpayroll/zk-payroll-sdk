@@ -13,3 +13,20 @@ export {
   redactAmount,
   redactIdentifier,
 } from "./redaction";
+export {
+  SafeCredentialHandlingError,
+  validateSafeCredentialUsage,
+  assertSafeCredentialUsage,
+  maskCredential,
+  sanitizeForPersistence,
+  SafeCredentialAuditor,
+} from "./safeCredentialHandling";
+export type {
+  SafeCredentialErrorCode,
+  SafeCredentialFinding,
+  SafeCredentialValidationResult,
+  SafeCredentialContext,
+  SafeCredentialValidationOptions,
+  PersistenceSanitizationOptions,
+  MaskCredentialOptions,
+} from "./safeCredentialHandling";

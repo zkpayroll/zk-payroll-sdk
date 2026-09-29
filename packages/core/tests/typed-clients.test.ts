@@ -630,7 +630,9 @@ describe("PaymentExecutorClient", () => {
     });
 
     it("throws an error when an invalid reasonCode is provided", async () => {
-      await expect(client.cancel(42n, signer, "invalid_reason")).rejects.toThrow("Unsupported cancellation reason: invalid_reason");
+      await expect(client.cancel(42n, signer, "invalid_reason")).rejects.toThrow(
+        "Unsupported cancellation reason: invalid_reason"
+      );
     });
   });
 
