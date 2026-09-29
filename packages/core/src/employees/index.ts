@@ -10,3 +10,4 @@ export * from "./payoutDestination";
 export * from "../events/employeeStatus";
 export * from "./suspensionPayoutEvaluator";
 export * from "../import/resultParser";
+export * from "./versionConflictResponse";

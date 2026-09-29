@@ -15,3 +15,6 @@ export * from "./retryEligibility";
 export * from "./payoutThresholdValidator";
 export * from "./payoutCountValidator";
 export * from "./payrollPeriodReopenEligibility";
+export * from "./paymentInstructionExpiry";
+export * from "./periodOwnershipReader";
+export * from "./payrollSubmissionSequenceValidator";
