@@ -319,6 +319,42 @@ if (!inspection.canLock) {
 }
 ```
 
+## SDK Blocked Execution Diagnostics
+
+Pure, privacy-safe diagnostics engine for identifying, categorizing, and explaining why a payroll execution is blocked prior to on-chain submission (`#605`).
+
+- **Zero Information Leakage**: Never exposes individual compensation numbers, private keys, or unmasked recipient credentials. Only aggregate totals, masked identifiers (`GA2C...6E67`, `EMP***1`), and operational metadata are emitted.
+- **Comprehensive Blocker Detection**: Evaluates treasury reserves & buffers, ZK proof freshness and verification, contract pause states, batch capacity limits, approval governance, wallet rotation cooldowns, recipient eligibility, and session auth nonces.
+- **Actionable Remediation**: Every blocker and warning provides a structured remediation with action types (`fund_treasury`, `generate_proof`, `split_batch`, `reauthenticate`, `resolve_recipients`, etc.) and suggested resolution steps.
+- **Fluent & Service Integration**: Available via `diagnoseBlockedExecution()`, `assertCanExecute()`, `formatBlockedExecutionReport()`, or `PayrollService#diagnoseBlockedExecution()`.
+
+```typescript
+import {
+  diagnoseBlockedExecution,
+  assertCanExecute,
+  formatBlockedExecutionReport,
+} from "@zk-payroll/core";
+
+const report = diagnoseBlockedExecution({
+  runId: "run_001",
+  totalAmount: 50_000,
+  treasuryBalance: 20_000, // Shortfall: $30,000
+  hasProof: false,         // Missing ZK proof
+});
+
+console.log(formatBlockedExecutionReport(report));
+
+if (report.isBlocked) {
+  console.log(`Execution blocked by ${report.blockerCount} issue(s):`);
+  for (const blocker of report.blockers) {
+    console.log(`[${blocker.code}] ${blocker.message}`);
+    console.log(` -> Action: ${blocker.remediation.label} (${blocker.remediation.suggestedAction})`);
+  }
+} else {
+  assertCanExecute(report);
+}
+```
+
 ## Event Stream Deduplication
 
 The SDK provides deduplication helpers to prevent processing the same payroll event more than once. This strengthens payroll workflows while keeping private salary and employee data protected.

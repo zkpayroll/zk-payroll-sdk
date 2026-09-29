@@ -7,11 +7,13 @@
  * stale clients, and race conditions from corrupting payroll execution.
  */
 
-import type { PayrollPeriodStatus } from "./types";
+import type { PayrollStatus as PayrollPeriodStatus } from "./types";
 
 export enum StateConsistencyErrorCode {
   /** The locally tracked status does not match the on-chain status. */
   STATUS_MISMATCH = "STATUS_MISMATCH",
+  /** The local version is ahead of the on-chain version. */
+  STATE_MISMATCH = "STATE_MISMATCH",
   /** The locally tracked version is behind the on-chain version. */
   STALE_CLIENT = "STALE_CLIENT",
   /** The period identifiers do not refer to the same period. */
@@ -110,7 +112,7 @@ export function assertPayrollStateConsistent(
   local: LocalPayrollState,
   onchain: OnChainPayrollState,
   options: StateConsistencyGuardOptions = {}
-  ): void {
+): void {
   const { allowLocalAwead = false, tolerateMissingVersion = true } = options;
   const baseContext: StateConsistencyErrorContext = { ...options.context };
 
@@ -174,8 +176,10 @@ export function assertPayrollStateConsistent(
     );
   }
 
-  const localVersion = typeof local.version === "number" ? local.version : tolerateMissingVersion ? 0 : undefined;
-  const onchainVersion = typeof onchain.version === "number" ? onchain.version : tolerateMissingVersion ? 0 : undefined;
+  const localVersion =
+    typeof local.version === "number" ? local.version : tolerateMissingVersion ? 0 : undefined;
+  const onchainVersion =
+    typeof onchain.version === "number" ? onchain.version : tolerateMissingVersion ? 0 : undefined;
 
   if (localVersion === undefined || onchainVersion === undefined) {
     throw new StateConsistencyError(

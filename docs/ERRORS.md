@@ -250,3 +250,34 @@ draft --> pending_approval --> approved --> executing --> completed
 Each transition is validated by the SDK. Attempting an invalid transition (for example, executing a payroll that has not been approved) throws a `PayrollStateConsistencyError` with code `PAYROLL_STATE_INVALID_TRANSITION`.
 
 The consistency guard also detects stale or inconsistent local state by comparing the local payroll snapshot against the on-chain record. When a divergence is detected, a `PayrollStateConsistencyError` with code `PAYROLL_STATE_STALE_DATA` is thrown, signalling that the caller should refresh before retrying.
+
+### 6. Handling Blocked Execution Diagnostics (`BlockedExecutionError`)
+
+Prior to on-chain submission, payroll executions should be validated with `diagnoseBlockedExecution()` to catch protocol, treasury, proof, recipient, and policy blockers without risk of on-chain reverts.
+
+```typescript
+import {
+  diagnoseBlockedExecution,
+  assertCanExecute,
+  BlockedExecutionError,
+} from "@zk-payroll/core";
+
+try {
+  const report = diagnoseBlockedExecution({
+    runId: "run_001",
+    totalAmount: 50_000,
+    hasProof: true,
+    treasuryBalance: 10_000, // Insufficient treasury balance
+  });
+
+  assertCanExecute(report);
+} catch (error) {
+  if (error instanceof BlockedExecutionError) {
+    console.error(`Blocked by ${error.report.blockerCount} issue(s):`, error.message);
+    const primary = error.primaryBlocker;
+    if (primary) {
+      console.error(`Remediation action: ${primary.remediation.label}`);
+    }
+  }
+}
+```

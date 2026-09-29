@@ -122,6 +122,42 @@ export {
   type DraftLockWarningCode,
 };
 
+import {
+  diagnoseBlockedExecution as diagnoseBlockedExecutionHelper,
+  assertCanExecute as assertCanExecuteHelper,
+  hasExecutionBlocker as hasExecutionBlockerHelper,
+  getDiagnosticsByCategory as getDiagnosticsByCategoryHelper,
+  getFirstRemediation as getFirstRemediationHelper,
+  formatBlockedExecutionReport as formatBlockedExecutionReportHelper,
+  BlockedExecutionError,
+  type BlockedExecutionInput,
+  type BlockedExecutionReport,
+  type BlockedExecutionDiagnostic,
+  type BlockedExecutionReasonCode,
+  type BlockerSeverity,
+  type BlockerCategory,
+  type ExecutionRemediation,
+  type RemediationActionType,
+} from "./payroll/blockedExecutionDiagnostics";
+
+export {
+  diagnoseBlockedExecutionHelper as diagnoseBlockedExecution,
+  assertCanExecuteHelper as assertCanExecute,
+  hasExecutionBlockerHelper as hasExecutionBlocker,
+  getDiagnosticsByCategoryHelper as getDiagnosticsByCategory,
+  getFirstRemediationHelper as getFirstRemediation,
+  formatBlockedExecutionReportHelper as formatBlockedExecutionReport,
+  BlockedExecutionError,
+  type BlockedExecutionInput,
+  type BlockedExecutionReport,
+  type BlockedExecutionDiagnostic,
+  type BlockedExecutionReasonCode,
+  type BlockerSeverity,
+  type BlockerCategory,
+  type ExecutionRemediation,
+  type RemediationActionType,
+};
+
 export {
   submitSequentialPayrollBatches,
   type SafeBatchSubmissionOptions,
@@ -755,7 +791,9 @@ export class PayrollService {
   /**
    * Static helper: Checks whether a recipient is locked (#512).
    */
-  static isRecipientLocked(statusOrRecipient: RecipientLockStatus | { isLocked: boolean }): boolean {
+  static isRecipientLocked(
+    statusOrRecipient: RecipientLockStatus | { isLocked: boolean }
+  ): boolean {
     return isRecipientLockedHelper(statusOrRecipient);
   }
 
@@ -794,20 +832,50 @@ export class PayrollService {
   /**
    * Asserts that a draft is clear to be locked and submitted, throwing DraftLockError if not (#537).
    */
-  assertDraftLockable(
-    draft: unknown,
-    options?: DraftLockInspectionOptions
-  ): void {
+  assertDraftLockable(draft: unknown, options?: DraftLockInspectionOptions): void {
     assertDraftLockableHelper(draft, options);
   }
 
   /**
    * Static helper: Asserts that a draft is clear to be locked and submitted (#537).
    */
-  static assertDraftLockable(
-    draft: unknown,
-    options?: DraftLockInspectionOptions
-  ): void {
+  static assertDraftLockable(draft: unknown, options?: DraftLockInspectionOptions): void {
     assertDraftLockableHelper(draft, options);
+  }
+  /**
+   * Evaluates an execution payload against all protocol, treasury, proof,
+   * recipient, and governance constraints (#605).
+   */
+  diagnoseBlockedExecution(input: BlockedExecutionInput): BlockedExecutionReport {
+    return diagnoseBlockedExecutionHelper(input);
+  }
+
+  /**
+   * Static helper: Evaluates an execution payload for blocked execution diagnostics (#605).
+   */
+  static diagnoseBlockedExecution(input: BlockedExecutionInput): BlockedExecutionReport {
+    return diagnoseBlockedExecutionHelper(input);
+  }
+
+  /**
+   * Asserts that execution is not blocked. Throws BlockedExecutionError if blocked (#605).
+   */
+  assertCanExecute(reportOrInput: BlockedExecutionReport | BlockedExecutionInput): void {
+    const report =
+      "canExecute" in reportOrInput
+        ? (reportOrInput as BlockedExecutionReport)
+        : diagnoseBlockedExecutionHelper(reportOrInput as BlockedExecutionInput);
+    assertCanExecuteHelper(report);
+  }
+
+  /**
+   * Static helper: Asserts that execution is not blocked (#605).
+   */
+  static assertCanExecute(reportOrInput: BlockedExecutionReport | BlockedExecutionInput): void {
+    const report =
+      "canExecute" in reportOrInput
+        ? (reportOrInput as BlockedExecutionReport)
+        : diagnoseBlockedExecutionHelper(reportOrInput as BlockedExecutionInput);
+    assertCanExecuteHelper(report);
   }
 }

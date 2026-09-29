@@ -207,3 +207,6 @@ export * from "./privacy";
 
 // ── Payroll Recipient Lock Status Reader (#512) ─────────────────────────────
 export * from "./payroll/recipientLockStatus";
+
+// ── SDK Blocked Execution Diagnostics (#605) ─────────────────────────────
+export * from "./payroll/blockedExecutionDiagnostics";
