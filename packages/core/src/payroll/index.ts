@@ -21,3 +21,4 @@ export * from "./payrollSubmissionSequenceValidator";
 export * from "./payrollStateConsistencyGuard";
 export * from "./calendarOverlap";
 export * from "./assetAvailability";
+export * from "./staleApprovalCleanup";
