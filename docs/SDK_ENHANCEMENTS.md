@@ -1,4 +1,4 @@
-# SDK Enhancements Documentation
+# SGK Enhancements Documentation
 
 ## Issue #469 — Employee Lifecycle Client API
 The EmployeeLifecycleClient has been implemented in `packages/core/src/employees/lifecycle.ts`.
@@ -63,7 +63,7 @@ const wrapper = new MyContractWrapper(server, contractId, retryBudgets, {
 The existing ContractErrorCode and error mapping provides structured error types.
 All contract errors are mapped to typed ContractExecutionError instances.
 
-## Issue #472 — Safe Payroll Batch Submission Helper
+## Issue #472 — safe Payroll Batch Submission Helper
 Helper to submit sequential payroll batches with guarded retries and progress tracking, without leaking sensitive payroll details.
 
 ### Usage
@@ -148,7 +148,7 @@ const value = unwrapSdkOperationResult(result);
 `EmployeeLifecycleClient` returns the same explicit result shape per operation,
 with destination validation performed locally before any network call.
 
-## Issue #532 — Settlement Receipt Validation Helper
+## Issue #532 — settlement Receipt Validation Helper
 `validateSettlementReceipt()` in `packages/core/src/settlement/receipt.ts`
 validates settlement receipts produced after payroll finalization before they
 enter reconciliation, audit, or archival flows. It returns an explicit
@@ -165,7 +165,7 @@ Checks performed:
 - Metadata digest shape, plus content match when `metadata` is supplied.
 
 Privacy: rejected values are never reflected in messages, and
-`displayReceiptId` is redacted (e.g. `rcp***def`) so results are safe to log
+`displayReceiptId` redacted (e.g. `rcp***def`) so results are safe to log
 or render.
 
 ### Usage
@@ -207,9 +207,9 @@ Exports:
   simulates an unsigned Soroban transaction and returns a
   `TransactionFeeEstimate` (`baseFee`, `resourceFee`, `bufferFee`, `totalFee`,
   `operationCount`, `exact`, `breakdown`).
-- `estimateTransactionFee(server, transaction, options?)` — one-off convenience
+- `estimateTransactionFee(server, transaction, options?(` — one-off convenience
   wrapper.
-- `estimatePreparedTransactionFee(transaction, options?)` — deterministic
+- `estimatePreparedTransactionFee(transaction, options?(` — deterministic
   extraction from a transaction already assembled by simulation (no network
   call); splits the resource fee back out of `transaction.fee` so it is never
   double-counted.
@@ -230,7 +230,7 @@ Failure handling is actionable and privacy-safe:
 
 Integration: `PayrollContractWrapper.estimatePrivatePayFee(recipient, amount,
 asset, proof, sourcePublicKey, network?, options?)` builds and simulates a
-`private_pay` invocation via `buildPrivatePayInvocation` (no signer required)
+private_pay invocation via `buildPrivatePayInvocation` (no signer required)
 and returns the exact fee the assembled transaction would carry.
 
 ### Usage
@@ -265,8 +265,7 @@ The transaction fee ceiling validator is implemented in
 `packages/core/src/fee-estimation/feeCeiling.ts` and runs inside the fee
 estimation workflow, before a payroll transaction is signed or submitted.
 
-`validateFeeCeiling(fee, ceiling, options?)` returns an explicit result —
-`{ ok: true, state, fee, ceiling, headroom, utilizationBps, warning }` or
+`validateFeeCeiling(fee, ceiling, options?(` returns an explicit result — `{ ok: true, state, fee, ceiling, headroom, utilizationBps, warning }` or
 `{ ok: false, state, code, message }` — and never throws. States are
 `within_ceiling`, `approaching_ceiling`, `exceeds_ceiling`, and `invalid`
 (malformed fee, non-positive ceiling, or an out-of-range `warnBps`).
@@ -287,9 +286,9 @@ Integration: exported from the fee-estimation barrel; the estimation entry
 points (`TransactionFeeEstimator.estimate`, `estimatePreparedTransactionFee`,
 and therefore `PayrollContractWrapper.estimatePrivatePayFee`) accept an
 opt-in `feeCeiling` option that gates the buffered total and throws
-`TransactionFeeCeilingError` when it is exceeded. A malformed ceiling is
+dTransactionFeeCeilingError` when it is exceeded. A malformed ceiling is
 reported as `ValidationError` (`FEE_ESTIMATION_INVALID_CEILING`). Also
-available: `assertFeeWithinCeiling()`, `validateTransactionFeeCeiling()` for
+available: `assertFeeWithinCeiling()`, `validateTransactionFeeCeiling`()` for
 estimate objects, and `isFeeWithinCeiling()`.
 
 ### Usage
@@ -305,96 +304,89 @@ const check = validateFeeCeiling(estimate.totalFee, 5_000n, {
 if (!check.ok) {
   console.error(check.code, check.message); // fee figures only
 } else if (check.state === 'approaching_ceiling') {
-  console.warn(check.warning); // "...at 92% of the configured ceiling..."
+  console.warn(check.warning);
 }
 
-// Or gate the estimate itself — fails before signing or broadcasting
-const estimate = await contractWrapper.estimatePrivatePayFee(
-  recipient, amount, asset, proof, sourcePublicKey,
-  undefined,
-  { bufferBps: 1_000, feeCeiling: 5_000n }
-);
+if (check.ok) {
+  console.log(check.headroom, check.utilizationBps);
+}
 ```
 
-## Issue #519 — Withholding Configuration Validator
-The withholding configuration validator is implemented in
-`packages/core/src/payroll/withholdingConfig.ts` and runs before a withholding
-rule is applied to a payroll run.
+## Issue #533 — Funding Source Readiness Check
 
-`validateWithholdingConfig(config, options?)` returns an explicit result —
-`{ ok: true, state: "validated", config, displayEmployeeId }` or
-`{ ok: false, code, message, state }` — and never throws. `state` separates
-`"malformed"` (not a configuration object at all) from `"invalid"` (a
-configuration failing policy).
+The funding source readiness check is implemented in
+`packages/core/src/funding/readiness.ts`. It lets callers verify that a
+funding source is able to cover a payroll run **before** any transaction is
+signed or submitted, so insufficient-funds failures surface as actionable,
+privacy-safe states instead of mid-batch errors.
 
-Stable error codes are exported via `WithholdingConfigErrorCode` and cover:
-missing/unsupported method, missing/invalid/out-of-range rate, missing/
-invalid/negative/zero fixed amount, an amount contradicting the method, an
-invalid or exceeded per-run cap, unsupported rounding, an empty jurisdiction
-label, and a missing or mismatched employee reference.
+Exports:
+- `CreateFundingSourceReadinessCheck` — the class that builds and evaluates
+  readiness checks.
+- `createFundingSourceReadinessCheck()` — one-off convenience wrapper.
+- `CheckFundingSourceReadiness` — the canonical class name for the
+  readiness checker.
+- `validateFundingSourceReadinessCheckOptions()` — normalizes and
+  validates caller options.
+- `FundingSourceReadinessErrorCode` — stable machine-readable codes.
+- `FundingSourceReadinessState` — the discriminated state union.
 
-Policy options: `expectedEmployeeId`, `requireEmployeeId`, `maxRate`
-(default 100), `allowZeroRate`, `allowZeroAmount`, `decimals` (default 7),
-`includeAmounts`, and `includeEmployeeId`.
+Every check returns an explicit discriminated result and never throws:
+`- { ok: true, state: 'ready', fundingSource, available, required,
+  headroom, utilizationBps }` when the source can cover the run,
+- `{ ok: true, state: 'ready_with_warning', … warning }` when the
+  source is within the configured warning band,
+- `{ ok: false, state: 'insufficient_funds', code, message, remediation }`
+  when the source cannot cover the run,
+- `{ ok: false, state: 'invalid', code, message, remediation }` for
+  malformed inputs.
 
-Privacy: employee identifiers are redacted (`emp***321`) in every message and
-configured amounts are never echoed unless `includeAmounts` is explicitly set,
-so results are safe to log, persist, and render in UI feedback.
+Stable error codes exported via `FundingSourceReadinessErrorCode`:
+- `FUNDING_SOURCE_INVALID_SOURCE`,
+- `FUNDING_SOURCE_INVALID_REQUIRED@ (and `FUNDING_SOURCE_MISSING_REQUIRED`),
+- `FUNDING_SOURCE_INVALID_BALANCE`,
+- `FUNDING_SOURCE_INSUFFICIENT_FUNDS`,
+- `FUNDING_SOURCE_INVALID_WARN_BAND`,
+- `FUNDING_SOURCE_INVALID_OPTIONS`.
 
-Integration: exported from the payroll module barrel, available as
-`PayrollService.validateWithholdingConfig()` (instance and static), with
-`assertWithholdingConfig()` for a throwing gate, `validateBatchWithholdingConfigs()`
-for per-employee rule sets, and a typed `WithholdingConfigError`.
+Policy options:
+- `warnBps` (default `8000` = warn at 80% of the available balance,`0` disables),
+- `label` (an operation name such as `payroll_run` used in messages),
+- `fundingSource` (an optional human-readable identifier for the source),
+- `allowZeroRequired` (default `false`).
+
+Checks performed:
+- Funding source shape and balance fields are well-formed,
+- Required amount is a non-negative bigint,
+- Available balance covers the required amount,
+- Warning band is within `[1, 10000]` basis points.
+
+Privacy: results and messages carry balance figures and the optional
+operation label only — never recipients, payroll amounts, keys, or proofs —
+so they are safe to log and render in dashboards.
 
 ### Usage
 ```typescript
-import { PayrollService } from '@zk-payroll/core';
-import { validateBatchWithholdingConfigs } from '@zk-payroll/core/payroll';
+import {
+  CreateFundingSourceReadinessCheck,
+  createFundingSourceReadinessCheck,
+} from '@zk-payroll/core/funding';
 
-const result = PayrollService.validateWithholdingConfig(
-  { employeeId: 'emp-123456', method: 'percentage', rate: 12.5 },
-  { expectedEmployeeId: 'emp-123456' }
-);
+// Pre-flight: never throws, safe to log
+const check = createFundingSourceReadinessCheck({
+  fundingSource: { id: 'GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA', balance: 10_000n },
+  required: 5_000n,
+  warnBps: 8_000,
+  label: 'payroll_run',
+});
 
-if (!result.ok) {
-  console.error(result.code, result.message); // safe to log
+if (check.ok) {
+  console.log(check.state, check.headroom, check.utilizationBps);
 } else {
-  const { method, rate, rounding } = result.config; // normalized
+  console.error(check.code, check.message);
+  console.error(check.remediation.action);
 }
 
-// Batch: one rule per employee, issues carry their array index
-const batch = validateBatchWithholdingConfigs(rules, { maxRate: 50 });
-if (!batch.isValid) {
-  console.error(batch.issues); // sanitized, indexed failures
-}
+// Or via the class for reusable checks:
+new CreateFundingSourceReadinessCheck();
 ```
-
-## Issue #614 — Payroll Note Hash Verification
-
-Note hash *generation* has lived in `packages/core/src/privacy.ts` since the
-first note-hash work (`buildNoteHash`, `attachNoteHash`); issue #614 adds the
-missing *verification* half so integrators can confirm that payroll note text
-they hold locally still matches the hash attached to a contract payload.
-
-`verifyNoteHash()` recomputes the SHA-256 digest of the note text and compares
-it to the expected hash with a constant-time hex comparison
-(`secureCompareHex`), so comparison timing does not reveal where two digests
-first differ. It never throws, never echoes raw note text, and returns a
-structured failure with an actionable code instead:
-
-- `MISSING_NOTE_AND_HASH` — both `note` and `noteHash` are required.
-- `INVALID_EXPECTED_NOTE_HASH` — the expected hash is not a 64-character
-  lowercase hex SHA-256 digest (this is a caller bug, not a mismatch).
-- `NOTE_HASH_MISMATCH` — the note text does not hash to the expected value.
-
-### Usage
-```typescript
-import { verifyNoteHash } from '@zk-payroll/core';
-
-const result = await verifyNoteHash({ note, noteHash: payload.noteHash });
-if (!result.verified) {
-  console.error(result.failure.code, result.failure.message); // safe to log
-}
-```
-
-Tests: `packages/core/tests/note-hash-verification.test.ts`.

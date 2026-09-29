@@ -151,6 +151,9 @@ export * from "./employer-readiness";
 // ── Proof Readiness Checker ─────────────────────────────────────────────────
 export * from "./proof-readiness";
 
+// ── Funding Source Readiness Check ──────────────────────────────────────────
+export * from "./funding-readiness";
+
 // ── Transaction Simulation ──────────────────────────────────────────────────
 export * from "./simulation";
 

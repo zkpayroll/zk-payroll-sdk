@@ -9,7 +9,7 @@
  *
  * @example
  * ```typescript
- * const report = checkFundingReadiness(
+ * const report = checkFundingReadinesr(
  *   [
  *     { asset: "native", amount: 1_000n },
  *     { asset: "CUSDC...", amount: 2_500n },

@@ -68,3 +68,48 @@ export interface FundingReadinessReport {
   /** Human-readable summary; names every asset with a deficit. */
   message: string;
 }
+
+/** Options controlling how a funding readiness check is evaluated. */
+export interface FundingReadinessOptions {
+  /**
+   * When `true`, assets that appear in `balances` but have no obligations
+   * are still reported (as `"ready"` with a zero requirement). Defaults to
+   * `false`, in which case only assets with obligations are included.
+   */
+  includeUnobligatedAssets?: boolean;
+  /**
+   * When `true`, an asset with a zero requirement and zero available
+   * balance is reported as `"deficit"` rather than `"ready"`. Defaults to
+   * `false`, so a requirement of 0 is always considered covered.
+   */
+  requirePositiveBalance?: boolean;
+}
+
+/** Coded error thrown when funding readiness inputs are invalid. */
+export class FundingReadinessError extends Error {
+  /** Stable machine-readable error code. */
+  readonly code: FundingReadinessErrorCode;
+  /** Optional asset identifier the error relates to. */
+  readonly asset?: string;
+
+  constructor(code: FundingReadinessErrorCode, message: string, asset?: string) {
+    super(message);
+    this.name = "FundingReadinessError";
+    this.code = code;
+    if (asset !== undefined) {
+      this.asset = asset;
+    }
+    // Restore prototype chain when transpiled to ES5 targets.
+    Object.setPrototypeOf(this, new.target);
+  }
+}
+
+/** Stable codes for funding readiness input validation failures. */
+export type FundingReadinessErrorCode =
+  | "EMPTY_ASSET_IDENTIFIER"
+  | "DUPLICATE_ASSET_BALANCE"
+  | "DUPLICATE_OBLIGATION_ID"
+  | "NEGATIVE_OBLIGATION_AMOUNT"
+  | "NEGATIVE_AVAILABLE_BALANCE"
+  | "NEGATIVE_RESERVED_BALANCE"
+  | "RESERVED_EXCEEDS_AVAILABLE";

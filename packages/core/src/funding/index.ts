@@ -13,4 +13,7 @@ export type {
   FundingObligation,
   FundingReadinessReport,
 } from "./types";
-export { checkFundingReadiness, groupObligationsByAsset } from "./readiness";
+export {
+  checkFundingReadiness,
+  groupObligationsByAsset,
+} from "./readiness";
