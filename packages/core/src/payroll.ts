@@ -10,6 +10,10 @@ import type { ServerCacheAdapter } from "./cache/ServerCacheAdapter";
 import { CacheNamespace } from "./cache/types";
 import type { EmployerUpdatedEvent } from "./events/employerUpdated";
 import { redactError } from "./redaction/RedactionEngine";
+import {
+  assertPayrollOperatorPermission,
+  PayrollOperatorPermissionError,
+} from "./roles/capabilityMatrix";
 import { IdempotencyRegistry, createPaymentIdempotencyKey } from "./core/idempotency";
 import { createPayrollProgressEvent } from "./progress";
 import { assertValidPayrollWitness } from "./crypto/proofInputSanitizer";
@@ -195,6 +199,11 @@ export interface FilterCriteria {
   minAmount: bigint;
 }
 
+export interface PayrollServiceOptions {
+  /** Resolve authoritative role assignments for an operator before payroll submission. */
+  resolveOperatorRoles?: (operatorAddress: string) => Promise<readonly string[]>;
+}
+
 /**
  * PayrollService — API layer for private payroll payments.
  *
@@ -214,7 +223,8 @@ export class PayrollService {
     signer: Keypair | ISigner,
     private readonly network: string = Networks.TESTNET,
     private readonly logger?: SdkLogger,
-    private readonly cache?: ServerCacheAdapter
+    private readonly cache?: ServerCacheAdapter,
+    private readonly options: PayrollServiceOptions = {}
   ) {
     this.signer = toISigner(signer);
   }
@@ -300,6 +310,22 @@ export class PayrollService {
         })
       );
       throw destinationError;
+    }
+
+    if (this.options.resolveOperatorRoles) {
+      try {
+        const operatorAddress = await this.signer.getPublicKey();
+        const operatorRoles = await this.options.resolveOperatorRoles(operatorAddress);
+        assertPayrollOperatorPermission(operatorAddress, operatorRoles, "submit");
+      } catch (error) {
+        if (error instanceof PayrollOperatorPermissionError) throw error;
+        throw new PayrollOperatorPermissionError(
+          "OPERATOR_PERMISSION_LOOKUP_FAILED",
+          "submit",
+          "Unable to verify payroll operator permissions. Check the role registry connection and retry.",
+          error
+        );
+      }
     }
 
     // 2. Generate ZK proof

@@ -18,6 +18,7 @@ export { PayrollError, PayrollServiceErrorCode, handleApiError } from "./errors"
 
 // ── Adapters Layer ──────────────────────────────────────────────────────────
 export { PayrollService } from "./payroll";
+export type { PayrollServiceOptions } from "./payroll";
 export { PayrollContract } from "./contract";
 export { ZKProofGenerator } from "./crypto/proofs";
 export { SnarkjsProofGenerator } from "./crypto/SnarkjsProofGenerator";
@@ -81,6 +82,7 @@ export * from "./cache";
 export * from "./amendments";
 export * from "./types";
 export * from "./progress";
+export * from "./roles";
 export {
   IdempotencyRegistry,
   createPaymentIdempotencyKey,

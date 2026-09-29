@@ -29,6 +29,18 @@ const result = await service.processPayment({
 - Reuse the same key for retries of that same intent
 - Use a new key for genuinely new payment requests
 
+## Payroll operator permission validation
+
+`PayrollService` can validate the connected signer against an authoritative role source before generating a proof or submitting a payment. Supply `resolveOperatorRoles` in the final constructor options argument; the resolver receives the signer address and must return its registered payroll roles.
+
+```typescript
+const service = new PayrollService(wrapper, proofGenerator, signer, network, logger, cache, {
+  resolveOperatorRoles: (operatorAddress) => roleRegistry.getRoles(operatorAddress),
+});
+```
+
+The SDK checks the `submit` capability using its payroll role matrix and rejects missing, malformed, or insufficient role data with `PayrollOperatorPermissionError`. Without a resolver, existing integrations retain their current behavior. Treat the resolver as a trusted authorization source; do not use roles supplied by an untrusted request.
+
 ### Typed Contract Clients
 
 The SDK provides fully typed client wrappers for the core ZK Payroll Soroban contracts. Each client extends `BaseContractWrapper` and handles XDR encoding/decoding automatically.

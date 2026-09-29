@@ -60,6 +60,71 @@ describe("PayrollService", () => {
       );
     });
 
+    it("checks resolved operator roles before generating a proof", async () => {
+      const { mockWrapper, mockProofGen, signer } = createMocks();
+      const resolveOperatorRoles = jest.fn().mockResolvedValue(["batch_creator"]);
+      const service = new PayrollService(
+        mockWrapper,
+        mockProofGen,
+        signer,
+        undefined,
+        undefined,
+        undefined,
+        { resolveOperatorRoles }
+      );
+
+      await service.processPayment({ recipient: "GABC123", amount: 100n, asset: "native" });
+
+      expect(resolveOperatorRoles).toHaveBeenCalledWith(signer.publicKey());
+      expect(mockProofGen.generateProof).toHaveBeenCalledTimes(1);
+      expect(mockWrapper.privatePay).toHaveBeenCalledTimes(1);
+    });
+
+    it("rejects operators without submit permission before proof generation", async () => {
+      const { mockWrapper, mockProofGen, signer } = createMocks();
+      const service = new PayrollService(
+        mockWrapper,
+        mockProofGen,
+        signer,
+        undefined,
+        undefined,
+        undefined,
+        { resolveOperatorRoles: async () => ["auditor"] }
+      );
+
+      await expect(
+        service.processPayment({ recipient: "GABC123", amount: 100n, asset: "native" })
+      ).rejects.toMatchObject({
+        name: "PayrollOperatorPermissionError",
+        code: "OPERATOR_PERMISSION_DENIED",
+        action: "submit",
+      });
+      expect(mockProofGen.generateProof).not.toHaveBeenCalled();
+      expect(mockWrapper.privatePay).not.toHaveBeenCalled();
+    });
+
+    it("fails closed when the operator role resolver returns malformed role data", async () => {
+      const { mockWrapper, mockProofGen, signer } = createMocks();
+      const service = new PayrollService(
+        mockWrapper,
+        mockProofGen,
+        signer,
+        undefined,
+        undefined,
+        undefined,
+        { resolveOperatorRoles: async () => [null] as unknown as string[] }
+      );
+
+      await expect(
+        service.processPayment({ recipient: "GABC123", amount: 100n, asset: "native" })
+      ).rejects.toMatchObject({
+        name: "PayrollOperatorPermissionError",
+        code: "OPERATOR_ROLE_INVALID",
+      });
+      expect(mockProofGen.generateProof).not.toHaveBeenCalled();
+      expect(mockWrapper.privatePay).not.toHaveBeenCalled();
+    });
+
     it("invokes contract.privatePay with correct args after proof generation", async () => {
       const { mockWrapper, mockProofGen, signer } = createMocks();
       const service = new PayrollService(mockWrapper, mockProofGen, signer);

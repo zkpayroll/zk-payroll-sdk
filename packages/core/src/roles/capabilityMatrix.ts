@@ -77,6 +77,25 @@ export class PayrollRolePermissionError extends Error {
   }
 }
 
+export type PayrollOperatorPermissionErrorCode =
+  | "OPERATOR_IDENTITY_MISSING"
+  | "OPERATOR_ROLES_MISSING"
+  | "OPERATOR_ROLE_INVALID"
+  | "OPERATOR_PERMISSION_DENIED"
+  | "OPERATOR_PERMISSION_LOOKUP_FAILED";
+
+export class PayrollOperatorPermissionError extends Error {
+  constructor(
+    public readonly code: PayrollOperatorPermissionErrorCode,
+    public readonly action: string,
+    message: string,
+    public readonly cause?: unknown
+  ) {
+    super(message);
+    this.name = "PayrollOperatorPermissionError";
+  }
+}
+
 /**
  * Default role capability matrix defining permissions across all standard roles.
  */
@@ -336,6 +355,66 @@ export class PayrollRoleCapabilityMatrix {
 // ── Standalone Utility Helpers ──────────────────────────────────────────────
 
 const defaultInstance = new PayrollRoleCapabilityMatrix();
+
+/** Validates operator identity and role data, then asserts the requested SDK capability. */
+export function assertPayrollOperatorPermission(
+  operatorAddress: unknown,
+  operatorRoles: unknown,
+  action: PayrollAction | string
+): void {
+  if (typeof operatorAddress !== "string" || !operatorAddress.trim()) {
+    throw new PayrollOperatorPermissionError(
+      "OPERATOR_IDENTITY_MISSING",
+      String(action),
+      "A connected operator address is required before payroll actions can be authorized."
+    );
+  }
+
+  if (!Array.isArray(operatorRoles) || operatorRoles.length === 0) {
+    throw new PayrollOperatorPermissionError(
+      "OPERATOR_ROLES_MISSING",
+      String(action),
+      "No payroll operator roles were found. Confirm the operator is registered and role data is available."
+    );
+  }
+
+  const normalizedRoles: PayrollRole[] = [];
+  for (const role of operatorRoles) {
+    if (typeof role !== "string" || !role.trim()) {
+      throw new PayrollOperatorPermissionError(
+        "OPERATOR_ROLE_INVALID",
+        String(action),
+        "Operator role data is malformed. Reload the operator's assigned roles before retrying."
+      );
+    }
+
+    const normalizedRole = role.trim().toLowerCase();
+    if (!(ALL_PAYROLL_ROLES as readonly string[]).includes(normalizedRole)) {
+      throw new PayrollOperatorPermissionError(
+        "OPERATOR_ROLE_INVALID",
+        String(action),
+        "Operator role data contains an unsupported role. Refresh the SDK role mapping before retrying."
+      );
+    }
+    normalizedRoles.push(normalizedRole as PayrollRole);
+  }
+
+  if (!(ALL_PAYROLL_ACTIONS as readonly string[]).includes(action)) {
+    throw new PayrollOperatorPermissionError(
+      "OPERATOR_PERMISSION_DENIED",
+      String(action),
+      `Payroll action '${String(action)}' is not recognized by this SDK version.`
+    );
+  }
+
+  if (!defaultInstance.hasUserCapability(normalizedRoles, action)) {
+    throw new PayrollOperatorPermissionError(
+      "OPERATOR_PERMISSION_DENIED",
+      action,
+      `The assigned payroll roles do not allow '${action}'. Request an authorized role from your organization administrator.`
+    );
+  }
+}
 
 /**
  * Checks if a role has capability for a given action using the default matrix.
