@@ -19,6 +19,74 @@ export interface PayrollState {
   updatedAt?: number;
 }
 
+export type ExecutionInitiatorRole = BatchCreatorRole;
+
+/**
+ * Validates whether the execution initiator is authorized to start a payroll run.
+ * This is intentionally non-throwing so callers can inspect the result and decide
+ * how to surface it in dashboards and SDK consumers.
+ */
+export function validateExecutionInitiatorAuthorization(
+  caller: string,
+  callerRoles: string[] = [],
+  requiredRoles: ExecutionInitiatorRole[] = ["BATCH_CREATOR", "PAYROLL_ADMIN", "EMPLOYER"],
+  context: ErrorContext = {}
+): { isAuthorized: boolean; requiredRoles: readonly ExecutionInitiatorRole[]; caller: string } {
+  if (!caller || typeof caller !== "string") {
+    return {
+      isAuthorized: false,
+      requiredRoles,
+      caller: caller || "",
+    };
+  }
+
+  const normalizedRoles = callerRoles.map((role) => String(role).trim().toUpperCase());
+  const required = requiredRoles.map((role) => role.toUpperCase() as ExecutionInitiatorRole);
+  const isAuthorized = normalizedRoles.some((role) => required.includes(role as ExecutionInitiatorRole));
+
+  return {
+    isAuthorized,
+    requiredRoles: required,
+    caller,
+  };
+}
+
+/**
+ * Assert that the execution initiator holds a valid payroll role before the SDK
+ * allows execution to proceed.
+ */
+export function assertExecutionInitiatorAuthorized(
+  caller: string,
+  callerRoles: string[] = [],
+  requiredRoles: ExecutionInitiatorRole[] = ["BATCH_CREATOR", "PAYROLL_ADMIN", "EMPLOYER"],
+  context: ErrorContext = {}
+): void {
+  const { isAuthorized } = validateExecutionInitiatorAuthorization(caller, callerRoles, requiredRoles, context);
+  if (!isAuthorized) {
+    if (!caller || typeof caller !== "string") {
+      throw new BatchCreatorPermissionError(
+        "Caller address is required to verify execution initiator authorization",
+        BatchCreatorPermissionErrorCode.UNAUTHORIZED_CREATOR,
+        { ...context, caller: caller || "[empty]" },
+        {
+          attemptedCaller: caller,
+          requiredRoles,
+        }
+      );
+    }
+
+    throw new BatchCreatorPermissionError(
+      `Caller ${caller} is not authorized to initiate payroll execution. Required one of: ${requiredRoles.join(", ")}`,
+      BatchCreatorPermissionErrorCode.UNAUTHORIZED_CREATOR,
+      { ...context, caller },
+      {
+        attemptedCaller: caller,
+        requiredRoles,
+      }
+    );
+  }
+}
+
 export const PAYROLL_STATE_TRANSITIONS: Readonly<
   Record<PayrollState["status"], readonly PayrollState["status"][]>
 > = {

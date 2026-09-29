@@ -471,4 +471,47 @@ describe("SDK Blocked Execution Diagnostics (#605)", () => {
       expect(() => PayrollService.assertCanExecute(blockedInput)).toThrow(BlockedExecutionError);
     });
   });
+
+  describe("Execution Initiator Authorization", () => {
+    it("blocks execution when the initiator lacks a required payroll role", () => {
+      const report = diagnoseBlockedExecution({
+        ...VALID_BASE_INPUT,
+        initiatorAddress: "GCL5G5E2N7R7QJQ4J3TY4BGV5M2W5XJQ4MIXQ7ZQ",
+        initiatorRoles: ["EMPLOYEE"],
+        requiredInitiatorRoles: ["BATCH_CREATOR", "PAYROLL_ADMIN", "EMPLOYER"],
+      });
+
+      expect(report.isBlocked).toBe(true);
+      expect(hasExecutionBlocker(report, "OPERATOR_UNAUTHORIZED")).toBe(true);
+      expect(report.primaryBlocker?.code).toBe("OPERATOR_UNAUTHORIZED");
+      expect(report.primaryBlocker?.metadata?.requiredRoles).toContain("BATCH_CREATOR");
+      expect(report.primaryBlocker?.metadata?.currentRoles).toBe("EMPLOYEE");
+    });
+
+    it("allows execution when the initiator has a required role", () => {
+      const report = diagnoseBlockedExecution({
+        ...VALID_BASE_INPUT,
+        initiatorAddress: "GCL5G5E2N7R7QJQ4J3TY4BGV5M2W5XJQ4MIXQ7ZQ",
+        initiatorRoles: ["PAYROLL_ADMIN"],
+        requiredInitiatorRoles: ["BATCH_CREATOR", "PAYROLL_ADMIN", "EMPLOYER"],
+      });
+
+      expect(report.canExecute).toBe(true);
+      expect(report.isBlocked).toBe(false);
+      expect(hasExecutionBlocker(report, "OPERATOR_UNAUTHORIZED")).toBe(false);
+    });
+
+    it("supports explicit authorization state when precomputed by the caller", () => {
+      const report = diagnoseBlockedExecution({
+        ...VALID_BASE_INPUT,
+        initiatorAddress: "GCL5G5E2N7R7QJQ4J3TY4BGV5M2W5XJQ4MIXQ7ZQ",
+        initiatorRoles: ["EMPLOYEE"],
+        requiredInitiatorRoles: ["PAYROLL_ADMIN"],
+        isInitiatorAuthorized: true,
+      });
+
+      expect(report.isBlocked).toBe(false);
+      expect(report.canExecute).toBe(true);
+    });
+  });
 });

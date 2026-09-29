@@ -49,12 +49,14 @@ export type BlockedExecutionReasonCode =
   | "EXECUTION_NONCE_INVALID"
   | "DUPLICATE_EXECUTION"
   | "RUN_ALREADY_EXECUTED"
-  | "RUN_CANCELLED";
+  | "RUN_CANCELLED"
+  // Initiator Authorization
+  | "INITIATOR_UNAUTHORIZED";
 
 export type BlockerSeverity = "blocker" | "warning" | "info";
 
 export type BlockerCategory =
-  "treasury" | "proof" | "contract" | "policy" | "approval" | "recipient" | "auth";
+  "treasury" | "proof" | "contract" | "policy" | "approval" | "recipient" | "auth" | "initiator";
 
 export const BLOCKER_CATEGORIES: readonly BlockerCategory[] = Object.freeze([
   "treasury",
@@ -64,6 +66,7 @@ export const BLOCKER_CATEGORIES: readonly BlockerCategory[] = Object.freeze([
   "approval",
   "recipient",
   "auth",
+  "initiator",
 ]);
 
 export type RemediationActionType =
@@ -127,6 +130,14 @@ export interface BlockedExecutionInput {
     current: number;
     required: number;
   };
+  /** Optional execution initiator Stellar address or internal identifier. */
+  initiatorAddress?: string;
+  /** Roles currently held by the execution initiator. */
+  initiatorRoles?: string[];
+  /** Required roles for this execution. Defaults to batch creator/admin roles. */
+  requiredInitiatorRoles?: string[];
+  /** Explicit authorization state when the caller has already been checked. */
+  isInitiatorAuthorized?: boolean;
 }
 
 // ── Output Types ────────────────────────────────────────────────────────────
@@ -192,6 +203,36 @@ export function diagnoseBlockedExecution(input: BlockedExecutionInput): BlockedE
         suggestedAction: "Reconnect your wallet and refresh your session credentials.",
       },
     });
+  }
+
+  if (input.initiatorAddress !== undefined || input.initiatorRoles !== undefined) {
+    const requiredRoles = input.requiredInitiatorRoles ?? ["BATCH_CREATOR", "PAYROLL_ADMIN", "EMPLOYER"];
+    const callerRoles = (input.initiatorRoles ?? []).map((role) => String(role).trim().toUpperCase());
+    const normalizedRequired = requiredRoles.map((role) => String(role).trim().toUpperCase());
+    const isAuthorized =
+      input.isInitiatorAuthorized ??
+      callerRoles.some((role) => normalizedRequired.includes(role));
+
+    if (!isAuthorized) {
+      diagnostics.push({
+        code: "OPERATOR_UNAUTHORIZED",
+        category: "auth",
+        severity: "blocker",
+        title: "Execution Initiator Not Authorized",
+        message:
+          "The connected wallet or operator is not authorized to initiate this payroll execution. Use an account with batch-creator or payroll-admin privileges.",
+        remediation: {
+          label: "Switch Account",
+          action: "reauthenticate",
+          suggestedAction:
+            "Connect an authorized signer and retry with a role granted by the payroll admin or employer.",
+        },
+        metadata: {
+          requiredRoles: normalizedRequired.join(",") || "none",
+          currentRoles: callerRoles.join(",") || "none",
+        },
+      });
+    }
   }
 
   if (input.isWrongNetwork) {
@@ -685,6 +726,49 @@ export function diagnoseBlockedExecution(input: BlockedExecutionInput): BlockedE
     });
   }
 
+  // 11. Initiator Authorization
+  const hasInitiatorContext =
+    input.initiatorAddress !== undefined ||
+    input.initiatorRoles !== undefined ||
+    input.requiredInitiatorRoles !== undefined ||
+    input.isInitiatorAuthorized !== undefined;
+
+  const resolvedInitiatorAuthorized =
+    input.isInitiatorAuthorized ??
+    (input.initiatorRoles ?? []).some((role) =>
+      (input.requiredInitiatorRoles ?? ["BATCH_CREATOR", "PAYROLL_ADMIN", "EMPLOYER"]).some(
+        (requiredRole) => String(requiredRole).trim().toUpperCase() === String(role).trim().toUpperCase()
+      )
+    );
+
+  if (
+    hasInitiatorContext &&
+    !resolvedInitiatorAuthorized &&
+    (input.initiatorAddress !== undefined ||
+      input.initiatorRoles !== undefined ||
+      input.requiredInitiatorRoles !== undefined ||
+      input.isInitiatorAuthorized === false)
+  ) {
+    diagnostics.push({
+      code: "INITIATOR_UNAUTHORIZED",
+      category: "initiator",
+      severity: "blocker",
+      title: "Execution Initiator Unauthorized",
+      message:
+        "The execution initiator does not have the required roles or authorization to perform this action.",
+      remediation: {
+        label: "Check Roles & Permissions",
+        action: "custom",
+        suggestedAction:
+          "Ensure the initiator has the correct Stellar roles (e.g., payroll creator, admin) and re-attempt execution.",
+      },
+      metadata: {
+        requiredRoles: (input.requiredInitiatorRoles ?? ["BATCH_CREATOR", "PAYROLL_ADMIN", "EMPLOYER"]).join(",") || "none",
+        currentRoles: (input.initiatorRoles ?? []).join(",") || "none",
+      },
+    });
+  }
+
   // Roll up diagnostic results
   const blockers = diagnostics.filter((d) => d.severity === "blocker");
   const warnings = diagnostics.filter((d) => d.severity === "warning");
@@ -697,6 +781,7 @@ export function diagnoseBlockedExecution(input: BlockedExecutionInput): BlockedE
     approval: [],
     recipient: [],
     auth: [],
+    initiator: [],
   };
 
   for (const item of diagnostics) {
