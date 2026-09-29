@@ -172,7 +172,7 @@ export class EmployeeRegistry {
         success: false,
         employeeId,
         status: "not_found",
-        message: `No employee registered with id "${employeeId}".",
+        message: `No employee registered with id "${employeeId}".`,
       };
     }
 
