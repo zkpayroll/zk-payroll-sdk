@@ -100,7 +100,7 @@ describe("proposeRoleTransfer", () => {
   });
 
   it("rejects free-text reasons and invalid timestamps without echoing payroll details", () => {
-    const privateDetail = "salary_9000_employee_jane";
+    const privateDetail = "salary: 9000 for employee Jane";
     const result = proposeRoleTransfer(
       { role: "payroll_admin", fromAddress: FROM, toAddress: TO, reason: privateDetail },
       Number.NaN

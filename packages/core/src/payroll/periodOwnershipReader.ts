@@ -231,7 +231,7 @@ export function getEffectiveOwner(
 export function isOwnershipValid(
   ownership: PayrollPeriodOwnership
 ): boolean {
-  return (
+  return Boolean(
     ownership.status === "active" &&
     ownership.ownerId &&
     ownership.ownerId.trim().length > 0 &&

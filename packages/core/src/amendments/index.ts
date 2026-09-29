@@ -10,3 +10,19 @@ export type {
   AmendmentHistoryRecord,
   AmendmentHistoryRecordInput,
 } from "./history";
+export {
+  createPayrollRunAmendment,
+  inspectPayrollRunAmendment,
+  validatePayrollRunAmendment,
+  authorizePayrollRunAmendment,
+} from "./runAmendment";
+export type {
+  AmendmentAuthorizationStatus,
+  PayrollRunCommitment,
+  CreatePayrollRunAmendmentInput,
+  AmendmentInspectionSummary,
+  PayrollRunAmendment,
+  PayrollRunAmendmentErrorCode,
+  PayrollRunAmendmentValidationResult,
+  ValidatePayrollRunAmendmentOptions,
+} from "./runAmendment";

@@ -477,6 +477,49 @@ reference, and metadata digest — returning an explicit result with a stable
 error code and a sanitized, actionable message that never echoes rejected
 values. The display receipt ID in the result is redacted for safe logging.
 
+## Payroll run amendments
+
+The SDK provides `createPayrollRunAmendment`, `inspectPayrollRunAmendment`, `validatePayrollRunAmendment`, and `authorizePayrollRunAmendment` to support controlled, privacy-preserving modifications to active payroll runs before settlement:
+
+- **Create & Diff**: Compares existing and proposed commitments, deriving deterministic diffs (`added`, `removed`, `modified`) and aggregate inspection summaries.
+- **Privacy Guarantees**: Raw compensation amounts and recipient addresses are masked in public descriptions and omitted from validation error messages. Reasons are restricted to lowercase operational codes (e.g. `retroactive_adjustment`, `hours_correction`) to prevent accidental PII/salary leakage.
+- **Authorization Lifecycle**: Enforces authorizer role checks, positive revision increments, duplicate recipient detection, and terminal state safeguards.
+
+```typescript
+import {
+  createPayrollRunAmendment,
+  inspectPayrollRunAmendment,
+  validatePayrollRunAmendment,
+  authorizePayrollRunAmendment,
+} from "@zk-payroll/core";
+
+// 1. Create a proposed amendment run with calculated diffs
+const amendment = createPayrollRunAmendment({
+  payrollId: "pay-2026-09-01",
+  revision: 2,
+  authorizer: "GADMIN...",
+  reason: "retroactive_adjustment",
+  currentCommitments: [{ recipient: "G_ALICE...", amount: 5000n, asset: "USDC" }],
+  proposedCommitments: [{ recipient: "G_ALICE...", amount: 5500n, asset: "USDC" }],
+});
+
+// 2. Inspect aggregate diffs and risk level (privacy-safe, no exposed salary data)
+const inspection = inspectPayrollRunAmendment(amendment);
+console.log(inspection.redactedDescription);
+// "Amendment (rev 2) for payroll pay...-01: 0 added, 1 modified, 0 removed across asset(s) USDC."
+
+// 3. Validate against operational constraints and allowed signers
+const validation = validatePayrollRunAmendment(amendment, {
+  allowedAuthorizers: ["GADMIN..."],
+  currentPayrollStatus: "draft",
+});
+
+if (validation.ok) {
+  // 4. Authorize for contract submission
+  const authorized = authorizePayrollRunAmendment(amendment, "GADMIN...");
+}
+```
+
 ## Signed payroll instruction builder
 
 ### Payroll owner transfer safety

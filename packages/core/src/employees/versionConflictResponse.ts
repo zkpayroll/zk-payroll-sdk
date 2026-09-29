@@ -101,7 +101,7 @@ export function createEmployeeVersionConflictResponse(
 ): EmployeeVersionConflictResponse {
   const {
     attemptAutoResolve = true,
-    preferredStrategy = "USE_LATEST",
+    preferredStrategy = "TAKE_LATEST",
     redactEmployeeId: shouldRedactId = true,
   } = options;
 
