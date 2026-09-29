@@ -99,6 +99,27 @@ describe("proposeRoleTransfer", () => {
     expect(result.error).toBe("same_address");
   });
 
+  it("rejects free-text reasons and invalid timestamps without echoing payroll details", () => {
+    const privateDetail = "salary_9000_employee_jane";
+    const result = proposeRoleTransfer(
+      { role: "payroll_admin", fromAddress: FROM, toAddress: TO, reason: privateDetail },
+      Number.NaN
+    );
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.error).toBe("invalid_window");
+    expect(result.message).not.toContain(privateDetail);
+
+    const reasonResult = proposeRoleTransfer(
+      { role: "payroll_admin", fromAddress: FROM, toAddress: TO, reason: privateDetail },
+      NOW
+    );
+    expect(reasonResult.ok).toBe(false);
+    if (reasonResult.ok) return;
+    expect(reasonResult.error).toBe("invalid_reason");
+    expect(reasonResult.message).not.toContain(privateDetail);
+  });
+
   it("rejects an invalid fromAddress", () => {
     const result = proposeRoleTransfer(
       { role: "payroll_admin", fromAddress: "not-an-address", toAddress: TO },

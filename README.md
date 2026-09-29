@@ -479,6 +479,10 @@ values. The display receipt ID in the result is redacted for safe logging.
 
 ## Signed payroll instruction builder
 
+### Payroll owner transfer safety
+
+The authorization role-transfer helper bounds nominee acceptance windows to 5 minutes–30 days and requires valid signer addresses and safe epoch-millisecond timestamps. Transfer reasons are restricted to short lowercase operational codes; free text is rejected so employee or compensation details cannot leak through transfer summaries or errors. Treat `finalized` as the signal to submit the contract role assignment; `pending`, `accepted`, cancelled, and expired proposals must not change the on-chain owner.
+
 `SignedPayrollInstructionBuilder` composes a payroll request, deterministically
 serializes it (the same encoder used for on-chain command payloads), and
 produces a signed, auditable instruction — independent of transaction
