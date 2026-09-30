@@ -8,6 +8,11 @@
  * individual salary amounts, private keys, secrets, or unmasked recipient
  * credentials. Only aggregate totals, masked identifiers, and operational
  * metadata are emitted.
+ *
+ * Failed Payout Retry Diagnostics (#606): Adds retry-aware diagnostics so
+ * integrators can distinguish transient failures (safe to retry) from
+ * terminal failures (must be resolved before retrying) and receive
+ * actionable retry guidance.
  */
 
 import { maskStellarAddress, maskEmployeeId } from "../issues/exportSanitizer";
@@ -51,12 +56,16 @@ export type BlockedExecutionReasonCode =
   | "RUN_ALREADY_EXECUTED"
   | "RUN_CANCELLED"
   // Initiator Authorization
-  | "INITIATOR_UNAUTHORIZED";
+  | "INITIATOR_UNAUTHORIZED"
+  // Retry Diagnostics
+  | "RETRY_TRANSIENT_FAILURE"
+  | "RETRY_TERMINAL_FAILURE"
+  | "RETRY_ATTEMPTS_EXHAUSTED";
 
 export type BlockerSeverity = "blocker" | "warning" | "info";
 
 export type BlockerCategory =
-  "treasury" | "proof" | "contract" | "policy" | "approval" | "recipient" | "auth" | "initiator";
+  "treasury" | "proof" | "contract" | "policy" | "approval" | "recipient" | "auth" | "initiator" | "retry";
 
 export const BLOCKER_CATEGORIES: readonly BlockerCategory[] = Object.freeze([
   "treasury",
@@ -67,6 +76,7 @@ export const BLOCKER_CATEGORIES: readonly BlockerCategory[] = Object.freeze([
   "recipient",
   "auth",
   "initiator",
+  "retry",
 ]);
 
 export type RemediationActionType =
@@ -79,6 +89,7 @@ export type RemediationActionType =
   | "resume_contract"
   | "refresh_policy"
   | "verify_nonce"
+  | "retry_execution"
   | "custom";
 
 export interface ExecutionRemediation {
@@ -96,6 +107,29 @@ export interface BlockedExecutionDiagnostic {
   message: string;
   remediation: ExecutionRemediation;
   metadata?: Record<string, string | number | boolean>;
+}
+
+// ── Retry Diagnostics Types ─────────────────────────────────────────────────
+
+export type RetryFailureClass = "transient" | "terminal" | "unknown";
+
+export interface FailedPayoutRetryInput {
+  /** Number of retry attempts already performed for this payout/run. */
+  attemptCount?: number;
+  /** Maximum retry attempts permitted by policy. Defaults to 3. */
+  maxAttempts?: number;
+  /** Classification of the last failure, if known. */
+  failureClass?: RetryFailureClass;
+  /** Raw failure code from the underlying submission layer. */
+  failureCode?: string;
+  /** Human-readable failure reason (must be privacy-safe). */
+  failureReason?: string;
+  /** Whether the failure is considered safe to retry automatically. */
+  isRetryable?: boolean;
+  /** Optional ISO timestamp of the last attempt. */
+  lastAttemptAt?: string | number | Date | null;
+  /** Optional backoff hint in milliseconds. */
+  suggestedBackoffMs?: number;
 }
 
 // ── Input Types ─────────────────────────────────────────────────────────────
@@ -138,6 +172,8 @@ export interface BlockedExecutionInput {
   requiredInitiatorRoles?: string[];
   /** Explicit authorization state when the caller has already been checked. */
   isInitiatorAuthorized?: boolean;
+  /** Optional failed payout retry context for retry diagnostics. */
+  retry?: FailedPayoutRetryInput;
 }
 
 // ── Output Types ────────────────────────────────────────────────────────────
@@ -155,6 +191,20 @@ export interface BlockedExecutionReport {
   categories: Record<BlockerCategory, BlockedExecutionDiagnostic[]>;
   summary: string;
   evaluatedAt: string;
+  /** Retry diagnostics summary, present when retry context was supplied. */
+  retry?: FailedPayoutRetryDiagnostics;
+}
+
+export interface FailedPayoutRetryDiagnostics {
+  attemptCount: number;
+  maxAttempts: number;
+  attemptsRemaining: number;
+  failureClass: RetryFailureClass;
+  isRetryable: boolean;
+  isExhausted: boolean;
+  suggestedBackoffMs?: number;
+  lastAttemptAt?: string;
+  guidance: string;
 }
 
 // ── Custom Error ────────────────────────────────────────────────────────────
@@ -782,6 +832,7 @@ export function diagnoseBlockedExecution(input: BlockedExecutionInput): BlockedE
     recipient: [],
     auth: [],
     initiator: [],
+    retry: [],
   };
 
   for (const item of diagnostics) {
@@ -816,6 +867,143 @@ export function diagnoseBlockedExecution(input: BlockedExecutionInput): BlockedE
     categories,
     summary,
     evaluatedAt: new Date().toISOString(),
+    retry: input.retry
+      ? buildFailedPayoutRetryDiagnostics(input.retry, diagnostics)
+      : undefined,
+  };
+}
+
+// ── Failed Payout Retry Diagnostics ─────────────────────────────────────────
+
+const DEFAULT_MAX_RETRY_ATTEMPTS = 3;
+const DEFAULT_TRANSIENT_BACKOFF_MS = 5_000;
+
+/**
+ * Builds privacy-safe retry diagnostics for a failed payout and appends
+ * retry-specific diagnostics to the shared diagnostics array.
+ */
+export function buildFailedPayoutRetryDiagnostics(
+  retry: FailedPayoutRetryInput,
+  diagnostics: BlockedExecutionDiagnostic[]
+): FailedPayoutRetryDiagnostics {
+  const attemptCount = Math.max(0, Number(retry.attemptCount ?? 0));
+  const maxAttempts = Math.max(1, Number(retry.maxAttempts ?? DEFAULT_MAX_RETRY_ATTEMPTS));
+  const attemptsRemaining = Math.max(0, maxAttempts - attemptCount);
+  const failureClass: RetryFailureClass = retry.failureClass ?? "unknown";
+  const isExhausted = attemptsRemaining === 0;
+  const isRetryable =
+    retry.isRetryable ?? (failureClass === "transient" && !isExhausted);
+
+  const lastAttemptAt = retry.lastAttemptAt
+    ? new Date(retry.lastAttemptAt).toISOString()
+    : undefined;
+
+  const suggestedBackoffMs =
+    retry.suggestedBackoffMs ??
+    (failureClass === "transient" ? DEFAULT_TRANSIENT_BACKOFF_MS : undefined);
+
+  const baseMetadata: Record<string, string | number | boolean> = {
+    attemptCount,
+    maxAttempts,
+    attemptsRemaining,
+    failureClass,
+    isRetryable,
+    isExhausted,
+  };
+  if (retry.failureCode) {
+    baseMetadata.failureCode = retry.failureCode;
+  }
+  if (suggestedBackoffMs !== undefined) {
+    baseMetadata.suggestedBackoffMs = suggestedBackoffMs;
+  }
+
+  let guidance: string;
+
+  if (isExhausted) {
+    guidance = `Retry attempts exhausted (${attemptCount}/${maxAttempts}). Resolve the underlying failure before retrying.`;
+    diagnostics.push({
+      code: "RETRY_ATTEMPTS_EXHAUSTED",
+      category: "retry",
+      severity: "blocker",
+      title: "Retry Attempts Exhausted",
+      message: `Failed payout has exhausted all ${maxAttempts} permitted retry attempt(s). Automatic retries are disabled until the underlying issue is resolved.`,
+      remediation: {
+        label: "Resolve & Retry Manually",
+        action: "retry_execution",
+        suggestedAction:
+          "Investigate the failure reason, apply the required fix, then trigger a manual retry.",
+      },
+      metadata: baseMetadata,
+    });
+  } else if (failureClass === "terminal") {
+    guidance = `Terminal failure (${retry.failureCode ?? "unknown"}). Retrying will not succeed until the cause is fixed.`;
+    diagnostics.push({
+      code: "RETRY_TERMINAL_FAILURE",
+      category: "retry",
+      severity: "blocker",
+      title: "Terminal Payout Failure",
+      message: `The failed payout encountered a terminal error${
+        retry.failureReason ? `: ${retry.failureReason}` : "."
+      } Retrying without changes will not succeed.`,
+      remediation: {
+        label: "Fix Root Cause",
+        action: "custom",
+        suggestedAction:
+          "Resolve the terminal failure (e.g., invalid recipient, policy violation) before retrying.",
+      },
+      metadata: baseMetadata,
+    });
+  } else if (failureClass === "transient") {
+    guidance = `Transient failure. Safe to retry (${attemptsRemaining} attempt(s) remaining)${
+      suggestedBackoffMs ? ` after ~${suggestedBackoffMs}ms backoff` : ""
+    }.`;
+    diagnostics.push({
+      code: "RETRY_TRANSIENT_FAILURE",
+      category: "retry",
+      severity: "warning",
+      title: "Transient Payout Failure",
+      message: `The failed payout encountered a transient error${
+        retry.failureReason ? `: ${retry.failureReason}` : "."
+      } Retry is safe (${attemptsRemaining} attempt(s) remaining).`,
+      remediation: {
+        label: "Retry Execution",
+        action: "retry_execution",
+        suggestedAction: suggestedBackoffMs
+          ? `Retry after approximately ${suggestedBackoffMs}ms backoff.`
+          : "Retry the payout when the transient condition clears.",
+      },
+      metadata: baseMetadata,
+    });
+  } else {
+    guidance = `Failure class unknown. Manual review recommended before retrying (${attemptsRemaining} attempt(s) remaining).`;
+    diagnostics.push({
+      code: "RETRY_TERMINAL_FAILURE",
+      category: "retry",
+      severity: "warning",
+      title: "Unclassified Payout Failure",
+      message: `The failed payout could not be classified as transient or terminal${
+        retry.failureReason ? `: ${retry.failureReason}` : "."
+      } Manual review is recommended before retrying.`,
+      remediation: {
+        label: "Review Failure",
+        action: "custom",
+        suggestedAction:
+          "Inspect the failure details and decide whether a retry is appropriate.",
+      },
+      metadata: baseMetadata,
+    });
+  }
+
+  return {
+    attemptCount,
+    maxAttempts,
+    attemptsRemaining,
+    failureClass,
+    isRetryable,
+    isExhausted,
+    suggestedBackoffMs,
+    lastAttemptAt,
+    guidance,
   };
 }
 
@@ -902,6 +1090,20 @@ export function formatBlockedExecutionReport(report: BlockedExecutionReport): st
       lines.push(`     Detail:      ${w.message}`);
       lines.push(`     Remediation: ${w.remediation.label}`);
     });
+    lines.push("");
+  }
+
+  if (report.retry) {
+    lines.push("--- Retry Diagnostics ---");
+    lines.push(`Attempts:      ${report.retry.attemptCount}/${report.retry.maxAttempts}`);
+    lines.push(`Remaining:     ${report.retry.attemptsRemaining}`);
+    lines.push(`Failure Class: ${report.retry.failureClass}`);
+    lines.push(`Retryable:     ${report.retry.isRetryable ? "YES" : "NO"}`);
+    lines.push(`Exhausted:     ${report.retry.isExhausted ? "YES" : "NO"}`);
+    if (report.retry.suggestedBackoffMs !== undefined) {
+      lines.push(`Backoff Hint:  ${report.retry.suggestedBackoffMs}ms`);
+    }
+    lines.push(`Guidance:      ${report.retry.guidance}`);
     lines.push("");
   }
 

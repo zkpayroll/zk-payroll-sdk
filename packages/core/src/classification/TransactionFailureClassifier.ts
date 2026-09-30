@@ -10,6 +10,40 @@ import type { ContractErrorCodeType } from "../errors";
 import type { FailureCategory, TransactionFailureClassification } from "./types";
 
 /**
+ * A single failed payout attempt recorded during a retry sequence.
+ */
+export interface FailedPayoutAttempt {
+  /** Zero-based index of this attempt within the retry sequence. */
+  attempt: number;
+  /** The classification produced for this attempt. */
+  classification: TransactionFailureClassification;
+  /** Wall-clock duration of the attempt in milliseconds, if measured. */
+  durationMs?: number;
+}
+
+/**
+ * Aggregated diagnostics for a payout that failed after one or more
+ * retry attempts. Designed to be surfaced to integrators so they can
+ * decide whether to escalate, re-queue, or abandon the payout.
+ */
+export interface FailedPayoutRetryDiagnostics {
+  /** The payout identifier this diagnostic report belongs to. */
+  payoutId: string;
+  /** Ordered list of every attempt made, including the final failure. */
+  attempts: FailedPayoutAttempt[];
+  /** The classification of the final (terminal) attempt. */
+  finalClassification: TransactionFailureClassification;
+  /** Total number of attempts made. */
+  totalAttempts: number;
+  /** Whether the overall payout should be considered retryable. */
+  canRetry: boolean;
+  /** Human-readable summary suitable for logs or UI. */
+  summary: string;
+  /** Actionable guidance for the integrator. */
+  recoveryHint: string;
+}
+
+/**
  * Maps a Soroban RPC {@link SendTransactionResponse} status to a failure
  * classification.
  *
@@ -74,6 +108,23 @@ export function classifySendResponse(status: string): TransactionFailureClassifi
       };
   }
 }
+
+/**
+ * Builds a structured diagnostics report for a payout that failed after
+ * one or more retry attempts.
+ *
+ * This is the primary entry point for integrators who want to understand
+ * *why* a payout ultimately failed, not just the final error. It preserves
+ * the full attempt history so downstream tooling can render timelines,
+ * compute retry budgets, or escalate to operators.
+ *
+ * @param payoutId  Identifier of the payout being diagnosed.
+ * @param attempts  Ordered list of attempts. Must contain at least one entry.
+ * @returns         A diagnostics report with summary and recovery hint.
+ * @throws          {Error} If `attempts` is empty.
+ *
+ * @example
+ * 
 
 /**
  * Maps a Soroban RPC {@link GetTransactionResponse} status to a failure

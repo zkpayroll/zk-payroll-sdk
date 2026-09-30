@@ -18,6 +18,7 @@ export const ErrorCategory = {
   IDEMPOTENCY: "idempotency",
   AUDIT: "audit",
   ELIGIBILITY: "eligibility",
+  PAYOUT: "payout",
 } as const;
 
 export type ErrorCategoryType = (typeof ErrorCategory)[keyof typeof ErrorCategory];
@@ -375,6 +376,32 @@ export const ERROR_CODE_REGISTRY: Record<string, ErrorCodeEntry> = {
     retryable: false,
     suggestedMessage:
       "The payroll batch contains ineligible employee records. Review the batch eligibility report and correct the affected records.",
+  },
+
+  // ── Failed Payout Retry Diagnostics ─────────────────────────────────────
+  PAYOUT_RETRY_NOT_ELIGIBLE: {
+    category: ErrorCategory.PAYOUT,
+    meaning:
+      "A failed payout was submitted for retry but is not eligible — it is not in a failed state, has already been retried, or its failure is classified as non-retryable.",
+    retryable: false,
+    suggestedMessage:
+      "This payout cannot be retried. It is either not in a failed state, has already been retried, or its failure is non-retryable. Review the payout diagnostics for details.",
+  },
+  PAYOUT_RETRY_ATTEMPTS_EXHAUSTED: {
+    category: ErrorCategory.PAYOUT,
+    meaning:
+      "A failed payout retry was rejected because the maximum number of retry attempts has been reached.",
+    retryable: false,
+    suggestedMessage:
+      "The maximum number of retry attempts for this payout has been reached. Escalate or resolve the underlying failure manually.",
+  },
+  PAYOUT_RETRY_DIAGNOSTICS_UNAVAILABLE: {
+    category: ErrorCategory.PAYOUT,
+    meaning:
+      "Retry diagnostics could not be produced for a failed payout — the failure record is missing, incomplete, or references an unknown payout.",
+    retryable: true,
+    suggestedMessage:
+      "Retry diagnostics are currently unavailable for this payout. The failure record may be missing or incomplete; refresh and try again.",
   },
 };
 
