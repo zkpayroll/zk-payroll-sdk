@@ -17,7 +17,7 @@ import {
 import { IdempotencyRegistry, createPaymentIdempotencyKey } from "./core/idempotency";
 import { createPayrollProgressEvent } from "./progress";
 import { assertValidPayrollWitness } from "./crypto/proofInputSanitizer";
-import { iterateBatches } from "./batch/paginate";
+import { assertValidPageSize, iterateBatches } from "./batch/paginate";
 import type { BatchPayload } from "./batch/BatchPayloadBuilder";
 import {
   createPayrollReceipt,
@@ -438,20 +438,71 @@ export class PayrollService {
    *
    * When `batchSize` is provided, validated entries are processed incrementally
    * in deterministic, order-preserving batches via the batch pagination helper.
-   * Results are returned in the original entry order either way.
+   * Optional progress events report batch lifecycle and cumulative successful
+   * item counts without exposing payment details. Results are returned in the
+   * original entry order either way.
    */
-  async processBatchPayments(entries: unknown[], batchSize?: number): Promise<PaymentResult[]> {
+  async processBatchPayments(
+    entries: unknown[],
+    batchSize?: number,
+    onProgress?: (event: SafeBatchProgressEvent) => void
+  ): Promise<PaymentResult[]> {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { PayrollValidation } = require("./core/validation");
     const payload: BatchPayload = PayrollValidation.assertValidBatchPayload(entries);
 
     const results: PaymentResult[] = [];
+    const totalItems = payload.entries.length;
+    assertValidPageSize(batchSize);
+    const totalBatches = totalItems === 0 ? 0 : Math.ceil(totalItems / (batchSize ?? totalItems));
+    let itemsProcessed = 0;
+    const emitProgress = (stage: SafeBatchProgressStage, batchIndex: number, message: string) => {
+      onProgress?.({
+        stage,
+        batchIndex,
+        totalBatches,
+        itemsProcessed,
+        totalItems,
+        percentage:
+          totalItems === 0 ? 100 : Math.min(100, Math.round((itemsProcessed / totalItems) * 100)),
+        message,
+        timestamp: new Date().toISOString(),
+      });
+    };
+
+    emitProgress(
+      "validating",
+      0,
+      `Validating ${totalItems} payroll item(s) across ${totalBatches} batch(es)...`
+    );
     for (const batch of iterateBatches(payload.entries, batchSize)) {
-      for (const entry of batch.items) {
-        const res = await this.processPayment(entry);
-        results.push(res);
+      emitProgress(
+        "batch_starting",
+        batch.index,
+        `Starting batch ${batch.index + 1} of ${totalBatches}...`
+      );
+      emitProgress(
+        "batch_submitting",
+        batch.index,
+        `Processing batch ${batch.index + 1} of ${totalBatches}...`
+      );
+      try {
+        for (const entry of batch.items) {
+          const res = await this.processPayment(entry);
+          results.push(res);
+          itemsProcessed++;
+        }
+      } catch (error) {
+        emitProgress("failed", batch.index, `Batch ${batch.index + 1} of ${totalBatches} failed.`);
+        throw error;
       }
+      emitProgress(
+        "batch_completed",
+        batch.index,
+        `Completed batch ${batch.index + 1} of ${totalBatches}.`
+      );
     }
+    emitProgress("completed", totalBatches - 1, `Completed all ${totalBatches} payroll batch(es).`);
     return results;
   }
 

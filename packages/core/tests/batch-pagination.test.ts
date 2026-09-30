@@ -15,7 +15,7 @@ import {
 } from "../src/batch";
 import { ValidationError } from "../src/errors";
 import { Keypair, xdr } from "@stellar/stellar-sdk";
-import { PayrollService } from "../src/payroll";
+import { PayrollService, type SafeBatchProgressEvent } from "../src/payroll";
 import { PayrollContractWrapper } from "../src/adapters/PayrollContractWrapper";
 import { IProofGenerator, ProofPayload } from "../src/crypto/IProofGenerator";
 
@@ -454,6 +454,51 @@ describe("PayrollService.processBatchPayments with batchSize", () => {
     expect(results).toHaveLength(7);
     const calls = (mockWrapper.privatePay as jest.Mock).mock.calls;
     expect(calls.map(([recipient]) => recipient)).toEqual(entries.map((e) => e.recipient));
+  });
+
+  it("reports cumulative, privacy-safe progress across batches", async () => {
+    const { service } = createService();
+    const entries = makeEntries(5);
+    const progressEvents: SafeBatchProgressEvent[] = [];
+
+    await service.processBatchPayments(entries, 2, (event) => progressEvents.push(event));
+
+    expect(progressEvents[0]).toMatchObject({
+      stage: "validating",
+      totalBatches: 3,
+      totalItems: 5,
+      itemsProcessed: 0,
+      percentage: 0,
+    });
+    expect(progressEvents.filter((event) => event.stage === "batch_completed")).toHaveLength(3);
+    expect(progressEvents[progressEvents.length - 1]).toMatchObject({
+      stage: "completed",
+      itemsProcessed: 5,
+      percentage: 100,
+    });
+    for (const event of progressEvents) {
+      expect(event.message).not.toMatch(/GTEST|amount|recipient/i);
+    }
+  });
+
+  it("reports failed batch progress and preserves the payment error", async () => {
+    const { service, mockWrapper } = createService();
+    const entries = makeEntries(3);
+    const progressEvents: SafeBatchProgressEvent[] = [];
+    (mockWrapper.privatePay as jest.Mock)
+      .mockResolvedValueOnce(xdr.ScVal.scvVoid())
+      .mockRejectedValueOnce(new Error("Submission failed"));
+
+    await expect(
+      service.processBatchPayments(entries, 2, (event) => progressEvents.push(event))
+    ).rejects.toThrow();
+
+    expect(progressEvents[progressEvents.length - 1]).toMatchObject({
+      stage: "failed",
+      batchIndex: 0,
+      itemsProcessed: 1,
+      totalItems: 3,
+    });
   });
 
   it("produces the same results with pagination as without", async () => {
