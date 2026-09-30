@@ -573,6 +573,7 @@ patterns for tests, and rules for extending the registry in production.
 - [Versioning & Compatibility](./docs/VERSIONING.md) - SDK semantic versioning and contract compatibility matrix
 - [SDK Migration Cookbook](./docs/SDK_MIGRATION_COOKBOOK.md) - Step-by-step upgrade checklist and migration patterns
 - [Troubleshooting](./docs/TROUBLESHOOTING.md) - Solutions for common CI, dependency, and environment issues
+- [Payroll Preflight Controls](./docs/PAYROLL_PREFLIGHT_CONTROLS.md) - Company revisions, reference integrity, treasury reserves, and period closure checks
 
 ## Development
 
