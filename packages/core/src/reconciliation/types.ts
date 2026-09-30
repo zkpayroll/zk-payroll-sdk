@@ -59,10 +59,29 @@ export interface ReconciliationDiffEntry {
   reason: string;
 }
 
+/**
+ * Result of total amount reconciliation check (#609).
+ * Validates that sum of expected payments matches sum of observed payments.
+ */
+export interface TotalAmountCheck {
+  /** Total of all expected successful payment amounts (excluding pending and failed) */
+  expectedTotal: bigint;
+  /** Total of all observed confirmed payment amounts */
+  observedTotal: bigint;
+  /** Whether the totals match */
+  isMatching: boolean;
+  /** Difference between expected and observed (expected - observed) */
+  difference: bigint;
+  /** Human-readable explanation of the check result */
+  reason: string;
+}
+
 export interface ReconciliationDiffResult {
   entries: ReconciliationDiffEntry[];
   counts: Record<ReconciliationDiffCategory, number>;
   /** True only when every entry is "match" or "still_pending" -- i.e. nothing requires admin attention. */
   isFullyReconciled: boolean;
+  /** Total amount reconciliation check - validates sum of expected vs observed payments (#609) */
+  totalAmountCheck: TotalAmountCheck;
   generatedAt: number;
 }

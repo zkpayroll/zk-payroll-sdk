@@ -4,6 +4,7 @@ import type {
   ReconciliationDiffCategory,
   ReconciliationDiffEntry,
   ReconciliationDiffResult,
+  TotalAmountCheck,
 } from "./types";
 
 const CATEGORIES: ReconciliationDiffCategory[] = [
@@ -102,6 +103,46 @@ function diffOne(
 }
 
 /**
+ * Calculate total amount reconciliation check (#609).
+ * Compares sum of expected successful payments against sum of observed confirmed payments.
+ */
+function calculateTotalAmountCheck(
+  expected: PayrollExecutionSummary,
+  observed: ObservedPaymentState[]
+): TotalAmountCheck {
+  // Sum expected successful payment amounts (exclude pending and failed)
+  const expectedTotal = expected.results
+    .filter((outcome) => outcome.status === "success")
+    .reduce((sum, outcome) => sum + outcome.amount, BigInt(0));
+
+  // Sum observed confirmed payment amounts
+  const observedTotal = observed
+    .filter((o) => o.onChainStatus === "confirmed" && o.amount !== undefined)
+    .reduce((sum, o) => sum + (o.amount ?? BigInt(0)), BigInt(0));
+
+  const difference = expectedTotal - observedTotal;
+  const isMatching = difference === BigInt(0);
+
+  let reason: string;
+  if (isMatching) {
+    reason = `Total amounts match: ${expectedTotal.toString()} stroops expected and observed.`;
+  } else if (difference > 0n) {
+    reason = `Expected total (${expectedTotal.toString()} stroops) exceeds observed total (${observedTotal.toString()} stroops) by ${difference.toString()} stroops. Possible missing or failed payments.`;
+  } else {
+    const absDiff = -difference;
+    reason = `Observed total (${observedTotal.toString()} stroops) exceeds expected total (${expectedTotal.toString()} stroops) by ${absDiff.toString()} stroops. Possible unexpected or duplicate payments.`;
+  }
+
+  return {
+    expectedTotal,
+    observedTotal,
+    isMatching,
+    difference,
+    reason,
+  };
+}
+
+/**
  * Generate a reconciliation diff between a payroll run's expected results
  * and independently observed on-chain/contract state.
  *
@@ -169,7 +210,10 @@ export function generateReconciliationDiff(
     (e) => e.category === "match" || e.category === "still_pending"
   );
 
-  return { entries, counts, isFullyReconciled, generatedAt: Date.now() };
+  // Calculate total amount check (#609)
+  const totalAmountCheck = calculateTotalAmountCheck(expected, observed);
+
+  return { entries, counts, isFullyReconciled, totalAmountCheck, generatedAt: Date.now() };
 }
 
 export class ReconciliationDiffGenerator {
