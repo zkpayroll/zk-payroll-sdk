@@ -183,6 +183,9 @@ export * from "./classification";
 // Contract State Indexer
 export * from "./indexer";
 
+// ── Payroll preflight controls ─────────────────────────────────────────────
+export * from "./payroll-controls";
+
 // Proof Artifact Lifecycle
 export * from "./artifacts";
 
