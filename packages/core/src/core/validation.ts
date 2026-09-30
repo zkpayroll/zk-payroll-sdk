@@ -8,6 +8,10 @@ import {
   validateBatchPayload,
 } from "../batch/BatchPayloadBuilder";
 import { validatePayoutDestination } from "../employees/payoutDestination";
+import {
+  isPaymentAssetCompatible,
+  PAYMENT_ASSET_COMPATIBILITY_MESSAGE,
+} from "../assets/paymentAssetCompatibility";
 
 export interface ValidationResult {
   isValid: boolean;
@@ -45,8 +49,10 @@ export class PayrollValidation {
       errors.push({ field: "amount", message: "Amount must be a positive value" });
     }
 
-    if (!params.asset || params.asset.trim() === "") {
+    if (typeof params.asset !== "string" || params.asset.trim() === "") {
       errors.push({ field: "asset", message: "Asset identifier is required" });
+    } else if (!isPaymentAssetCompatible(params.asset)) {
+      errors.push({ field: "asset", message: PAYMENT_ASSET_COMPATIBILITY_MESSAGE });
     }
 
     return {

@@ -115,6 +115,14 @@ describe("BatchPayloadBuilder", () => {
         new BatchPayloadBuilder().add({ recipient: "GA1", amount: 100n, asset: "" }).build()
       ).toThrow(BatchValidationFailedError);
     });
+
+    it("reports an incompatible asset identifier", () => {
+      const errors = validateBatchPayload([{ recipient: "GA1", amount: 100n, asset: "USDC:GABC" }]);
+
+      expect(errors).toContainEqual(
+        expect.objectContaining({ code: "INCOMPATIBLE_ASSET", field: "asset", index: 0 })
+      );
+    });
   });
 
   describe("validate() — returns error details", () => {

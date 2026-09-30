@@ -1,4 +1,8 @@
 import { ZkPayrollError } from "../core/errors";
+import {
+  isPaymentAssetCompatible,
+  PAYMENT_ASSET_COMPATIBILITY_MESSAGE,
+} from "../assets/paymentAssetCompatibility";
 
 export interface BatchPaymentEntry {
   recipient: string;
@@ -12,7 +16,12 @@ export interface BatchPayload {
 }
 
 export type BatchErrorCode =
-  "EMPTY_BATCH" | "INVALID_RECIPIENT" | "INVALID_AMOUNT" | "DUPLICATE_RECIPIENT" | "MISSING_ASSET";
+  | "EMPTY_BATCH"
+  | "INVALID_RECIPIENT"
+  | "INVALID_AMOUNT"
+  | "DUPLICATE_RECIPIENT"
+  | "MISSING_ASSET"
+  | "INCOMPATIBLE_ASSET";
 
 export interface BatchValidationError {
   code: BatchErrorCode;
@@ -124,10 +133,17 @@ export class BatchPayloadBuilder {
         });
       }
 
-      if (!entry.asset || entry.asset.trim() === "") {
+      if (typeof entry.asset !== "string" || entry.asset.trim() === "") {
         errors.push({
           code: "MISSING_ASSET",
           message: "Asset identifier is required",
+          field: "asset",
+          index: i,
+        });
+      } else if (!isPaymentAssetCompatible(entry.asset)) {
+        errors.push({
+          code: "INCOMPATIBLE_ASSET",
+          message: PAYMENT_ASSET_COMPATIBILITY_MESSAGE,
           field: "asset",
           index: i,
         });

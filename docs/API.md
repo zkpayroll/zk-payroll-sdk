@@ -40,6 +40,11 @@ const result = await service.processPayment({
 });
 ```
 
+Payment assets are validated before proof generation. Use `native` for XLM or a
+valid Soroban token contract ID; malformed identifiers and classic issued
+`CODE:ISSUER` assets are rejected with `INVALID_ASSET`. Batch validation reports
+incompatible entries with the structured `INCOMPATIBLE_ASSET` error code.
+
 ### Recommendation
 
 - Generate one idempotency key per user intent (for example, button click / request ID)
@@ -68,11 +73,11 @@ Typed client for the `payroll_registry` contract. Manages employer-employee payr
 
 #### `constructor(server: rpc.Server, contractId: string, options?: ClientOptions)`
 
-| Param | Type | Description |
-|---|---|---|
-| `server` | `rpc.Server` | Soroban RPC server instance |
-| `contractId` | `string` | Deployed contract address |
-| `options.networkPassphrase` | `string` | Network passphrase (default: `Networks.TESTNET`) |
+| Param                       | Type         | Description                                      |
+| --------------------------- | ------------ | ------------------------------------------------ |
+| `server`                    | `rpc.Server` | Soroban RPC server instance                      |
+| `contractId`                | `string`     | Deployed contract address                        |
+| `options.networkPassphrase` | `string`     | Network passphrase (default: `Networks.TESTNET`) |
 
 #### `register(request: RegisterRequest, signer: Keypair, network?: string): Promise<void>`
 
@@ -80,11 +85,11 @@ Registers a new payroll relationship.
 
 ```typescript
 interface RegisterRequest {
-  employer: string;   // Stellar address
-  employee: string;   // Stellar address
-  salary: bigint;     // Amount in stroops
-  token: string;      // Token contract address
-  metadata?: string;  // Optional description
+  employer: string; // Stellar address
+  employee: string; // Stellar address
+  salary: bigint; // Amount in stroops
+  token: string; // Token contract address
+  metadata?: string; // Optional description
 }
 ```
 
@@ -151,7 +156,7 @@ Commits to a salary amount for a specific pay cycle using a hash.
 interface CommitRequest {
   employer: string;
   employee: string;
-  commitmentHash: string;  // Hex-encoded hash
+  commitmentHash: string; // Hex-encoded hash
   cycleId: bigint;
 }
 ```
@@ -247,7 +252,7 @@ Returns metadata for a verification key.
 interface VerificationKeyInfo {
   id: number;
   description: string;
-  key: string;  // Hex-encoded
+  key: string; // Hex-encoded
 }
 ```
 
@@ -287,7 +292,7 @@ interface SchedulePaymentRequest {
   recipient: string;
   amount: bigint;
   asset: string;
-  executeAt: number;   // Unix timestamp
+  executeAt: number; // Unix timestamp
   memo?: string;
 }
 
@@ -369,6 +374,7 @@ interface ReleaseAuditHoldResponse {
 ```
 
 Assumes the contract exposes:
+
 - `get_audit_hold_status(hold_id)` → hold status struct
 - `release_audit_hold(hold_id, released_by, authorization_token, release_reason?)` → updated hold struct
 
@@ -379,10 +385,13 @@ Assumes the contract exposes:
 Main entry point for payroll operations.
 
 #### `constructor(config: ClientConfig)`
+
 Initializes the service with network configuration.
 
 #### `processPayment(recipient: string, amount: bigint): Promise<string>`
+
 Generates a ZK proof and submits a payment transaction to the smart contract.
+
 - **recipient**: Stellar address of the employee.
 - **amount**: Salary amount to pay.
 - **Returns**: Transaction hash.
@@ -416,7 +425,11 @@ progress events, or logs.
 PayrollService.setDestinationValidationHook((destination) =>
   isApprovedPayoutAccount(destination)
     ? { ok: true, kind: "internal_treasury" }
-    : { ok: false, code: "COMPANY_DESTINATION_NOT_ALLOWED", message: "Destination is not on the approved payout list." }
+    : {
+        ok: false,
+        code: "COMPANY_DESTINATION_NOT_ALLOWED",
+        message: "Destination is not on the approved payout list.",
+      }
 );
 
 const gate = await PayrollService.validateDestination(recipient);
@@ -424,7 +437,9 @@ if (!gate.ok) {
   console.error(gate.code, gate.message); // safe to log
 }
 ```
+
 #### `evaluateFailedPayoutRetryEligibility(input): FailedPayoutRetryEligibility`
+
 Checks whether an individual failed payout is safe to retry. The input includes its normalized transaction status, failure classification, attempt count, maximum attempts, and idempotency key. Retry is allowed only for a retryable failure while attempts remain and an idempotency key is present. The result provides a stable code and generic guidance; it never returns the key or reflects raw failure details.
 
 ### `PayrollContract`
@@ -436,16 +451,21 @@ Low-level wrapper for direct smart contract interactions.
 Production-ready ZK proof generator using snarkjs library.
 
 #### `constructor(config: ProofGeneratorConfig, cache?: CacheProvider<string>)`
+
 Creates a new proof generator instance.
+
 - **config**: Circuit artifact URLs and cache settings
 - **cache**: Optional cache provider for proof results
 
 #### `generateProof(witness: Record<string, unknown>): Promise<ProofPayload>`
+
 Generates a Groth16 zero-knowledge proof.
+
 - **witness**: Circuit inputs (must match circuit's input signal names)
 - **Returns**: ProofPayload formatted for smart contract verification
 
 #### `clearArtifactCache(): void`
+
 Clears cached .wasm and .zkey files to force re-download.
 
 ### `ZKProofGenerator`
@@ -453,12 +473,15 @@ Clears cached .wasm and .zkey files to force re-download.
 Legacy proof generator with factory methods for backward compatibility.
 
 #### `static generateProof(witness: any, cache?: CacheProvider<string>): Promise<Uint8Array>`
+
 **Deprecated**: Generates a simulated proof. Use `SnarkjsProofGenerator` for production.
 
 #### `static createSnarkjsGenerator(config: ProofGeneratorConfig, cache?: CacheProvider<string>): SnarkjsProofGenerator`
+
 Factory method to create a configured SnarkjsProofGenerator instance.
 
 #### `static generateSnarkjsProof(witness: Record<string, unknown>, config: ProofGeneratorConfig, cache?: CacheProvider<string>): Promise<ProofPayload>`
+
 Convenience method to generate a proof without creating a generator instance.
 
 ## Interfaces
@@ -473,6 +496,7 @@ Convenience method to generate a proof without creating a generator instance.
 Interface for zero-knowledge proof generation implementations.
 
 #### `generateProof(witness: Record<string, unknown>): Promise<ProofPayload>`
+
 Generates a zero-knowledge proof for the given witness data.
 
 ### `ProofGeneratorConfig`
@@ -507,6 +531,7 @@ interface ProofPayload {
 In-memory cache implementation (lost on page reload).
 
 #### `constructor()`
+
 Creates a new memory cache instance.
 
 ### `LocalStorageCacheProvider`
@@ -514,6 +539,7 @@ Creates a new memory cache instance.
 Browser localStorage-based cache (persists across sessions).
 
 #### `constructor(keyPrefix?: string)`
+
 Creates a new localStorage cache with optional key prefix.
 
 ## Usage Examples
@@ -530,24 +556,30 @@ const signer = Keypair.fromSecret("S...");
 const registry = new PayrollRegistryClient(server, "CCONTRACT_ID...");
 
 // Register a new employee
-await registry.register({
-  employer: "GEMPLOYER...",
-  employee: "GEMPLOYEE...",
-  salary: 1000n,
-  token: "CTOKEN...",
-  metadata: "engineering",
-}, signer);
+await registry.register(
+  {
+    employer: "GEMPLOYER...",
+    employee: "GEMPLOYEE...",
+    salary: 1000n,
+    token: "CTOKEN...",
+    metadata: "engineering",
+  },
+  signer
+);
 
 // Query
 const entry = await registry.getRegistry("GEMPLOYER...", "GEMPLOYEE...", signer);
 console.log(entry.active, entry.salary);
 
 // Update salary
-await registry.updateRegistry({
-  employer: "GEMPLOYER...",
-  employee: "GEMPLOYEE...",
-  salary: 2000n,
-}, signer);
+await registry.updateRegistry(
+  {
+    employer: "GEMPLOYER...",
+    employee: "GEMPLOYEE...",
+    salary: 2000n,
+  },
+  signer
+);
 
 // Paginated employee list
 const employees = await registry.getEmployees("GEMPLOYER...", 0, 10, signer);
@@ -564,21 +596,28 @@ import { SalaryCommitmentClient } from "@zk-payroll/sdk";
 const client = new SalaryCommitmentClient(server, "CCONTRACT_ID...");
 
 // Commit to a salary
-await client.commit({
-  employer: "GEMPLOYER...",
-  employee: "GEMPLOYEE...",
-  commitmentHash: "deadbeef...",
-  cycleId: 1n,
-}, signer);
+await client.commit(
+  {
+    employer: "GEMPLOYER...",
+    employee: "GEMPLOYEE...",
+    commitmentHash: "deadbeef...",
+    cycleId: 1n,
+  },
+  signer
+);
 
 // Retrieve commitment
 const commitment = await client.getCommitment("GEMPLOYER...", "GEMPLOYEE...", 1n, signer);
 
 // Batch commit
-await client.batchCommit("GEMPLOYER...", [
-  { employee: "G1...", commitmentHash: "abcd", cycleId: 1n },
-  { employee: "G2...", commitmentHash: "ef01", cycleId: 1n },
-], signer);
+await client.batchCommit(
+  "GEMPLOYER...",
+  [
+    { employee: "G1...", commitmentHash: "abcd", cycleId: 1n },
+    { employee: "G2...", commitmentHash: "ef01", cycleId: 1n },
+  ],
+  signer
+);
 
 // Reveal salary
 await client.revealSalary("GEMPLOYER...", "GEMPLOYEE...", 1n, 1500n, signer);
@@ -593,9 +632,17 @@ const client = new ProofVerifierClient(server, "CCONTRACT_ID...");
 
 // Verify a proof
 const valid = await client.verify(
-  { pi_a: ["1","2"], pi_b: [["3","4"],["5","6"]], pi_c: ["7","8"], publicSignals: ["sig"] },
+  {
+    pi_a: ["1", "2"],
+    pi_b: [
+      ["3", "4"],
+      ["5", "6"],
+    ],
+    pi_c: ["7", "8"],
+    publicSignals: ["sig"],
+  },
   ["public_input"],
-  1,  // verification key ID
+  1, // verification key ID
   signer
 );
 
@@ -617,22 +664,28 @@ import { PaymentExecutorClient } from "@zk-payroll/sdk";
 const client = new PaymentExecutorClient(server, "CCONTRACT_ID...");
 
 // Execute immediate payment
-const execResult = await client.execute({
-  recipient: "GPAYEE...",
-  amount: 1000n,
-  asset: "CNATIVE...",
-  memo: "monthly salary",
-}, signer);
+const execResult = await client.execute(
+  {
+    recipient: "GPAYEE...",
+    amount: 1000n,
+    asset: "CNATIVE...",
+    memo: "monthly salary",
+  },
+  signer
+);
 console.log("TxHash:", execResult.txHash);
 
 // Schedule payment
-const scheduleResult = await client.schedule({
-  recipient: "GPAYEE...",
-  amount: 500n,
-  asset: "CNATIVE...",
-  executeAt: Math.floor(Date.now() / 1000) + 86400,
-  memo: "bonus",
-}, signer);
+const scheduleResult = await client.schedule(
+  {
+    recipient: "GPAYEE...",
+    amount: 500n,
+    asset: "CNATIVE...",
+    executeAt: Math.floor(Date.now() / 1000) + 86400,
+    memo: "bonus",
+  },
+  signer
+);
 
 // Cancel scheduled payment
 await client.cancel(scheduleResult.paymentId, signer);
@@ -653,12 +706,15 @@ const hold = await holds.getAuditHoldStatus("hold-1", signer);
 
 // Release a hold once compliance clears it — authorization is validated
 // locally first, and the token is never surfaced in errors
-const release = await holds.releaseAuditHold({
-  holdId: "hold-1",
-  releasedBy: "GCOMPLIANCE_OFFICER...",
-  authorizationToken: process.env.HOLD_RELEASE_TOKEN!,
-  releaseReason: "KYC review completed",
-}, signer);
+const release = await holds.releaseAuditHold(
+  {
+    holdId: "hold-1",
+    releasedBy: "GCOMPLIANCE_OFFICER...",
+    authorizationToken: process.env.HOLD_RELEASE_TOKEN!,
+    releaseReason: "KYC review completed",
+  },
+  signer
+);
 console.log(release.explanation); // safe to render in dashboards
 ```
 
@@ -736,10 +792,10 @@ The SDK provides helpers for discovering and validating deployed contract metada
 
 Returns the default metadata for a known environment, with optional field overrides.
 
-| Param | Type | Description |
-|---|---|---|
-| `environment` | `string` | Environment name (`"testnet"`, `"mainnet"`, or `"standalone"`) |
-| `overrides` | `Partial<ContractMetadata>` | Optional fields to merge on top of defaults |
+| Param         | Type                        | Description                                                    |
+| ------------- | --------------------------- | -------------------------------------------------------------- |
+| `environment` | `string`                    | Environment name (`"testnet"`, `"mainnet"`, or `"standalone"`) |
+| `overrides`   | `Partial<ContractMetadata>` | Optional fields to merge on top of defaults                    |
 
 **Throws** if the environment name is not recognized.
 
@@ -767,8 +823,8 @@ const deployed = getContractMetadata("testnet", {
 
 Validates a `ContractMetadata` object and returns a structured result with actionable errors.
 
-| Param | Type | Description |
-|---|---|---|
+| Param      | Type               | Description              |
+| ---------- | ------------------ | ------------------------ |
 | `metadata` | `ContractMetadata` | The metadata to validate |
 
 Returns `{ valid: boolean, errors: MetadataValidationError[] }`. Each error has `field`, `message`, and `code` properties.
@@ -790,6 +846,7 @@ if (!result.valid) {
 ```
 
 **Validation checks:**
+
 - `networkUrl` is a valid HTTP(S) URL
 - `networkPassphrase` matches a known Stellar network
 - `payrollRegistryId`, `salaryCommitmentId`, `proofVerifierId`, `paymentExecutorId` are valid Soroban contract ID format (starts with `C`, 56 alphanumeric characters)
@@ -844,10 +901,7 @@ const config = buildClientConfig(metadata);
 const server = new rpc.Server(config.networkUrl);
 const signer = Keypair.fromSecret("SAV75E2NK7Q5J2Y...");
 
-const registry = new PayrollRegistryClient(
-  server,
-  config.contractIds.payrollRegistryId
-);
+const registry = new PayrollRegistryClient(server, config.contractIds.payrollRegistryId);
 
 await registry.getRegistry("GEMPLOYER...", "GEMPLOYEE...", signer);
 ```
@@ -870,11 +924,11 @@ interface ContractMetadata {
 
 A static array of `KnownEnvironment` entries defining the built-in network presets. Each entry has:
 
-| Field | Type | Description |
-|---|---|---|
-| `name` | `string` | Machine-readable key (`"testnet"`, `"mainnet"`, `"standalone"`) |
-| `label` | `string` | Human-readable label |
-| `metadata` | `ContractMetadata` | Default network settings |
+| Field      | Type               | Description                                                     |
+| ---------- | ------------------ | --------------------------------------------------------------- |
+| `name`     | `string`           | Machine-readable key (`"testnet"`, `"mainnet"`, `"standalone"`) |
+| `label`    | `string`           | Human-readable label                                            |
+| `metadata` | `ContractMetadata` | Default network settings                                        |
 
 ---
 

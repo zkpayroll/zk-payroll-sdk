@@ -1,4 +1,4 @@
-import { Keypair, Networks, xdr } from "@stellar/stellar-sdk";
+import { Keypair, Networks, StrKey, xdr } from "@stellar/stellar-sdk";
 import { PayrollService } from "../src/payroll";
 import { PayrollContractWrapper } from "../src/adapters/PayrollContractWrapper";
 import { IProofGenerator, ProofPayload } from "../src/crypto/IProofGenerator";
@@ -321,6 +321,53 @@ describe("PayrollService", () => {
       ).rejects.toMatchObject({
         code: String(PayrollServiceErrorCode.INVALID_ASSET),
       });
+    });
+
+    it("accepts a valid Soroban token contract ID", async () => {
+      const { mockWrapper, mockProofGen, signer } = createMocks();
+      const service = new PayrollService(mockWrapper, mockProofGen, signer);
+      const asset = StrKey.encodeContract(Buffer.alloc(32, 1));
+
+      await service.processPayment({ recipient: "GABC123", amount: 100n, asset });
+
+      expect(mockWrapper.privatePay).toHaveBeenCalledTimes(1);
+      expect((mockWrapper.privatePay as jest.Mock).mock.calls[0][2]).toBe(asset);
+    });
+
+    it("rejects incompatible asset identifiers before proof generation or submission", async () => {
+      const { mockWrapper, mockProofGen, signer } = createMocks();
+      const service = new PayrollService(mockWrapper, mockProofGen, signer);
+      const issuedAsset = `USDC:${Keypair.random().publicKey()}`;
+
+      for (const asset of [issuedAsset, "not-a-contract", " native "]) {
+        await expect(
+          service.processPayment({ recipient: "GABC123", amount: 100n, asset })
+        ).rejects.toMatchObject({
+          code: String(PayrollServiceErrorCode.INVALID_ASSET),
+          message: expect.stringContaining("valid Soroban token contract ID"),
+        });
+      }
+
+      expect(mockProofGen.generateProof).not.toHaveBeenCalled();
+      expect(mockWrapper.privatePay).not.toHaveBeenCalled();
+    });
+
+    it("rejects an incompatible asset anywhere in a batch before processing entries", async () => {
+      const { mockWrapper, signer } = createMocks();
+      const service = new PayrollService(mockWrapper, { generateProof: jest.fn() }, signer);
+
+      await expect(
+        service.processBatchPayments([
+          { recipient: "GABC123", amount: 100n, asset: "native" },
+          { recipient: "GDEF456", amount: 100n, asset: "not-a-contract" },
+        ])
+      ).rejects.toMatchObject({
+        validationErrors: expect.arrayContaining([
+          expect.objectContaining({ code: "INCOMPATIBLE_ASSET", index: 1 }),
+        ]),
+      });
+
+      expect(mockWrapper.privatePay).not.toHaveBeenCalled();
     });
 
     it("wraps proof generation errors in PayrollError(2001)", async () => {
