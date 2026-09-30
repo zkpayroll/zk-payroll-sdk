@@ -22,3 +22,6 @@ export * from "./payrollStateConsistencyGuard";
 export * from "./calendarOverlap";
 export * from "./staleApprovalCleanup";
 export * from "./paymentInstructionDuplicateDetector";
+export * from "./periodLabel";
+export * from "./salaryPolicyImpact";
+export * from "./blockedExecutionDiagnostics";

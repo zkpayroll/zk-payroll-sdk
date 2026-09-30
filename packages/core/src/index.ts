@@ -236,4 +236,7 @@ export * from "./privacy";
 export * from "./schedules";
 
 // ── Salary Policy Change Impact Analysis ────────────────────────────────────
-export * from "./salary-policy";
+// The module lives in `payroll/`; the root barrel points at the real path
+// (it previously referenced a non-existent `./salary-policy`).
+export * from "./payroll/salaryPolicyImpact";
+

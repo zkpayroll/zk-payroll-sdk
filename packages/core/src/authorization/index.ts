@@ -5,4 +5,3 @@ export * from "./approvalExpiry";
 export * from "./approvalTimestamps";
 export * from "./roleTransfer";
 export * from "./delegatedApprover";
-export * from "./payrollAdjustmentApprovalExpiry";

@@ -19,6 +19,8 @@ export class MultiSignerCoordinator {
       maxExpiryMs: options?.maxExpiryMs ?? 86400000,
       nonceLength: options?.nonceLength ?? 32,
       defaultPolicyType: options?.defaultPolicyType ?? "unanimous",
+      expiryGraceMs: options?.expiryGraceMs ?? 0,
+      autoExpire: options?.autoExpire ?? false,
     };
   }
 
