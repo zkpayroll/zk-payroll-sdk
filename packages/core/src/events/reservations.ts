@@ -5,6 +5,8 @@
  * FundingReservationCreatedEvent, supporting both single- and multi-asset
  * reservations. Follows the same topics/data ScVal decoding conventions as
  * ../event-parser.ts.
+ *
+ * Also provides treasury reserve release validation (Issue #373).
  */
 
 import { Address, xdr } from "@stellar/stellar-sdk";
@@ -19,6 +21,12 @@ export { ReservationEventParsingError } from "./types";
 export type { FundingReservationCreatedEvent, ReservationAssetAmount } from "./types";
 
 const EVENT_NAME = "funding_reservation_created";
+
+/** Maximum allowed reserve amount per asset (i128 max). */
+const MAX_RESERVE_AMOUNT = (1n << 127n) - 1n;
+
+/** Minimum allowed reserve amount per asset. */
+const MIN_RESERVE_AMOUNT = 0n;
 
 /**
  * Decode a raw contract event into a FundingReservationCreatedEvent.
@@ -67,6 +75,8 @@ export function parseFundingReservationCreatedEvent(
     );
   }
 
+  validateTreasuryReserveRelease(assets, event);
+
   return {
     type: EVENT_NAME,
     reservationId,
@@ -93,6 +103,72 @@ export function parseFundingReservationCreatedEvents(
     results.push(parseFundingReservationCreatedEvent(event));
   }
   return results;
+}
+
+/**
+ * Validate that a set of reservation assets is safe to release from the
+ * treasury reserve. Ensures amounts are within bounds, assets are unique,
+ * and no zero-amount reservations are silently accepted.
+ *
+ * @throws ReservationEventParsingError if any asset entry is invalid.
+ */
+export function validateTreasuryReserveRelease(
+  assets: ReservationAssetAmount[],
+  event?: RawContractEvent
+): void {
+  if (!assets || assets.length === 0) {
+    throw new ReservationEventParsingError(
+      "Treasury reserve release requires at least one asset",
+      { event }
+    );
+  }
+
+  const seen = new Set<string>();
+
+  for (const entry of assets) {
+    if (!entry || typeof entry.asset !== "string" || entry.asset.length === 0) {
+      throw new ReservationEventParsingError(
+        "Treasury reserve release contains an asset entry with a missing asset identifier",
+        { event }
+      );
+    }
+
+    if (typeof entry.amount !== "bigint") {
+      throw new ReservationEventParsingError(
+        `Treasury reserve release amount for asset "${entry.asset}" is not a valid integer`,
+        { event }
+      );
+    }
+
+    if (entry.amount < MIN_RESERVE_AMOUNT) {
+      throw new ReservationEventParsingError(
+        `Treasury reserve release amount for asset "${entry.asset}" must not be negative`,
+        { event }
+      );
+    }
+
+    if (entry.amount === 0n) {
+      throw new ReservationEventParsingError(
+        `Treasury reserve release amount for asset "${entry.asset}" must be greater than zero`,
+        { event }
+      );
+    }
+
+    if (entry.amount > MAX_RESERVE_AMOUNT) {
+      throw new ReservationEventParsingError(
+        `Treasury reserve release amount for asset "${entry.asset}" exceeds the maximum allowed reserve`,
+        { event }
+      );
+    }
+
+    if (seen.has(entry.asset)) {
+      throw new ReservationEventParsingError(
+        `Treasury reserve release contains duplicate asset "${entry.asset}"`,
+        { event }
+      );
+    }
+    seen.add(entry.asset);
+  }
 }
 
 // ── ScVal Decoding Helpers ───────────────────────────────────────────────────

@@ -16,12 +16,13 @@ All SDK errors inherit from the base `ZKPayrollError` class.
   - `ProofGenerationError` - Failures related to circuit artifact downloading, caching, or witness calculation.
   - `SerializationError` - Failures during importing or exporting of payroll drafts.
   - `ValidationError` - Client-side validation errors.
-  - `PayoutScheduleCollisionError` - Payout schedule collisions, minimum interval violations, or duplicate schedule identifiers.
+- `PayoutScheduleCollisionError` - Payout schedule collisions, minimum interval violations, or duplicate schedule identifiers.
   - `PayrollStateConsistencyError` - Payroll state transitions that violate the expected lifecycle or contain inconsistent data.
   - `PayrollCalendarOverlapError` - Payroll calendar cycles that overlap, contain collisions, or define inverted date ranges.
   - `PaymentInstructionDuplicateError` - Payment instructions that duplicate an existing instruction in the same payroll batch.
+  - `TreasuryReserveReleaseError` - Treasury reserve release validation failures (missing reserve, insufficient balance, invalid release amount, or disallowed state transition).
 
-*Note: `PayrollError` is deprecated and acts as a backward-compatibility alias for `ZKPayrollError`)*
+*(Note: `PayrollError` is deprecated and acts as a backward-compatibility alias for `ZKPayrollError`)*
 
 ## Stable Error Code Reference
 
@@ -74,8 +75,8 @@ if (isRetryableErrorCode(error.code)) {
 | `NETWORK_ERROR` | network | HTTP or network request failure. | Yes | A network error occurred. Please check your internet connection and try again. |
 | `SERIALIZATION_FAILED` | serialization | Binary encoding or decoding failed. | No | Failed to serialize or deserialize data. The data may be corrupted. |
 | `ARTIFACT_NOT_FOUND` | artifact | ZK circuit artifact not found at configured path. | Yes | A required proving artifact was not found. Please check your artifact URLs and try again. |
-| `ARTIFACT_ACCESS_DENIEDN | artifact | Access to artifact storage was denied. | No | Access to proving artifacts was denied. Please check your permissions and try again. |
-| `ARTIFACT_CORRUPTc | artifact | Downloaded artifact has invalid checksum. | Yes | A proving artifact appears to be corrupt. The SGK will attempt to re-download it. |
+| `ARTIFACT_ACCESS_DENIED` | artifact | Access to artifact storage was denied. | No | Access to proving artifacts was denied. Please check your permissions and try again. |
+| `ARTIFACT_CORRUPT` | artifact | Downloaded artifact has invalid checksum. | Yes | A proving artifact appears to be corrupt. The SGK will attempt to re-download it. |
 | `ARTIFACT_FETCH_FAILED` | artifact | Artifact download failed due to network/server error. | Yes | Failed to download a proving artifact. Please check your network connection and try again. |
 | `ARTIFACT_HASH_MISMATCH` | artifact | Artifact hash does not match expected value. | Yes | The downloaded proving artifact does not match its expected checksum. The SGK will retry. |
 | `BATCH_VALIDATION_FAILED` | batch | Batch payload validation failed. | No | The batch payload contains invalid entries. Please review the validation errors and try again. |
@@ -86,6 +87,11 @@ if (isRetryableErrorCode(error.code)) {
 | `PAYROLL_STATE_STALE_DATA` | payroll | Payroll state data is out of date or inconsistent. | Yes | The payroll data is out of date. Refresh the payroll and try again. |
 | `PAYROLL_STATE_INVALID_TRANSITION` | payroll | Requested payroll state transition is not allowed. | No | This payroll operation is not allowed in the current state. Please review the payroll status. |
 | `PAYROLL_CALENDAR_OVERLAP` | payroll | Payroll calendar cycles overlap or contain conflicting date intervals. | No | Payroll calendar cycles overlap or contain conflicting date intervals. Please review your period dates and try again. |
+| `TREASURY_RESERVE_NOT_FOUND` | treasury | No treasury reserve exists for the requested payroll cycle. | No | No treasury reserve was found for this payroll cycle. Please create a reserve before releasing funds. |
+| `TREASURY_RESERVE_INSUFFICIENT_BALANCE` | treasury | Treasury reserve balance is lower than the requested release amount. | No | The treasury reserve does not hold enough funds for this release. Please fund the reserve and try again. |
+| `TREASURY_RESERVE_INVALID_AMOUNT` | treasury | Release amount is zero, negative, or not a valid integer. | No | The release amount is invalid. Please provide a positive amount and try again. |
+| `TREASURY_RESERVE_INVALID_STATE` | treasury | Treasury reserve is in a state that disallows release. | No | The treasury reserve is not ready for release. Please review the reserve status and try again. |
+| `TREASURY_RESERVE_ALREADY_RELEASED` | treasury | Treasury reserve for this cycle has already been released. | No | This treasury reserve has already been released. Refresh the payroll to view the current status. |
 
 ### Retry Guidance
 
@@ -94,7 +100,7 @@ if (isRetryableErrorCode(error.code)) {
 
 ## User-Friendly UI Mapping
 
-Use `toUserFriendlyError(error)` to map any SGK or unknown error into a clean, human-readable format suitable for UI hots and diagnostic logs:
+Use `toUserFriendlyError(error)` to map any SGK or unknown error into a clean, human-readable format suitable for UI toasts and diagnostic logs:
 
 ```typescript
 import { toUserFriendlyError } from "@zk-payroll/sdk";
@@ -159,4 +165,6 @@ try {
       showToast("Transaction signing was canceled by the user.");
     } else if (error.code === WalletErrorCode.NETWORK_MISMATCH) {
       // Recovery: Ask the user to switch networks in their wallet extension.
-      showWarning("Please switch your wallet to the Te
+### 3. Handling Zero-Knowledge Proof Failures (`ProofGenerationError`)
+
+Proof generation is computationally heavy and relies on downloaded circuit artifacts.
