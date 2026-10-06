@@ -7,14 +7,9 @@
   "workspaces": [
     "packages/*"
   ],
-  "engines": {
-    "node": ">=20.0.0",
-    "npm": ">=9.0.0"
-  },
   "scripts": {
     "build": "npm run build -w packages/core",
     "test": "npm run test -w packages/core",
-    "test:compat": "npm run test:compat -w packages/core",
     "clean": "npm run clean -w packages/core",
     "lint": "npm run lint -w packages/core",
     "lint:fix": "npm run lint:fix -w packages/core",
