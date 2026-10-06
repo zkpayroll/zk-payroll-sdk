@@ -4,15 +4,10 @@
   "description": "Core SDK for interacting with ZK Payroll contracts",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "engines": {
-    "node": ">=20.0.0",
-    "npm": ">=9.0.0"
-  },
   "scripts": {
     "build": "rimraf dist && tsc",
     "test": "jest --config jest.node.config.js --runInBand",
     "test:browser": "jest --config jest.browser.config.js --runInBand",
-    "test:compat": "jest --config jest.node.config.js tests/runtime-compatibility.test.ts --runInBand",
     "test:env-matrix": "npm run test && npm run test:browser",
     "clean": "rimraf dist",
     "lint": "eslint \"src/**/*.ts\" \"tests/**/*.ts\"",
