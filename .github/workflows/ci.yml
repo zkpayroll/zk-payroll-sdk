@@ -44,3 +44,41 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  # Exercises every runtime declared in docs/SUPPORT_MATRIX.md so a documented-but-untested
+  # Node.js release cannot ship. The guard itself lives in
+  # packages/core/tests/runtime-compatibility.test.ts.
+  compat-matrix:
+    name: compat (node ${{ matrix.node }}, ${{ matrix.target }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ["20.x", "22.x", "24.x"]
+        target: ["node", "browser"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Runtime compatibility guard
+        run: npm run test:compat
+
+      - name: Node environment tests
+        if: matrix.target == 'node'
+        run: npm test
+
+      - name: Browser environment tests
+        if: matrix.target == 'browser'
+        run: npm run test:browser -w @zk-payroll/core
