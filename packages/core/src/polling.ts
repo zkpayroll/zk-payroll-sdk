@@ -1,5 +1,6 @@
 import { rpc } from "@stellar/stellar-sdk";
 import { ContractExecutionError, ContractErrorCode } from "./errors";
+import { cancellableDelay, throwIfAborted } from "./cancellation";
 
 export interface PollTransactionOptions {
   /** Maximum time to wait in milliseconds. Default: 30000 (30 seconds) */
@@ -26,8 +27,10 @@ export type TransactionStatusResult =
  * @param txHash The transaction hash to poll
  * @param options Polling configuration options including timeoutMs and intervalMs
  * @returns The final transaction status
+ * @throws {OperationCancelledError} If polling is cancelled via AbortSignal.
+ *   The error message contains only the stable operation name — caller-supplied
+ *   identifiers such as the txHash are never echoed.
  * @throws {ContractExecutionError} If the transaction times out
- * @throws {Error} If polling is cancelled via AbortSignal or an RPC error occurs
  */
 export async function pollTransaction(
   server: rpc.Server,
@@ -41,9 +44,7 @@ export async function pollTransaction(
   const startTime = Date.now();
 
   while (Date.now() - startTime < timeoutMs) {
-    if (signal?.aborted) {
-      throw new Error(`Polling for transaction ${txHash} was cancelled.`);
-    }
+    throwIfAborted(signal, "pollTransaction");
 
     const response = await server.getTransaction(txHash);
 
@@ -64,48 +65,13 @@ export async function pollTransaction(
       };
     }
 
-    // If NOT_FOUND, sleep and try again
-    try {
-      await sleep(intervalMs, signal);
-    } catch (err: unknown) {
-      if ((err as Error).message === "AbortError") {
-        throw new Error(`Polling for transaction ${txHash} was cancelled.`);
-      }
-      throw err;
-    }
+    // If NOT_FOUND, sleep and try again. Abort during the delay surfaces as
+    // OperationCancelledError from cancellableDelay.
+    await cancellableDelay(intervalMs, signal, "pollTransaction");
   }
 
   throw new ContractExecutionError(
     `Transaction ${txHash} timed out after ${timeoutMs}ms`,
     ContractErrorCode.TRANSACTION_TIMEOUT
   );
-}
-
-function sleep(ms: number, signal?: AbortSignal): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (signal?.aborted) {
-      return reject(new Error("AbortError"));
-    }
-
-    const timer = setTimeout(() => {
-      cleanup();
-      resolve();
-    }, ms);
-
-    const onAbort = () => {
-      clearTimeout(timer);
-      cleanup();
-      reject(new Error("AbortError"));
-    };
-
-    if (signal) {
-      signal.addEventListener("abort", onAbort);
-    }
-
-    function cleanup() {
-      if (signal) {
-        signal.removeEventListener("abort", onAbort);
-      }
-    }
-  });
 }

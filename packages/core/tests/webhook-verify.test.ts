@@ -28,7 +28,7 @@ import type {
 const TEST_SECRET = "whsec_test_secret_12345";
 
 function makeCompletedPayload(
-  overrides: Partial<PayrollCompletedPayload> = {}
+  overrides: Partial<PayrollCompletedPayload> = {},
 ): PayrollCompletedPayload {
   return {
     eventId: "evt_001",
@@ -49,7 +49,7 @@ function makeCompletedPayload(
 function makeSignedEnvelope(
   payload: WebhookPayload,
   secret: string = TEST_SECRET,
-  version: string = "1"
+  version: string = "1",
 ): SignedWebhookEnvelope {
   const signature = computeSignature(payload, secret);
   return { payload, signature, version };
@@ -75,8 +75,14 @@ describe("computeSignature()", () => {
   });
 
   it("produces different signatures for different payloads", () => {
-    const sig1 = computeSignature(makeCompletedPayload({ eventId: "evt_001" }), TEST_SECRET);
-    const sig2 = computeSignature(makeCompletedPayload({ eventId: "evt_002" }), TEST_SECRET);
+    const sig1 = computeSignature(
+      makeCompletedPayload({ eventId: "evt_001" }),
+      TEST_SECRET,
+    );
+    const sig2 = computeSignature(
+      makeCompletedPayload({ eventId: "evt_002" }),
+      TEST_SECRET,
+    );
     expect(sig1).not.toBe(sig2);
   });
 
@@ -148,14 +154,14 @@ describe("verifyWebhookSignature() — happy path", () => {
 
 describe("verifyWebhookSignature() — envelope validation", () => {
   it("throws ENVELOPE_INVALID for null body", () => {
-    expect(() =>
-      verifyWebhookSignature(null as never, TEST_SECRET)
-    ).toThrow(WebhookVerificationError);
+    expect(() => verifyWebhookSignature(null as never, TEST_SECRET)).toThrow(
+      WebhookVerificationError,
+    );
   });
 
   it("throws ENVELOPE_INVALID for non-object body", () => {
     expect(() =>
-      verifyWebhookSignature("string" as never, TEST_SECRET)
+      verifyWebhookSignature("string" as never, TEST_SECRET),
     ).toThrow(WebhookVerificationError);
   });
 
@@ -163,8 +169,8 @@ describe("verifyWebhookSignature() — envelope validation", () => {
     expect(() =>
       verifyWebhookSignature(
         { signature: "sha256=abc", version: "1" } as never,
-        TEST_SECRET
-      )
+        TEST_SECRET,
+      ),
     ).toThrow(WebhookVerificationError);
   });
 
@@ -172,8 +178,8 @@ describe("verifyWebhookSignature() — envelope validation", () => {
     expect(() =>
       verifyWebhookSignature(
         { payload: makeCompletedPayload(), version: "1" } as never,
-        TEST_SECRET
-      )
+        TEST_SECRET,
+      ),
     ).toThrow(WebhookVerificationError);
   });
 
@@ -181,15 +187,17 @@ describe("verifyWebhookSignature() — envelope validation", () => {
     expect(() =>
       verifyWebhookSignature(
         { payload: makeCompletedPayload(), signature: "sha256=abc" } as never,
-        TEST_SECRET
-      )
+        TEST_SECRET,
+      ),
     ).toThrow(WebhookVerificationError);
   });
 
   it("throws UNSUPPORTED_VERSION for unknown versions", () => {
     const payload = makeCompletedPayload();
     const envelope = makeSignedEnvelope(payload, TEST_SECRET, "2");
-    expect(() => verifyWebhookSignature(envelope, TEST_SECRET)).toThrow(WebhookVerificationError);
+    expect(() => verifyWebhookSignature(envelope, TEST_SECRET)).toThrow(
+      WebhookVerificationError,
+    );
   });
 });
 
@@ -202,14 +210,18 @@ describe("verifyWebhookSignature() — signature errors", () => {
     const payload = makeCompletedPayload();
     const envelope = makeSignedEnvelope(payload);
     envelope.signature = "abc123";
-    expect(() => verifyWebhookSignature(envelope, TEST_SECRET)).toThrow(WebhookVerificationError);
+    expect(() => verifyWebhookSignature(envelope, TEST_SECRET)).toThrow(
+      WebhookVerificationError,
+    );
   });
 
   it("throws SIGNATURE_EMPTY for empty digest", () => {
     const payload = makeCompletedPayload();
     const envelope = makeSignedEnvelope(payload);
     envelope.signature = "sha256=";
-    expect(() => verifyWebhookSignature(envelope, TEST_SECRET)).toThrow(WebhookVerificationError);
+    expect(() => verifyWebhookSignature(envelope, TEST_SECRET)).toThrow(
+      WebhookVerificationError,
+    );
   });
 
   it("throws SIGNATURE_MISMATCH when payload has been tampered with", () => {
@@ -217,14 +229,16 @@ describe("verifyWebhookSignature() — signature errors", () => {
     const envelope = makeSignedEnvelope(payload);
     // Tamper with the payload after signing
     envelope.payload = makeCompletedPayload({ eventId: "evt_tampered" });
-    expect(() => verifyWebhookSignature(envelope, TEST_SECRET)).toThrow(WebhookVerificationError);
+    expect(() => verifyWebhookSignature(envelope, TEST_SECRET)).toThrow(
+      WebhookVerificationError,
+    );
   });
 
   it("throws SIGNATURE_MISMATCH with wrong secret", () => {
     const payload = makeCompletedPayload();
     const envelope = makeSignedEnvelope(payload, "correct_secret");
     expect(() => verifyWebhookSignature(envelope, "wrong_secret")).toThrow(
-      WebhookVerificationError
+      WebhookVerificationError,
     );
   });
 });
@@ -239,7 +253,9 @@ describe("verifyWebhookSignature() — replay protection", () => {
     const payload = makeCompletedPayload({ timestamp: oldTimestamp });
     const envelope = makeSignedEnvelope(payload);
     // Default max age is 5 minutes
-    expect(() => verifyWebhookSignature(envelope, TEST_SECRET)).toThrow(WebhookVerificationError);
+    expect(() => verifyWebhookSignature(envelope, TEST_SECRET)).toThrow(
+      WebhookVerificationError,
+    );
   });
 
   it("accepts payloads within the max age window", () => {
@@ -255,22 +271,26 @@ describe("verifyWebhookSignature() — replay protection", () => {
     const payload = makeCompletedPayload({ timestamp: oldTimestamp });
     const envelope = makeSignedEnvelope(payload);
     // Custom max age of 10 seconds — should fail
-    expect(() => verifyWebhookSignature(envelope, TEST_SECRET, { maxAgeMs: 10_000 })).toThrow(
-      WebhookVerificationError
-    );
+    expect(() =>
+      verifyWebhookSignature(envelope, TEST_SECRET, { maxAgeMs: 10_000 }),
+    ).toThrow(WebhookVerificationError);
   });
 
   it("throws TIMESTAMP_MISSING when payload has no timestamp", () => {
     const payload = { ...makeCompletedPayload() } as never;
     (payload as Record<string, unknown>).timestamp = undefined;
     const envelope = makeSignedEnvelope(payload);
-    expect(() => verifyWebhookSignature(envelope, TEST_SECRET)).toThrow(WebhookVerificationError);
+    expect(() => verifyWebhookSignature(envelope, TEST_SECRET)).toThrow(
+      WebhookVerificationError,
+    );
   });
 
   it("throws TIMESTAMP_INVALID for non-parseable timestamps", () => {
     const payload = makeCompletedPayload({ timestamp: "not-a-date" });
     const envelope = makeSignedEnvelope(payload);
-    expect(() => verifyWebhookSignature(envelope, TEST_SECRET)).toThrow(WebhookVerificationError);
+    expect(() => verifyWebhookSignature(envelope, TEST_SECRET)).toThrow(
+      WebhookVerificationError,
+    );
   });
 
   it("throws TIMESTAMP_FUTURE for future timestamps beyond tolerance", () => {
@@ -278,7 +298,9 @@ describe("verifyWebhookSignature() — replay protection", () => {
     const payload = makeCompletedPayload({ timestamp: futureTimestamp });
     const envelope = makeSignedEnvelope(payload);
     // Default tolerance is 0
-    expect(() => verifyWebhookSignature(envelope, TEST_SECRET)).toThrow(WebhookVerificationError);
+    expect(() => verifyWebhookSignature(envelope, TEST_SECRET)).toThrow(
+      WebhookVerificationError,
+    );
   });
 
   it("accepts future timestamps within tolerance", () => {
@@ -292,7 +314,9 @@ describe("verifyWebhookSignature() — replay protection", () => {
   });
 
   it("disables replay protection when maxAgeMs is 0", () => {
-    const oldTimestamp = new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString(); // 1 year ago
+    const oldTimestamp = new Date(
+      Date.now() - 365 * 24 * 60 * 60 * 1000,
+    ).toISOString(); // 1 year ago
     const payload = makeCompletedPayload({ timestamp: oldTimestamp });
     const envelope = makeSignedEnvelope(payload);
     const result = verifyWebhookSignature(envelope, TEST_SECRET, {
@@ -322,12 +346,20 @@ describe("parseWebhookEnvelope()", () => {
   });
 
   it("throws BODY_INVALID for non-object body", () => {
-    expect(() => parseWebhookEnvelope("string")).toThrow(WebhookVerificationError);
+    expect(() => parseWebhookEnvelope("string")).toThrow(
+      WebhookVerificationError,
+    );
   });
 
   it("throws ENVELOPE_MALFORMED for missing fields", () => {
-    expect(() => parseWebhookEnvelope({ payload: {} })).toThrow(WebhookVerificationError);
-    expect(() => parseWebhookEnvelope({ signature: "x" })).toThrow(WebhookVerificationError);
-    expect(() => parseWebhookEnvelope({ version: "1" })).toThrow(WebhookVerificationError);
+    expect(() => parseWebhookEnvelope({ payload: {} })).toThrow(
+      WebhookVerificationError,
+    );
+    expect(() => parseWebhookEnvelope({ signature: "x" })).toThrow(
+      WebhookVerificationError,
+    );
+    expect(() => parseWebhookEnvelope({ version: "1" })).toThrow(
+      WebhookVerificationError,
+    );
   });
 });

@@ -163,9 +163,10 @@ describe("Browser Worker Compatibility - Proof Generation APIs", () => {
 
       expect(req.type).toBe("GENERATE_PROOF");
       if (req.type === "GENERATE_PROOF") {
-        expect(req.witness.amount).toBe(5000000000000000000n);
+        // Amount is normalized from bigint to string by the proof input sanitizer
+        expect(req.witness.amount).toBe("5000000000000000000");
         expect(req.witness.nullifier).toBe(12345678901234567890n);
-        expect(typeof req.witness.amount).toBe("bigint");
+        expect(typeof req.witness.amount).toBe("string");
       }
 
       worker.reply({ type: "PROOF_RESULT", id: req.id, payload: mockPayload });
@@ -231,7 +232,8 @@ describe("Browser Worker Compatibility - Proof Generation APIs", () => {
       const req = worker.lastRequest();
 
       if (req.type === "GENERATE_PROOF") {
-        expect(typeof req.witness.amount).toBe("bigint");
+        // Amount is normalized from bigint to string by the proof input sanitizer
+        expect(typeof req.witness.amount).toBe("string");
         expect(typeof req.witness.count).toBe("number");
         expect(typeof req.witness.flag).toBe("boolean");
         expect(typeof req.witness.label).toBe("string");
@@ -663,7 +665,8 @@ describe("Browser Worker Compatibility - Proof Generation APIs", () => {
       if (req.type === "GENERATE_PROOF") {
         expect(req.type).toBe("GENERATE_PROOF");
         expect(typeof req.id).toBe("string");
-        expect(req.witness).toEqual(witness);
+        // Amount is normalized from bigint to string by the proof input sanitizer
+        expect(req.witness).toEqual({ ...witness, amount: "5000" });
         expect(req.config).toEqual(config);
       }
     });

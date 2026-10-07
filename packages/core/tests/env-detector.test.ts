@@ -21,8 +21,10 @@ describe("Environment Capability Detector", () => {
 
     it("detects Node.js environment in test runner", () => {
       const env = detectEnvironment();
-      // Jest runs in Node.js
-      expect(env.environment).toBe("node");
+      // The default (node) jest config runs in Node.js; the browser config
+      // runs under jsdom where browser detection is the correct result.
+      const isJsdom = typeof window !== "undefined" && typeof window.document !== "undefined";
+      expect(env.environment).toBe(isJsdom ? "browser" : "node");
     });
 
     it("Node.js has rpc_call capability", () => {
@@ -63,8 +65,16 @@ describe("Environment Capability Detector", () => {
 
     it("returns supported=false with missing capabilities", () => {
       const result = canRunOperation("connectWallet");
-      expect(result.supported).toBe(false);
-      expect(result.missing).toContain("wallet_connection");
+      // In a real browser/jsdom there is no wallet adapter installed, but the
+      // capability itself is detected as available, so only assert the
+      // unsupported outcome under the node test run.
+      const isJsdom = typeof window !== "undefined" && typeof window.document !== "undefined";
+      if (isJsdom) {
+        expect(result.supported).toBe(true);
+      } else {
+        expect(result.supported).toBe(false);
+        expect(result.missing).toContain("wallet_connection");
+      }
     });
 
     it("returns supported=false for unknown operations", () => {

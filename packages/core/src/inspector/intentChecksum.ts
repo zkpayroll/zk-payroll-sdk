@@ -8,7 +8,9 @@ import type { TransactionSummary } from "./types";
  * Keys are sorted recursively, bigint values are stringified, and undefined
  * properties are stripped to prevent key ordering or serialization drift.
  */
-export function canonicalizeIntent(intent: Record<string, unknown> | TransactionSummary): string {
+export function canonicalizeIntent(
+  intent: Record<string, unknown> | TransactionSummary,
+): string {
   return JSON.stringify(intent, (key, value) => {
     if (typeof value === "bigint") {
       return value.toString();
@@ -37,7 +39,8 @@ function fnv1a32Hex(str: string): string {
   let hash = 0x811c9dc5;
   for (let i = 0; i < str.length; i++) {
     hash ^= str.charCodeAt(i);
-    hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+    hash +=
+      (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
   }
   return (hash >>> 0).toString(16).padStart(8, "0");
 }
@@ -49,13 +52,22 @@ function fnv1a32Hex(str: string): string {
  * @param intent - The transaction intent or TransactionSummary object to hash.
  * @returns Deterministic checksum string.
  */
-export function computeIntentChecksum(intent: Record<string, unknown> | TransactionSummary): string {
+export function computeIntentChecksum(
+  intent: Record<string, unknown> | TransactionSummary,
+): string {
   const canonical = canonicalizeIntent(intent);
-  if (typeof process !== "undefined" && process.versions && process.versions.node) {
+  if (
+    typeof process !== "undefined" &&
+    process.versions &&
+    process.versions.node
+  ) {
     try {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
       const crypto = require("crypto");
-      return crypto.createHash("sha256").update(canonical, "utf8").digest("hex");
+      return crypto
+        .createHash("sha256")
+        .update(canonical, "utf8")
+        .digest("hex");
     } catch {
       // Fall through to JS implementation
     }
@@ -70,7 +82,7 @@ export function computeIntentChecksum(intent: Record<string, unknown> | Transact
  * @returns Promise resolving to a 64-character lowercase SHA-256 hex string.
  */
 export async function computeIntentChecksumAsync(
-  intent: Record<string, unknown> | TransactionSummary
+  intent: Record<string, unknown> | TransactionSummary,
 ): Promise<string> {
   const canonical = canonicalizeIntent(intent);
   const encoder = new TextEncoder();
@@ -88,7 +100,7 @@ export async function computeIntentChecksumAsync(
  */
 export function verifyIntentChecksum(
   intent: Record<string, unknown> | TransactionSummary,
-  expectedChecksum: string
+  expectedChecksum: string,
 ): boolean {
   if (!expectedChecksum || typeof expectedChecksum !== "string") {
     return false;

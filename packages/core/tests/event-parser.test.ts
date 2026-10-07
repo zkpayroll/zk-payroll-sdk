@@ -37,7 +37,10 @@ function u64ScVal(value: bigint): xdr.ScVal {
 }
 
 function bytesScVal(hex: string): xdr.ScVal {
-  return nativeToScVal(Buffer.from(hex, "hex"), { type: "bytes" });
+  // Uint8Array.from instead of Buffer.from: the jsdom Buffer shim's
+  // `instanceof Uint8Array` checks fail inside the stellar-sdk bundle, while
+  // plain Uint8Arrays encode correctly in both node and browser configs.
+  return nativeToScVal(Uint8Array.from(Buffer.from(hex, "hex")), { type: "bytes" });
 }
 
 function symbolScVal(name: string): xdr.ScVal {

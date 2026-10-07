@@ -108,14 +108,15 @@ describe("WorkerProofGenerator", () => {
   describe("generateProof", () => {
     it("posts a GENERATE_PROOF message with the witness and config", async () => {
       const { worker, generator } = setup();
-      const witness = { recipient: "GABC", amount: 5000n };
+      const witness = { recipient: "GABC", amount: 5000n, asset: "native" };
 
       const promise = generator.generateProof(witness);
       const req = worker.lastRequest();
 
       expect(req.type).toBe("GENERATE_PROOF");
       if (req.type === "GENERATE_PROOF") {
-        expect(req.witness).toEqual(witness);
+        // Amount is normalized from bigint to string by the proof input sanitizer
+        expect(req.witness).toEqual({ ...witness, amount: "5000" });
         expect(req.config).toEqual(config);
         expect(typeof req.id).toBe("string");
       }
@@ -126,7 +127,7 @@ describe("WorkerProofGenerator", () => {
 
     it("resolves with the ProofPayload returned by the worker", async () => {
       const { worker, generator } = setup();
-      const promise = generator.generateProof({ amount: 1000n });
+      const promise = generator.generateProof({ recipient: "GX", amount: 1000n, asset: "native" });
       const { id } = worker.lastRequest();
       worker.reply({ type: "PROOF_RESULT", id, payload: mockPayload });
       await expect(promise).resolves.toEqual(mockPayload);
@@ -134,7 +135,7 @@ describe("WorkerProofGenerator", () => {
 
     it("rejects with PayrollError when worker sends PROOF_ERROR", async () => {
       const { worker, generator } = setup();
-      const promise = generator.generateProof({ amount: 100n });
+      const promise = generator.generateProof({ recipient: "GX", amount: 100n, asset: "native" });
       const { id } = worker.lastRequest();
       worker.reply({ type: "PROOF_ERROR", id, message: "invalid witness" });
       await expect(promise).rejects.toThrow(PayrollError);
@@ -194,7 +195,7 @@ describe("WorkerProofGenerator", () => {
 
     it("rejects with a timeout error when the worker is silent", async () => {
       const { generator } = setup({ timeoutMs: 5000 });
-      const promise = generator.generateProof({ amount: 100n });
+      const promise = generator.generateProof({ recipient: "GX", amount: 100n, asset: "native" });
 
       jest.advanceTimersByTime(5001);
 
@@ -204,7 +205,7 @@ describe("WorkerProofGenerator", () => {
 
     it("uses 120 000 ms as the default timeout", async () => {
       const { generator } = setup();
-      const promise = generator.generateProof({ amount: 100n });
+      const promise = generator.generateProof({ recipient: "GX", amount: 100n, asset: "native" });
 
       jest.advanceTimersByTime(119_999);
       // Promise should still be pending (not rejected yet)
@@ -234,7 +235,7 @@ describe("WorkerProofGenerator", () => {
 
     it("ignores responses with unknown ids", async () => {
       const { worker, generator } = setup();
-      const promise = generator.generateProof({ amount: 100n });
+      const promise = generator.generateProof({ recipient: "GX", amount: 100n, asset: "native" });
       const { id } = worker.lastRequest();
 
       // Unknown id — should be silently ignored
@@ -321,7 +322,7 @@ describe("WorkerProofGenerator", () => {
 
     it("clears all pending requests so post-terminate replies are no-ops", async () => {
       const { worker, generator } = setup();
-      const promise = generator.generateProof({ amount: 100n });
+      const promise = generator.generateProof({ recipient: "GX", amount: 100n, asset: "native" });
       const { id } = worker.lastRequest();
 
       generator.terminate();
@@ -349,7 +350,7 @@ describe("WorkerProofGenerator", () => {
 
     it("clears the pending map after a crash", async () => {
       const { worker, generator } = setup();
-      const promise = generator.generateProof({ amount: 100n });
+      const promise = generator.generateProof({ recipient: "GX", amount: 100n, asset: "native" });
       worker.crash("crash");
       await promise.catch(() => {});
 

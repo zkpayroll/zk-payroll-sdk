@@ -52,7 +52,20 @@ export type {
   ErrorCategoryType,
   ErrorCodeEntry,
 } from "./errors";
-export { DEFAULT_CONFIG } from "./config";
+export {
+  DEFAULT_CONFIG,
+  ConfigPresets,
+  ConfigBuilder,
+  validateConfig,
+  assertValidConfig,
+} from "./config";
+export type {
+  ClientConfig,
+  RetryPolicyConfig,
+  FeatureFlagsConfig,
+  ConfigValidationErrorDetail,
+  ConfigValidationResult,
+} from "./config";
 export * from "./cache";
 export * from "./types";
 export * from "./progress";
@@ -83,6 +96,7 @@ export * from "./testing";
 export { TransactionWatcher } from "./events";
 export type { ConfirmationOptions, ConfirmationResult } from "./events";
 export * from "./polling";
+export * from "./utils/xdr-formatters";
 
 // ── Pagination Helpers ───────────────────────────────────────────────────────
 export * from "./pagination";
@@ -107,6 +121,9 @@ export * from "./clients";
 
 // ── Environment Sanity Checker ──────────────────────────────────────────────
 export * from "./sanity";
+
+// ── Proof Readiness Checker ─────────────────────────────────────────────────
+export * from "./proof-readiness";
 
 // ── Transaction Simulation ──────────────────────────────────────────────────
 export * from "./simulation";
@@ -140,8 +157,14 @@ export * from "./reconciliation";
 // ── Audit View-Key Helpers ──────────────────────────────────────────────────
 export * from "./audit";
 
+// ── Idempotent Payroll Request Builder ─────────────────────────────────────
+export * from "./request";
+
 // ── Webhook Verification ────────────────────────────────────────────────────
 export * from "./webhooks";
+
+// ── Payroll Lifecycle Event Aggregator ──────────────────────────────────────
+export * from "./lifecycle";
 
 // ── Environment Capability Detector ─────────────────────────────────────────
 export * from "./env";
@@ -162,3 +185,47 @@ export * from "./indexer";
 
 // Proof Artifact Lifecycle
 export * from "./artifacts";
+// ── Payroll preflight controls ─────────────────────────────────────────────
+export * from "./payroll-controls";
+
+// Proof Artifact Lifecycle
+export * from "./artifacts";
+
+// ── Compliance Holds ─────────────────────────────────────────────────────────
+export * from "./compliance";
+
+// Treasury Checkpoints & Report Parser (#405)
+export * from "./treasury/checkpoints";
+export * from "./reconciliation/report";
+
+// Approval Invalidation Analyzer (#404)
+export * from "./signing/invalidationAnalyzer";
+export type {
+  PayrollPolicyConfig,
+  PayrollDraftRecipient,
+  InvalidationAnalysisResult,
+} from "./policy/types";
+export type { PayrollDraft as PayrollPolicyDraft } from "./policy/types";
+
+// Obligation Snapshot Planner (#403)
+export * from "./obligations/snapshotPlanner";
+export * from "./privacy/redaction";
+
+// Employee Reference ID Validator (#388)
+export * from "./employees/referenceId";
+
+// Employee Eligibility Status Evaluation (#612)
+export * from "./employees/eligibility";
+export { EmployeeEligibilityValidationError } from "./employees/errors";
+
+// Typed payroll approval request builder
+export * from "./approval";
+
+// Request cancellation support
+export * from "./cancellation";
+
+// Approved payroll revision protection
+export * from "./revision";
+
+// Employee Activation Prerequisite Checks (#636)
+export * from "./employees/activationPrerequisites";

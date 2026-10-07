@@ -51,3 +51,5 @@ A payment that needs to load proof artifacts generally emits:
 7. `payment.submission_done`
 
 Consumers should treat `stage` as the stable UI key. `message` is a machine-readable status detail, `progress` is present only when the SDK can estimate completion, and `metadata` never includes sensitive witness fields such as recipient or amount.
+
+> **Note:** the structured progress events above are emitted by the **SDK during a single processPayment call** — they are not the same as the **on-chain contract events** that record the final on-chain result. See [Contract Events](./CONTRACT_EVENTS.md) for the `committed`, `payment_executed`, and related event schemas that your indexers and dashboards should subscribe to.

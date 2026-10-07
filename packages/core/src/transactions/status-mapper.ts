@@ -10,7 +10,7 @@ import { NormalizedTransactionStatus, PayrollTransactionStatus } from "./types";
  * @returns A NormalizedTransactionStatus object mapping the RPC state to a uniform status
  */
 export function mapTransactionStatus(
-  response: rpc.Api.GetTransactionResponse | null | undefined
+  response: rpc.Api.GetTransactionResponse | null | undefined,
 ): NormalizedTransactionStatus {
   if (!response) {
     return {
@@ -20,7 +20,10 @@ export function mapTransactionStatus(
   }
 
   // Attempt to extract the hash if available
-  const txHash = "hash" in response ? (response as Record<string, unknown>).hash as string | undefined : undefined;
+  const txHash =
+    "hash" in response
+      ? ((response as Record<string, unknown>).hash as string | undefined)
+      : undefined;
 
   switch (response.status) {
     case rpc.Api.GetTransactionStatus.SUCCESS: {
@@ -57,7 +60,8 @@ export function mapTransactionStatus(
     default: {
       return {
         status: "unknown",
-        rawStatus: ((response as Record<string, unknown>).status as string) || "unknown",
+        rawStatus:
+          ((response as Record<string, unknown>).status as string) || "unknown",
         txHash,
         errorDetails: "Unrecognized status in RPC response",
       };
@@ -73,7 +77,7 @@ export function mapTransactionStatus(
  * @returns Normalized transaction status
  */
 export function mapContractStatus(
-  rawStatus: string | number | null | undefined
+  rawStatus: string | number | null | undefined,
 ): NormalizedTransactionStatus {
   if (rawStatus === null || rawStatus === undefined) {
     return {
@@ -142,7 +146,7 @@ export function mapContractStatus(
  * @returns Normalized transaction status
  */
 export function mapPayrollStatus(
-  input: rpc.Api.GetTransactionResponse | string | number | null | undefined
+  input: rpc.Api.GetTransactionResponse | string | number | null | undefined,
 ): NormalizedTransactionStatus {
   if (input !== null && typeof input === "object" && "status" in input) {
     return mapTransactionStatus(input as rpc.Api.GetTransactionResponse);

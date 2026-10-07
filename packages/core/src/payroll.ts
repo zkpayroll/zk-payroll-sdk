@@ -9,6 +9,7 @@ import { SdkLogger } from "./logging/SdkLogger";
 import { redactError } from "./redaction/RedactionEngine";
 import { IdempotencyRegistry, createPaymentIdempotencyKey } from "./core/idempotency";
 import { createPayrollProgressEvent } from "./progress";
+import { assertValidPayrollWitness } from "./crypto/proofInputSanitizer";
 
 export interface Transaction {
   amount: bigint;
@@ -98,11 +99,17 @@ export class PayrollService {
     }
 
     // 2. Generate ZK proof
-    const witness: Record<string, unknown> = {
+    // Build witness then sanitize it with payroll-specific validation
+    // (required fields enforced; forbidden fields rejected; amounts normalized).
+    const rawWitness: Record<string, unknown> = {
       recipient,
       amount: amount.toString(),
       asset,
     };
+
+    // Throws ProofGenerationError if any required field is missing or invalid.
+    // Error messages never contain raw input values.
+    const witness = assertValidPayrollWitness(rawWitness);
 
     let proof: ProofPayload;
     try {

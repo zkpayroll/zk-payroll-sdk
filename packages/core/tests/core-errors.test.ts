@@ -20,6 +20,7 @@ import {
   getErrorCodesByCategory,
 } from "../src/errors";
 import { PayrollError } from "../src/errors";
+import { classifyRecoverablePayrollError } from "../src/classification";
 
 describe("Core Error Classes", () => {
   describe("ZkPayrollError", () => {
@@ -619,6 +620,53 @@ describe("Core Error Classes", () => {
       const reconCodes = getErrorCodesByCategory(ErrorCategory.RECONCILIATION);
       expect(reconCodes).toContain("RECONCILIATION_DIFF_FAILED");
       expect(reconCodes).toContain("RECONCILIATION_UNEXPECTED_ACTIVITY");
+    });
+  });
+
+  describe("classifyRecoverablePayrollError", () => {
+    it("classifies transient network failures as retryable", () => {
+      const result = classifyRecoverablePayrollError(new NetworkError("connection failed"));
+
+      expect(result).toMatchObject({
+        category: "retryable",
+        code: "NETWORK_ERROR",
+        retryable: true,
+        userCorrectable: false,
+      });
+    });
+
+    it("classifies validation failures as user-correctable", () => {
+      const result = classifyRecoverablePayrollError(
+        new ValidationError("amount=5000 is invalid", "amount")
+      );
+
+      expect(result).toMatchObject({
+        category: "user-correctable",
+        code: "VALIDATION_ERROR",
+        retryable: false,
+        userCorrectable: true,
+      });
+      expect(result.suggestedMessage).not.toContain("5000");
+    });
+
+    it("classifies non-actionable payroll failures as terminal", () => {
+      const result = classifyRecoverablePayrollError({ code: "SERIALIZATION_FAILED" });
+
+      expect(result).toMatchObject({
+        category: "terminal",
+        code: "SERIALIZATION_FAILED",
+        retryable: false,
+        userCorrectable: false,
+      });
+    });
+
+    it("does not expose raw values from unknown errors", () => {
+      const result = classifyRecoverablePayrollError(
+        new Error("recipient=GSECRET amount=5000 privateKey=hidden")
+      );
+
+      expect(result.code).toBe("UNKNOWN_RPC_ERROR");
+      expect(result.suggestedMessage).not.toMatch(/GSECRET|5000|hidden/);
     });
   });
 });

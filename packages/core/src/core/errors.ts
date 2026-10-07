@@ -324,6 +324,24 @@ export const DEFAULT_ERROR_MESSAGES: Record<string, string> = {
     "The employee batch contains invalid records. Please review the validation errors and try again.",
   DRAFT_VALIDATION_FAILED:
     "The payroll draft contains invalid data. Please review the errors and try again.",
+  PROOF_INPUT_INVALID_RECIPIENT: "Recipient must be a string address.",
+  PROOF_INPUT_INVALID_AMOUNT: "Amount must be a non-negative integer.",
+  PROOF_INPUT_INVALID_ASSET: "Asset must be a string identifier.",
+  PROOF_INPUT_FORBIDDEN_FIELD: "The proof input contains a forbidden sensitive field.",
+  PROOF_INPUT_MISSING_REQUIRED_FIELD: "A required field is missing from the payroll proof input.",
+  PROOF_INPUT_INVALID: "Proof witness must be a non-null object.",
+  COMPLIANCE_HOLD_VALIDATION_FAILED:
+    "The compliance hold request is invalid. Please review the target, reason code, and required fields.",
+  COMPLIANCE_HOLD_RELEASE_UNAUTHORIZED:
+    "This hold cannot be released without a valid authorization token identifying who is releasing it.",
+  REVISION_APPROVED_EDIT_BLOCKED:
+    "This revision is already approved and can no longer be edited. Create a new revision to make further changes.",
+  REVISION_ALREADY_APPROVED:
+    "This revision is already approved. Pass { allowReapproval: true } to re-approve it intentionally.",
+  REVISION_VALIDATION_FAILED:
+    "The revision request is invalid. Please review the required identifiers and approver.",
+  EMPLOYEE_ELIGIBILITY_VALIDATION_FAILED:
+    "The employee eligibility request is invalid. Please review the employee address, status, and compliance hold inputs.",
 };
 
 /** Custom message overrides keyed by error code. */
@@ -457,8 +475,20 @@ const CATEGORY_MAP: Record<string, string> = {
   BATCH_VALIDATION_FAILED: "Batch",
   EMPLOYEE_BATCH_VALIDATION_FAILED: "Batch",
   DRAFT_VALIDATION_FAILED: "Draft",
+  PROOF_INPUT_INVALID_RECIPIENT: "Proof Generation",
+  PROOF_INPUT_INVALID_AMOUNT: "Proof Generation",
+  PROOF_INPUT_INVALID_ASSET: "Proof Generation",
+  PROOF_INPUT_FORBIDDEN_FIELD: "Proof Generation",
+  PROOF_INPUT_MISSING_REQUIRED_FIELD: "Proof Generation",
+  PROOF_INPUT_INVALID: "Proof Generation",
   RECONCILIATION_DIFF_FAILED: "Reconciliation",
   RECONCILIATION_UNEXPECTED_ACTIVITY: "Reconciliation",
+  COMPLIANCE_HOLD_VALIDATION_FAILED: "Compliance",
+  COMPLIANCE_HOLD_RELEASE_UNAUTHORIZED: "Compliance",
+  REVISION_APPROVED_EDIT_BLOCKED: "Revision",
+  REVISION_ALREADY_APPROVED: "Revision",
+  REVISION_VALIDATION_FAILED: "Revision",
+  EMPLOYEE_ELIGIBILITY_VALIDATION_FAILED: "Employee",
 };
 
 const RETRYABLE_CODES = new Set<string>(

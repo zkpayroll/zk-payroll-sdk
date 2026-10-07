@@ -45,7 +45,7 @@ describe("ProofConfigResolver (Issue #229)", () => {
       resolveProofConfig({
         wasmUrl: "http://malformed url with spaces",
         zkeyUrl: "https://example.com/payroll.zkey",
-      })
+      }),
     ).toThrow(ValidationError);
   });
 });

@@ -2,7 +2,7 @@ import { groth16 } from "snarkjs";
 import axios from "axios";
 import * as fs from "fs";
 import { CacheProvider } from "../cache/CacheProvider";
-import { PayrollError } from "../errors";
+import { PayrollError, ProofGenerationError } from "../errors";
 import {
   IPreloadableProofGenerator,
   ProofPayload,
@@ -16,6 +16,7 @@ import { SdkLogger } from "../logging/SdkLogger";
 import { Semaphore } from "../core/concurrency";
 import { IdempotencyRegistry } from "../core/idempotency";
 import { validateProofConfig } from "./configValidation";
+import { sanitizeProofInput } from "./proofInputSanitizer";
 
 /**
  * Default max concurrency for `groth16.fullProve`. The snarkjs call is
@@ -93,9 +94,19 @@ export class SnarkjsProofGenerator implements IPreloadableProofGenerator {
   async generateProof(witness: Record<string, unknown>): Promise<ProofPayload> {
     this.logger?.info("proof_generation_start", { wasmUrl: this.config.wasmUrl });
 
+    // ── Sanitize witness before any proof work begins ────────────────────
+    const sanitizeResult = sanitizeProofInput(witness);
+    if (!sanitizeResult.valid) {
+      const firstError = sanitizeResult.errors[0];
+      throw new ProofGenerationError(firstError.message, firstError.code, {
+        field: firstError.field,
+      });
+    }
+    const sanitized = sanitizeResult.sanitized!;
+
     try {
-      return await this.dedup.execute(witnessKey(witness), () =>
-        this.semaphore.runExclusive(() => this.computeProof(witness))
+      return await this.dedup.execute(witnessKey(sanitized), () =>
+        this.semaphore.runExclusive(() => this.computeProof(sanitized))
       );
     } catch (error) {
       this.logger?.error("proof_generation_failed", {

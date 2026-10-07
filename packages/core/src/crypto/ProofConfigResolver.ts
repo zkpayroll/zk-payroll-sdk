@@ -27,9 +27,12 @@ export interface ProofConfigResolverOptions extends Partial<ProofGeneratorConfig
  */
 export function resolveProofConfig(
   options: ProofConfigResolverOptions = {},
-  env: Record<string, string | undefined> = typeof process !== "undefined" ? process.env : {}
+  env: Record<string, string | undefined> = typeof process !== "undefined"
+    ? process.env
+    : {},
 ): ProofGeneratorConfig {
-  const artifactDir = options.artifactDir || env.ZK_PAYROLL_ARTIFACT_DIR || "./circuits";
+  const artifactDir =
+    options.artifactDir || env.ZK_PAYROLL_ARTIFACT_DIR || "./circuits";
 
   const wasmUrl =
     options.wasmUrl ||
@@ -43,8 +46,10 @@ export function resolveProofConfig(
     env.ZK_PAYROLL_ZKEY_URL ||
     `${artifactDir}/payroll.zkey`;
 
-  const expectedWasmHash = options.expectedWasmHash || env.ZK_PAYROLL_EXPECTED_WASM_HASH;
-  const expectedZkeyHash = options.expectedZkeyHash || env.ZK_PAYROLL_EXPECTED_ZKEY_HASH;
+  const expectedWasmHash =
+    options.expectedWasmHash || env.ZK_PAYROLL_EXPECTED_WASM_HASH;
+  const expectedZkeyHash =
+    options.expectedZkeyHash || env.ZK_PAYROLL_EXPECTED_ZKEY_HASH;
 
   const resolvedConfig: ProofGeneratorConfig = {
     wasmUrl,
@@ -53,8 +58,12 @@ export function resolveProofConfig(
     ...(options.zkeySource ? { zkeySource: options.zkeySource } : {}),
     ...(expectedWasmHash ? { expectedWasmHash } : {}),
     ...(expectedZkeyHash ? { expectedZkeyHash } : {}),
-    ...(options.artifactCacheTTL !== undefined ? { artifactCacheTTL: options.artifactCacheTTL } : {}),
-    ...(options.maxConcurrency !== undefined ? { maxConcurrency: options.maxConcurrency } : {}),
+    ...(options.artifactCacheTTL !== undefined
+      ? { artifactCacheTTL: options.artifactCacheTTL }
+      : {}),
+    ...(options.maxConcurrency !== undefined
+      ? { maxConcurrency: options.maxConcurrency }
+      : {}),
   };
 
   // Validate the resolved config to guarantee correctness before returning
@@ -70,7 +79,9 @@ export function resolveProofConfig(
  * @returns Fully validated ProofGeneratorConfig object
  */
 export function resolveProofConfigFromEnv(
-  env: Record<string, string | undefined> = typeof process !== "undefined" ? process.env : {}
+  env: Record<string, string | undefined> = typeof process !== "undefined"
+    ? process.env
+    : {},
 ): ProofGeneratorConfig {
   return resolveProofConfig({}, env);
 }

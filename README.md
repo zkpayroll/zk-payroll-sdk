@@ -8,6 +8,32 @@ TypeScript SDK for interacting with the ZK Payroll smart contracts.
 npm install @zk-payroll/sdk
 ```
 
+## Quickstart
+
+Minimal examples using fake data — initialize the SDK, validate a payroll
+draft, and read payroll status.
+
+```typescript
+import { PayrollContract, ConfigPresets, DraftBuilder } from "@zk-payroll/sdk";
+
+// 1. Initialize the SDK
+const config = ConfigPresets.testnet()
+  .withContractId("CCONTRACT_ID_EXAMPLE")
+  .build();
+const contract = new PayrollContract(config);
+
+// 2. Validate a payroll draft before submitting it
+const { errors, warnings } = new DraftBuilder()
+  .add({ recipientId: "GABC...EXAMPLE", amount: "100.00", asset: "native" })
+  .validate();
+if (errors.length > 0) {
+  console.error("Draft is invalid:", errors);
+}
+
+// 3. Read payroll status (balance) for an address
+const balance = await contract.getBalance("GABC...EXAMPLE");
+```
+
 ## Usage
 
 The SDK provides configuration presets for common environments to simplify initialization:
@@ -34,13 +60,37 @@ await service.processPayment(
 );
 ```
 
-### Configuration Validations
+### Configuration & Schema Validation
 
-The `ConfigBuilder` fails fast if required configuration is missing or malformed:
+The SDK enforces strict schema validation for all configuration parameters (`network`, `rpcUrl`/`networkUrl`, `contractId`/`contractIds`, `proofConfig`, `retryPolicy`, and `featureFlags`) before operations run.
+
+#### Minimal Valid Config Example
+```typescript
+import { ConfigPresets, validateConfig, assertValidConfig } from "@zk-payroll/sdk";
+
+// Using ConfigPresets for a minimal valid setup:
+const config = ConfigPresets.testnet()
+  .withContractId("CAKZGMMMJOHMSZ5V3DYKCUDNTIWBG57MAMFJDSVICNWUNVXLX6EZN3NC")
+  .build();
+
+// Direct schema validation utility
+const validation = validateConfig(config);
+if (!validation.isValid) {
+  console.error("Config errors:", validation.errors);
+}
+
+// Asserts configuration validity or throws structured ValidationError
+assertValidConfig(config);
+```
+
+#### Invalid Configuration Handling
+The `ConfigBuilder` and `assertValidConfig` fail fast with structured `ValidationError` (`code: CONFIG_VALIDATION_ERROR`) if required fields are missing or malformed:
 
 ```typescript
-// Throws Error: "Configuration validation failed:\n- contractId is malformed: invalid_id"
+// Throws ValidationError: "Configuration validation failed:\n- contractId is malformed: invalid_id"
 ConfigPresets.testnet().withContractId("invalid_id").build();
+```
+
 ## Idempotent retries
 
 For safe retries, pass an `idempotencyKey` when processing a payment.
@@ -516,12 +566,14 @@ patterns for tests, and rules for extending the registry in production.
 - [Runtime Support Matrix](./docs/SUPPORT_MATRIX.md) - Supported Node.js and browser versions
 - [Browser and Backend Usage](#browser-and-backend-usage) - Where to run the SDK, wallets, proofs, and secrets
 - [Payload Normalization](./docs/PAYLOAD_NORMALIZATION.md) - Canonicalizing payroll payloads before validation
+- [Contract Events](./docs/CONTRACT_EVENTS.md) - On-chain + webhook event schemas for indexers and dashboards
 - [API Reference](./docs/API.md) - Complete API documentation
 - [Error Handling](./docs/ERRORS.md) - Public error hierarchy and recovery patterns
 - [ZK Proof Generation](./docs/ZK_PROOF_GENERATION.md) - Detailed proof generation guide
 - [Versioning & Compatibility](./docs/VERSIONING.md) - SDK semantic versioning and contract compatibility matrix
 - [SDK Migration Cookbook](./docs/SDK_MIGRATION_COOKBOOK.md) - Step-by-step upgrade checklist and migration patterns
 - [Troubleshooting](./docs/TROUBLESHOOTING.md) - Solutions for common CI, dependency, and environment issues
+- [Payroll Preflight Controls](./docs/PAYROLL_PREFLIGHT_CONTROLS.md) - Company revisions, reference integrity, treasury reserves, and period closure checks
 
 ## Development
 
@@ -540,3 +592,9 @@ npm run lint
 ```
 
 > Having trouble? See the [Troubleshooting Guide](./docs/TROUBLESHOOTING.md).
+
+## Request cancellation
+
+SDK polling and long-running network operations accept an optional `AbortSignal`, letting callers cancel cleanly. Cancellation rejects with `OperationCancelledError` (code `OPERATION_CANCELLED`), is never retried, and never echoes sensitive payroll values.
+
+See `packages/core/src/cancellation/` for the API (`withCancellation`, `cancellableDelay`, `throwIfAborted`, `OperationCancelledError`). Passing no `signal` preserves existing behavior, so this is fully backward compatible.

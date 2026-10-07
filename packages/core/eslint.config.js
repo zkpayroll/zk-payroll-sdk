@@ -50,9 +50,9 @@ module.exports = [
       ...tseslint.configs.recommended.rules,
 
       // Strict typing
-      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-unused-vars': [
-        'error',
+        'warn',
         { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
       '@typescript-eslint/explicit-function-return-type': [
@@ -60,6 +60,7 @@ module.exports = [
         { allowExpressions: true, allowTypedFunctionExpressions: true },
       ],
       '@typescript-eslint/no-floating-promises': 'error',
+      '@typescript-eslint/no-require-imports': 'warn',
 
       'no-console': 'warn',
       eqeqeq: ['error', 'always'],

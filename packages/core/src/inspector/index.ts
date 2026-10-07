@@ -6,4 +6,3 @@ export {
   computeIntentChecksumAsync,
   verifyIntentChecksum,
 } from "./intentChecksum";
-
