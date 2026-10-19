@@ -240,3 +240,15 @@ export * from "./schedules";
 // (it previously referenced a non-existent `./salary-policy`).
 export * from "./payroll/salaryPolicyImpact";
 
+// ── Cross-Currency Rounding Safeguards ──────────────────────────────────────
+export * from "./settlement/roundingSafeguards";
+
+// ── Audit Sequence Verification ─────────────────────────────────────────────
+export * from "./audit/sequenceVerification";
+
+// ── Stalled Payroll Run Recovery Guidance ───────────────────────────────────
+export * from "./recovery/stalledRunRecovery";
+
+// ── Payroll Policy Effective-Date Guardrails ────────────────────────────────
+export * from "./policy/effectiveDateGuardrails";
+

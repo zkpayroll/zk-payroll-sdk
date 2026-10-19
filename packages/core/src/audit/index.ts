@@ -9,3 +9,4 @@ export * from "./accessExpiry";
 export * from "./auditReferenceAttachment";
 export * from "./grantScope";
 export * from "./auditRetentionSafeguards";
+export * from "./sequenceVerification";
