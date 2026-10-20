@@ -33,3 +33,4 @@ export * from "./duplicatePayoutInstructionDetector";
 export * from "./payrollReadinessScore";
 export * from "./payoutRetryApprovalBoundary";
 export * from "./periodReopeningRestrictions";
+export * from "./compensationGroupMembership";

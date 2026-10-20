@@ -17,3 +17,14 @@ export {
   checkFundingReadiness,
   groupObligationsByAsset,
 } from "./readiness";
+export type {
+  FundingFailoverErrorCode,
+  FundingFailoverResult,
+  FundingSource,
+  FundingSourceOutcome,
+} from "./sourceFailover";
+export {
+  FundingFailoverError,
+  validateBatchFundingFailover,
+  validateFundingFailoverChain,
+} from "./sourceFailover";

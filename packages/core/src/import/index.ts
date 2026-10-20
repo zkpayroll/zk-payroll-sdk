@@ -27,3 +27,6 @@ export * from "./resultParser";
 
 // ── Payroll Import Source Validator ────────────────────────────────────────
 export * from "./payrollImportSourceValidator";
+
+// ── Payroll Import Rollback Support (#713) ─────────────────────────────────
+export * from "./rollback";
