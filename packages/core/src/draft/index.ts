@@ -33,3 +33,4 @@ export {
   verifyDraftChecksum,
 } from "./draftChecksum";
 export * from "./draftLockInspection";
+export * from "./draftComparisonSnapshot";
