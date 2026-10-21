@@ -15,10 +15,15 @@ import {
   type CancellationReasonCode,
 } from "../payroll/cancellation";
 import { EventDecodingError } from "./types";
+import {
+  decodePayrollLifecycleEventSchemaVersion,
+  type PayrollLifecycleEventSchemaVersion,
+} from "./versioning";
 
 /** Emitted when a payroll run is cancelled on the contract. */
 export interface PayrollCancelledEvent {
   type: "payroll_cancelled";
+  schemaVersion: PayrollLifecycleEventSchemaVersion;
   /** Stellar address of the employer whose run was cancelled. */
   employer: string;
   /** Identifier of the cancelled payroll run. */
@@ -74,6 +79,7 @@ export function parsePayrollCancelledEvent(event: RawContractEvent): PayrollCanc
   }
 
   const data = decodeDataMap(event.data);
+  const schemaVersion = decodePayrollLifecycleEventSchemaVersion(data, EVENT_NAME, event);
 
   const runId = data.run_id?.str()?.toString();
   if (!runId) {
@@ -98,6 +104,7 @@ export function parsePayrollCancelledEvent(event: RawContractEvent): PayrollCanc
 
   return {
     type: "payroll_cancelled",
+    schemaVersion,
     employer,
     runId,
     reason,

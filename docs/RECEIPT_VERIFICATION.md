@@ -111,6 +111,27 @@ const receipt = payrollService.createReceipt(paymentParams, paymentResult, "pr_2
 const verificationResult = payrollService.verifyReceipt(receipt);
 ```
 
+### Treasury release outcomes
+
+Release attempts that run after payroll settlement can be summarized separately
+from receipt verification. This keeps cleanup failures visible without changing
+the payroll receipt's settlement status:
+
+```typescript
+import { summarizeTreasuryReleaseResults } from "@zk-payroll/core";
+
+const releaseResult = summarizeTreasuryReleaseResults(attempts);
+if (releaseResult.status === "partial" || releaseResult.status === "failed") {
+  console.warn(releaseResult.failures);
+}
+```
+
+The result status is `complete`, `partial`, `failed`, or `not_attempted`, with
+attempt, success, and failure counts. Failed entries include a redacted release
+identifier and a stable error code only; raw exception messages and amounts are
+never copied. Invalid input throws `TreasuryReleaseResultError` with code
+`TREASURY_RELEASE_RESULT_INVALID`.
+
 ---
 
 ## Redaction & Privacy

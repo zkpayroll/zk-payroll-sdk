@@ -32,6 +32,12 @@ import {
   type ProofVerifierAdapter,
 } from "./proofs/verifierAdapter";
 import type { ProofVerificationInput, ProofVerificationResult } from "./proofs/types";
+import {
+  readEffectiveAuditGrantScope,
+  type AuditGrantLifecycleState,
+  type AuditGrantRecord,
+} from "./audit/grantScope";
+import { redactAuditorId } from "./audit/accessExpiry";
 
 /**
  * Typed client helper for the payroll asset registry.
@@ -115,6 +121,128 @@ export async function getEnabledSupportedAssetsForClient(
   provider: SupportedAssetProvider
 ): Promise<SupportedAsset[]> {
   return _getEnabledSupportedAssets(provider);
+}
+
+/** A provider that returns persisted audit grants for status inspection. */
+export type AuditGrantProvider = () => Promise<unknown>;
+
+/** Stable error codes for audit grant status client failures. */
+export const AuditGrantStatusClientErrorCode = {
+  INVALID_GRANTEE: "AUDIT_GRANT_STATUS_INVALID_GRANTEE",
+  INVALID_DATA: "AUDIT_GRANT_STATUS_INVALID_DATA",
+  UNAVAILABLE: "AUDIT_GRANT_STATUS_UNAVAILABLE",
+  INVALID_TIME: "AUDIT_GRANT_STATUS_INVALID_TIME",
+} as const;
+
+export type AuditGrantStatusClientErrorCode =
+  (typeof AuditGrantStatusClientErrorCode)[keyof typeof AuditGrantStatusClientErrorCode];
+
+/** Safe error raised by the audit grant status client facade. */
+export class AuditGrantStatusClientError extends Error {
+  constructor(readonly code: AuditGrantStatusClientErrorCode, message: string) {
+    super(message);
+    this.name = "AuditGrantStatusClientError";
+  }
+}
+
+/** Privacy-safe effective and per-grantee revocation status. */
+export interface AuditGrantRevocationStatus {
+  /** Redacted grantee identifier. */
+  redactedGrantee: string;
+  /** Effective status at the requested reference time. */
+  state: AuditGrantLifecycleState;
+  /** True when one or more grants have an explicit revocation timestamp. */
+  hasRevokedGrant: boolean;
+  revokedGrantCount: number;
+  grantCount: number;
+  /** Latest explicit revocation timestamp, or null if none has been revoked. */
+  latestRevokedAt: string | null;
+}
+
+/**
+ * Loads a grantee's audit grants and returns their effective revocation status.
+ * A revoked grant remains visible when another active grant exists. Provider
+ * errors are normalized so raw backend messages and grant data are not leaked.
+ */
+export async function getAuditGrantRevocationStatusForClient(
+  provider: AuditGrantProvider,
+  grantee: string,
+  now: Date = new Date()
+): Promise<AuditGrantRevocationStatus> {
+  if (typeof grantee !== "string" || grantee.trim().length === 0) {
+    throw new AuditGrantStatusClientError(
+      AuditGrantStatusClientErrorCode.INVALID_GRANTEE,
+      "A grantee identifier is required to inspect audit grant status."
+    );
+  }
+
+  if (!(now instanceof Date) || Number.isNaN(now.getTime())) {
+    throw new AuditGrantStatusClientError(
+      AuditGrantStatusClientErrorCode.INVALID_TIME,
+      "Audit grant status requires a valid reference time."
+    );
+  }
+
+  let rawGrants: unknown;
+  try {
+    rawGrants = await provider();
+  } catch {
+    throw new AuditGrantStatusClientError(
+      AuditGrantStatusClientErrorCode.UNAVAILABLE,
+      "Audit grant status could not be loaded. Check the grant provider and retry."
+    );
+  }
+
+  if (!Array.isArray(rawGrants)) {
+    throw new AuditGrantStatusClientError(
+      AuditGrantStatusClientErrorCode.INVALID_DATA,
+      "Audit grant provider returned an invalid grant list."
+    );
+  }
+
+  const matchingGrants = rawGrants.filter(
+    (grant): grant is AuditGrantRecord =>
+      typeof grant === "object" &&
+      grant !== null &&
+      (grant as Partial<AuditGrantRecord>).grantee === grantee.trim()
+  );
+
+  let entry;
+  try {
+    entry = readEffectiveAuditGrantScope(matchingGrants, now).grantees[0];
+  } catch {
+    throw new AuditGrantStatusClientError(
+      AuditGrantStatusClientErrorCode.INVALID_DATA,
+      "Audit grant status data is invalid. Review the grant record and retry."
+    );
+  }
+
+  if (!entry) {
+    return {
+      redactedGrantee: redactAuditorId(grantee),
+      state: "none",
+      hasRevokedGrant: false,
+      revokedGrantCount: 0,
+      grantCount: 0,
+      latestRevokedAt: null,
+    };
+  }
+
+  const revokedGrants = entry.grants.filter((grant) => grant.state === "revoked");
+  const latestRevokedAt = revokedGrants.reduce<string | null>(
+    (latest, grant) =>
+      !latest || Date.parse(grant.revokedAt!) > Date.parse(latest) ? grant.revokedAt! : latest,
+    null
+  );
+
+  return {
+    redactedGrantee: entry.redactedGrantee,
+    state: entry.state,
+    hasRevokedGrant: revokedGrants.length > 0,
+    revokedGrantCount: revokedGrants.length,
+    grantCount: entry.grantCount,
+    latestRevokedAt,
+  };
 }
 
 /**

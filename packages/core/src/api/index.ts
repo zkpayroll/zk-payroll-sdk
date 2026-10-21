@@ -48,5 +48,15 @@ export type {
 
 export { PreflightClient } from "../clients/PreflightClient";
 export type { PreflightResult, PreflightFinding } from "../clients/PreflightClient";
+export {
+  AuditGrantStatusClientError,
+  AuditGrantStatusClientErrorCode,
+  getAuditGrantRevocationStatusForClient,
+} from "../client";
+export type {
+  AuditGrantProvider,
+  AuditGrantRevocationStatus,
+  AuditGrantStatusClientErrorCode as AuditGrantStatusClientErrorCodeType,
+} from "../client";
 
 export * from "../treasury/replenishmentReadiness";

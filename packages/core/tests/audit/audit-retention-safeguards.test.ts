@@ -92,6 +92,56 @@ describe("audit retention safeguards", () => {
       expect(result.maximumRetentionUntilMs).toBeNull();
     });
 
+    it("meets the minimum retention window exactly at its deadline", () => {
+      const result = evaluateAuditRetention({
+        recordId: "audit-package-2026-07",
+        recordKind: "audit_package",
+        createdAt: NOW,
+        minimumRetentionMs: MINIMUM_WINDOW,
+        referenceTime: NOW + MINIMUM_WINDOW,
+      });
+
+      expect(result.isMinimumRetentionMet).toBe(true);
+      expect(result.remainingMinimumMs).toBe(0);
+      expect(result.canDelete).toBe(true);
+    });
+
+    it("does not exceed maximum retention until after its exact deadline", () => {
+      const result = evaluateAuditRetention({
+        recordId: "audit-package-2026-07",
+        recordKind: "audit_package",
+        createdAt: NOW,
+        minimumRetentionMs: 0,
+        maximumRetentionMs: 100,
+        referenceTime: NOW + 100,
+      });
+
+      expect(result.isMaximumRetentionExceeded).toBe(false);
+      expect(result.status).toBe("eligible_for_deletion");
+    });
+
+    it("rejects non-finite reference times and overflowing deadlines", () => {
+      expect(() =>
+        evaluateAuditRetention({
+          recordId: "audit-package-2026-07",
+          recordKind: "audit_package",
+          createdAt: NOW,
+          minimumRetentionMs: 0,
+          referenceTime: Number.NaN,
+        })
+      ).toThrow(/Reference timestamp must be a finite number/);
+
+      expect(() =>
+        evaluateAuditRetention({
+          recordId: "audit-package-2026-07",
+          recordKind: "audit_package",
+          createdAt: Number.MAX_VALUE,
+          minimumRetentionMs: Number.MAX_VALUE,
+          referenceTime: 0,
+        })
+      ).toThrow(/deadline is outside the supported timestamp range/);
+    });
+
     it("blocks deletion when an active legal hold is present", () => {
       const referenceTime = NOW + MINIMUM_WINDOW + 1000;
       const result = evaluateAuditRetention({

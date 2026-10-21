@@ -15,10 +15,15 @@
 import type { RawContractEvent } from "../event-parser";
 import { decodeEventName, decodeAddress, decodeDataMap, decodeU64AsNumber } from "../event-parser";
 import { EventDecodingError } from "./types";
+import {
+  decodePayrollLifecycleEventSchemaVersion,
+  type PayrollLifecycleEventSchemaVersion,
+} from "./versioning";
 
 /** Emitted when a payroll draft expires on the contract. */
 export interface PayrollDraftExpiryEvent {
   type: "payroll_draft_expiry";
+  schemaVersion: PayrollLifecycleEventSchemaVersion;
   /** Stellar address of the employer who owns the expired draft. */
   employer: string;
   /** Identifier of the draft that expired. */
@@ -66,6 +71,7 @@ export function parseDraftExpiryEvent(event: RawContractEvent): PayrollDraftExpi
   }
 
   const data = decodeDataMap(event.data);
+  const schemaVersion = decodePayrollLifecycleEventSchemaVersion(data, EVENT_NAME, event);
 
   const draftId = data.draft_id?.str()?.toString();
   if (!draftId) {
@@ -96,6 +102,7 @@ export function parseDraftExpiryEvent(event: RawContractEvent): PayrollDraftExpi
 
   return {
     type: "payroll_draft_expiry",
+    schemaVersion,
     employer,
     draftId,
     expiryTimestamp,

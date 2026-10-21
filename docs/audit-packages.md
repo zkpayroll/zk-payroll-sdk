@@ -118,6 +118,14 @@ Retention statuses:
 - `eligible_for_deletion` — the minimum window is met and no legal hold applies.
 - `expired` — the maximum retention window has been exceeded; deletion is required.
 
+Deadlines are evaluated in epoch milliseconds. The minimum window is met at its
+exact deadline, and the maximum window is considered exceeded only after its
+exact deadline. A non-finite `referenceTime` is rejected. If adding a retention
+window to `createdAt` produces a non-finite deadline, validation throws
+`AuditRetentionValidationError` with code `INVALID_RETENTION_DEADLINE`; invalid
+reference times use `INVALID_REFERENCE_TIME`. These failures do not expose
+record identifiers or payroll data.
+
 ## Storage guidance
 
 Store the serialized package, the artifact manifest hash used for verification,

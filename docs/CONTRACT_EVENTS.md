@@ -951,7 +951,16 @@ parser enforces. Indexers not using the SDK should match this exactly.
 |---|---|---|
 | **Contract ABI** | `0.1.0` | Pinned in [`tests/contract-fixtures.test.ts`](../packages/core/tests/contract-fixtures.test.ts); bump when topic layout or data map shape changes |
 | **Webhook envelope** | `1` | The `version` field in [`SignedWebhookEnvelope`](../packages/core/src/webhooks/types.ts#L184); bump when the envelope schema itself changes (not when individual event payloads add fields) |
+| **Payroll lifecycle event payload** | `1` | Optional `schema_version` in the data map; decoded lifecycle events expose `schemaVersion` |
 | **SDK `TypedContractEvent`** | n/a (TypeScript types) | Adding a new event type is a non-breaking change; renaming `type` literals is breaking |
+
+Payroll lifecycle decoders for `payroll_cancelled`, `payroll_draft_expiry`,
+`payroll_draft_updated`, `settlement_expired`, and
+`interrupted_settlement_recovery` accept a missing `schema_version` as legacy
+version 1. Explicit versions must be the integer `1` encoded as `ScValU32` or
+`ScValU64`; decoded events include `schemaVersion: 1`. Unsupported or malformed
+versions throw `EventDecodingError` with a field-only message. Future payload
+versions must add decoder support before they are accepted.
 
 ### Backwards-compatibility rules
 

@@ -11,10 +11,15 @@
 import type { RawContractEvent } from "../event-parser";
 import { decodeEventName, decodeAddress, decodeDataMap, decodeU64AsNumber } from "../event-parser";
 import { EventDecodingError } from "./types";
+import {
+  decodePayrollLifecycleEventSchemaVersion,
+  type PayrollLifecycleEventSchemaVersion,
+} from "./versioning";
 
 /** Emitted when a payroll draft is updated on the contract. */
 export interface PayrollDraftUpdatedEvent {
   type: "payroll_draft_updated";
+  schemaVersion: PayrollLifecycleEventSchemaVersion;
   /** Stellar address of the employer who owns the draft. */
   employer: string;
   /** Identifier of the draft that was updated. */
@@ -60,9 +65,11 @@ export function parseDraftUpdatedEvent(event: RawContractEvent): PayrollDraftUpd
   }
 
   const data = decodeDataMap(event.data);
+  const schemaVersion = decodePayrollLifecycleEventSchemaVersion(data, EVENT_NAME, event);
 
   return {
     type: "payroll_draft_updated",
+    schemaVersion,
     employer,
     draftId: data.draft_id?.str()?.toString() ?? "",
     entryCount: decodeU64AsNumber(data.entry_count),

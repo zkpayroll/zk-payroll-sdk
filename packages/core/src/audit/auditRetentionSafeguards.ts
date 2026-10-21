@@ -33,8 +33,12 @@ export type AuditRetentionValidationErrorCode =
   | "INVALID_RECORD_KIND"
   /** The creation timestamp was missing or not a finite timestamp. */
   | "INVALID_CREATED_AT"
+  /** The reference timestamp was not a finite timestamp. */
+  | "INVALID_REFERENCE_TIME"
   /** The retention window bounds were negative or inconsistent. */
   | "INVALID_RETENTION_WINDOW"
+  /** A retention window produced an unrepresentable deadline. */
+  | "INVALID_RETENTION_DEADLINE"
   /** A legal hold entry was missing an id or a reason. */
   | "INVALID_LEGAL_HOLD";
 
@@ -212,6 +216,17 @@ export function validateAuditRetentionInput(
     });
   }
 
+  if (
+    record.referenceTime !== undefined &&
+    (typeof record.referenceTime !== "number" || !Number.isFinite(record.referenceTime))
+  ) {
+    errors.push({
+      code: "INVALID_REFERENCE_TIME",
+      message: "Reference timestamp must be a finite number of milliseconds.",
+      field: "referenceTime",
+    });
+  }
+
   const minimumRetentionMs = record.minimumRetentionMs ?? DEFAULT_MINIMUM_RETENTION_MS;
   if (typeof minimumRetentionMs !== "number" || !Number.isFinite(minimumRetentionMs)) {
     errors.push({
@@ -248,6 +263,33 @@ export function validateAuditRetentionInput(
         field: "maximumRetentionMs",
       });
     }
+  }
+
+  if (
+    typeof record.createdAt === "number" &&
+    Number.isFinite(record.createdAt) &&
+    typeof minimumRetentionMs === "number" &&
+    Number.isFinite(minimumRetentionMs) &&
+    !Number.isFinite(record.createdAt + minimumRetentionMs)
+  ) {
+    errors.push({
+      code: "INVALID_RETENTION_DEADLINE",
+      message: "Minimum retention deadline is outside the supported timestamp range.",
+      field: "minimumRetentionMs",
+    });
+  }
+  if (
+    typeof record.createdAt === "number" &&
+    Number.isFinite(record.createdAt) &&
+    typeof maximumRetentionMs === "number" &&
+    Number.isFinite(maximumRetentionMs) &&
+    !Number.isFinite(record.createdAt + maximumRetentionMs)
+  ) {
+    errors.push({
+      code: "INVALID_RETENTION_DEADLINE",
+      message: "Maximum retention deadline is outside the supported timestamp range.",
+      field: "maximumRetentionMs",
+    });
   }
 
   const legalHolds = record.legalHolds ?? [];
@@ -319,8 +361,8 @@ export function evaluateAuditRetention(
   const minimumRetentionMs = record.minimumRetentionMs ?? DEFAULT_MINIMUM_RETENTION_MS;
   const maximumRetentionMs = record.maximumRetentionMs;
 
-  const ageMs = evaluatedAt - record.createdAt;
-  const remainingMinimumMs = Math.max(0, minimumRetentionMs - ageMs);
+  const minimumRetentionUntilMs = record.createdAt + minimumRetentionMs;
+  const remainingMinimumMs = Math.max(0, minimumRetentionUntilMs - evaluatedAt);
   const isMinimumRetentionMet = remainingMinimumMs === 0;
   const maximumRetentionUntilMs =
     typeof maximumRetentionMs === "number" ? record.createdAt + maximumRetentionMs : null;

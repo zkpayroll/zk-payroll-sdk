@@ -21,6 +21,10 @@ import type { xdr } from "@stellar/stellar-sdk";
 import type { RawContractEvent } from "../event-parser";
 import { decodeEventName, decodeAddress, decodeBigInt, decodeDataMap } from "../event-parser";
 import { EventDecodingError } from "./types";
+import {
+  decodePayrollLifecycleEventSchemaVersion,
+  type PayrollLifecycleEventSchemaVersion,
+} from "./versioning";
 
 /** The canonical event name emitted for interrupted settlement recovery. */
 export const INTERRUPTED_SETTLEMENT_RECOVERY_EVENT_NAME = "interrupted_settlement_recovery";
@@ -47,6 +51,7 @@ export type SettlementRecoveryStatus = "pending" | "initiated" | "completed" | "
  */
 export interface InterruptedSettlementRecoveryEvent {
   type: typeof INTERRUPTED_SETTLEMENT_RECOVERY_EVENT_NAME;
+  schemaVersion: PayrollLifecycleEventSchemaVersion;
   /** Identifier of the interrupted settlement / receipt. */
   settlementId: string;
   /** Payroll run the settlement belonged to. */
@@ -106,6 +111,11 @@ export function parseInterruptedSettlementRecoveryEvent(
   }
 
   const data = event.data ? decodeDataMap(event.data) : {};
+  const schemaVersion = decodePayrollLifecycleEventSchemaVersion(
+    data,
+    INTERRUPTED_SETTLEMENT_RECOVERY_EVENT_NAME,
+    event
+  );
 
   const settlementId = decodeString(data.settlement_id);
   if (!settlementId) {
@@ -151,6 +161,7 @@ export function parseInterruptedSettlementRecoveryEvent(
 
   return {
     type: INTERRUPTED_SETTLEMENT_RECOVERY_EVENT_NAME,
+    schemaVersion,
     settlementId,
     payrollId,
     employer,

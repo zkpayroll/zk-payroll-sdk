@@ -5,6 +5,7 @@
  */
 
 export * from "./types";
+export * from "./versioning";
 export * from "./employerOnboarding";
 export * from "./operatorRemoval";
 export * from "./draftUpdated";

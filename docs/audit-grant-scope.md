@@ -141,6 +141,30 @@ deciding whether to re-issue it.
 resolveAuditGrantState(grant, new Date("2026-07-01T00:00:00Z")); // "active"
 ```
 
+### `getAuditGrantRevocationStatusForClient(provider, grantee, now?)`
+
+Loads grants from an async provider and reports whether the grantee has any
+explicitly revoked grant, including when a separate grant is still active.
+Grantee identifiers in the result are masked. Provider exceptions are replaced
+with a stable SDK error so backend messages and payroll data are not exposed.
+
+```ts
+import { getAuditGrantRevocationStatusForClient } from "@zk-payroll/core";
+
+const status = await getAuditGrantRevocationStatusForClient(
+  () => grantStore.list(),
+  auditorAddress
+);
+console.log(status.state, status.hasRevokedGrant, status.revokedGrantCount);
+```
+
+The result includes effective `state` (`active`, `expired`, `revoked`, or
+`none`), `hasRevokedGrant`, `revokedGrantCount`, `grantCount`, and
+`latestRevokedAt`. `AuditGrantStatusClientError` uses
+`AUDIT_GRANT_STATUS_INVALID_GRANTEE`, `AUDIT_GRANT_STATUS_INVALID_TIME`,
+`AUDIT_GRANT_STATUS_INVALID_DATA`, or `AUDIT_GRANT_STATUS_UNAVAILABLE` for
+actionable failure handling.
+
 ### `selectWidestAuditScope(scopes)`
 
 Widest scope in a collection, or `null` when empty. Unrecognised values are

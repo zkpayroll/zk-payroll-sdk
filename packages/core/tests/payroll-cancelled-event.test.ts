@@ -58,6 +58,7 @@ describe("parsePayrollCancelledEvent", () => {
     const event = parsePayrollCancelledEvent(makeEvent(baseData()));
     expect(event).toEqual({
       type: "payroll_cancelled",
+      schemaVersion: 1,
       employer: EMPLOYER,
       runId: "run_2026_10",
       reason: "compliance_hold",
@@ -77,6 +78,14 @@ describe("parsePayrollCancelledEvent", () => {
     );
     expect(event.reason).toBe("duplicate_run");
     expect(event.reasonRecognized).toBe(true);
+  });
+
+  it("accepts explicit schema version 1 at the version boundary", () => {
+    const event = parsePayrollCancelledEvent(
+      makeEvent({ ...baseData(), schema_version: xdr.ScVal.scvU32(1) })
+    );
+
+    expect(event.schemaVersion).toBe(1);
   });
 
   it("maps an unknown reason code to 'other' and keeps the raw code", () => {
@@ -141,6 +150,26 @@ describe("parsePayrollCancelledEvent", () => {
       expect(() =>
         parsePayrollCancelledEvent(makeEvent({ ...baseData(), cancelled_at: u64(0) }))
       ).toThrow(/cancelled_at/);
+    });
+
+    it("rejects unsupported or malformed schema versions without echoing values", () => {
+      const unsupported = makeEvent({
+        ...baseData(),
+        schema_version: xdr.ScVal.scvU32(2),
+        notes: str("private payroll note"),
+      });
+
+      expect(() => parsePayrollCancelledEvent(unsupported)).toThrow(
+        /Unsupported or invalid schema_version/
+      );
+      try {
+        parsePayrollCancelledEvent(unsupported);
+      } catch (error) {
+        expect((error as Error).message).not.toContain("private payroll note");
+      }
+      expect(() =>
+        parsePayrollCancelledEvent(makeEvent({ ...baseData(), schema_version: str("v2") }))
+      ).toThrow(/Unsupported or invalid schema_version/);
     });
 
     it("rejects a missing cancelled_at", () => {

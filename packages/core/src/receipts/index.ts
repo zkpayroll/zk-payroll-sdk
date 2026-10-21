@@ -7,3 +7,4 @@ export * from "./errors";
 export * from "./receiptVerifier";
 export * from "./referenceLookup";
 export * from "./policyRevisionAttachment";
+export * from "./treasuryReleaseResult";

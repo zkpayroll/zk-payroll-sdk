@@ -14,6 +14,10 @@ import type { RawContractEvent } from "../event-parser";
 import { decodeEventName, decodeAddress, decodeDataMap, decodeU64AsNumber } from "../event-parser";
 import { EventDecodingError } from "./types";
 import {
+  decodePayrollLifecycleEventSchemaVersion,
+  type PayrollLifecycleEventSchemaVersion,
+} from "./versioning";
+import {
   normalizeSettlementExpiryReason,
   type SettlementExpiryReasonCodeType,
 } from "../errors/settlementExpiryReasonCodes";
@@ -21,6 +25,7 @@ import {
 /** Emitted when a payroll run's settlement window expires before settling. */
 export interface SettlementExpiredEvent {
   type: "settlement_expired";
+  schemaVersion: PayrollLifecycleEventSchemaVersion;
   /** Stellar address of the employer who owned the expired settlement. */
   employer: string;
   /** Identifier of the payroll run or settlement that expired. */
@@ -80,6 +85,7 @@ export function parseSettlementExpiredEvent(event: RawContractEvent): Settlement
   }
 
   const data = decodeDataMap(event.data);
+  const schemaVersion = decodePayrollLifecycleEventSchemaVersion(data, EVENT_NAME, event);
 
   const settlementId = data.settlement_id?.str()?.toString() ?? data.run_id?.str()?.toString();
   if (!settlementId) {
@@ -105,6 +111,7 @@ export function parseSettlementExpiredEvent(event: RawContractEvent): Settlement
 
   return {
     type: "settlement_expired",
+    schemaVersion,
     employer,
     settlementId,
     reasonCode,
