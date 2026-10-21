@@ -278,3 +278,6 @@ export * from "./pause/emergencyPauseAuthorization";
 // ── SDK Payroll Cache Invalidation Helpers ─────────────────────────────────
 export * from "./events/invalidationBridge";
 export * from "./payroll/cacheInvalidator";
+
+// ── Payroll Review Decision Completeness Validation (#711) ─────────────────
+export * from "./payroll/reviewDecisionCompleteness";
