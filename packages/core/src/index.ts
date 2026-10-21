@@ -260,6 +260,9 @@ export * from "./recovery/stalledRunRecovery";
 // ── Payroll Policy Effective-Date Guardrails ────────────────────────────────
 export * from "./policy/effectiveDateGuardrails";
 
+// ── Payroll Policy Evaluation ───────────────────────────────────────────────
+export * from "./policies";
+
 // ── Duplicate Payout Instruction Detection ──────────────────────────────────
 export * from "./payroll/duplicatePayoutInstructionDetector";
 

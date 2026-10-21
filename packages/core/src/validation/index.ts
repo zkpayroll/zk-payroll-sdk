@@ -24,3 +24,6 @@ export * from "./warningCollector";
 
 // ── Structured Validation Result Formatter (#507) ──────────────────────────
 export * from "./formatValidationResult";
+
+// ── Payroll Policy Evaluation ───────────────────────────────────────────────
+export * from "../policies";
