@@ -1,4 +1,3 @@
-
 # Multi-Asset Support
 
 The ZK Payroll SDK centralises asset label, decimal, and display behaviour in a single
@@ -8,7 +7,7 @@ without scattering hard-coded decimal counts or symbol strings throughout the co
 ## Core concepts
 
 | Concept | What it is |
-|---|---|
+| --- | --- |
 | `AssetId` | The primary key for an asset: `"native"` for XLM, or a Soroban contract ID string for any other token. |
 | `AssetMetadata` | All display-time information about one asset: id, symbol, label, decimals, display format. |
 | `AssetRegistry` | A shared singleton (or custom instance) that maps asset ids and symbols to their metadata. |
@@ -21,10 +20,10 @@ without scattering hard-coded decimal counts or symbol strings throughout the co
 The shared singleton ships with three pre-registered assets:
 
 | ID | Symbol | Label | Decimals |
-|---|---|---|---|
+| --- | --- | --- | --- |
 | `"native"` | XLM | Stellar Lumens | 7 |
 | `"USDC"` | USDC | USD Coin | 7 |
-| `"EUROC"` | EUROC | Euro Coin | 7 |
+| `"EURoC"` | EUROC | Euro Coin | 7 |
 
 ```ts
 import { AssetRegistry } from "@zk-payroll/core";
@@ -57,8 +56,8 @@ Register multiple assets at once with `registerMany`:
 
 ```ts
 AssetRegistry.registerMany([
-  { id: "CUSDC_LOCAL", symbol: "USDC-L", label: "Local USDC", decimals: 7 },
-  { id: "CEUR_LOCAL",  symbol: "EUR-L",  label: "Local EUROC", decimals: 7 },
+  { id: "CUSDJ_LOCAL", symbol: "USDC-L", label: "Local USDC", decimals: 7 },
+  { id: "CEUR_LOCAL",  symbol: "EUR-L",  label: "Local EURoC", decimals: 7 },
 ]);
 ```
 
@@ -153,8 +152,8 @@ parseAmount("0.0000001",     usdc); // 1n (one stroop)
 Extra fractional digits are **truncated** (not rounded) and missing ones are **padded**:
 
 ```ts
-parseAmount("1.00000009", xlm); // treated as "1.0000000" → 10_000_000n
-parseAmount("1.5",        xlm); // treated as "1.5000000" → 15_000_000n
+parseAmount("1.00000009", xlm); // treated as "1.0000000" ℒ 10_000_000n
+parseAmount("1.5",        xlm); // treated as "1.5000000" ℕ 15_000_000n
 ```
 
 An invalid string throws by default:
@@ -169,7 +168,7 @@ parseAmount("not-a-number", usdc); // throws Error: cannot parse …
 
 ```ts
 const raw       = 123_456_789n;
-const formatted = formatAmount(raw, usdc, { locale: "en-US" }); // "12.3456789 USDC"
+const formatted = formatAmount(raw, usdc, { locale: "en-US"}); // "12.3456789 USDC"
 const reparsed  = parseAmount(formatted, usdc);                 // 123_456_789n
 // raw === reparsed ✓
 ```
@@ -254,6 +253,124 @@ interface NormalizeAmountOptions {
 }
 ```
 
+## Payout precision verification
+
+Before building a payout payload, verify that every line amount survives the
+canonical smallest-unit round trip for its asset. `verifyPayoutPrecision` checks a
+batch of lines and reports any line whose input precision would be silently
+truncated or rounded, along with the canonical amount that would actually be sent.
+
+```ts
+import {
+  AssetRegistry,
+  verifyPayoutPrecision,
+  PayoutPrecisionError,
+} from "@zk-payroll/core";
+
+const report = verifyPayoutPrecision([
+  { id: "row-1", amount: "1.5000000", asset: "native" },
+  { id: "row-2", amount: "2.0000001", asset: "native" }, // excess precision
+]);
+
+// report.ok      => false
+// report.issues => [{ id: "row-2", code: "PRECISION_LOSS", ... }]
+
+// Throwing variant for fail-fast payment processing
+try {
+  assertPayoutPrecision( lines );
+} catch (err) {
+  if (err instanceof PayoutPrecisionError) {
+    // err.issues lists every offending line with actionable messages
+}
+}
+```
+
+### What counts as a precision issue
+
+Each line is normalized with the asset's decimals and the configured rounding mode. An
+issue is reported when the input has more fractional digits than the asset can
+represent and the canonical amount differs from the exact input value:
+
+| Code | Meaning |
+| --- | --- |
+| `PRECISION_LOSS` | Fractional digits were truncated/rounded; the canonical amount differs from the input. |
+| `INVALID_AMOUNT` | The input could not be parsed as a number. |
+| `UNKNOWN_ASSET` | The line's asset id or symbol is not registered. |
+| `OUT_OF_BOUNDS` | The canonical amount falls outside the configured bounds. |
+
+Lines that are already canonical (e.g. `integer` inputs within precision, or `bigint`
+values) are reported as ok and included in `report.lines` with their normalized
+amount.
+
+### `PayoutPrecisionLine` input
+
+```ts
+interface PayoutPrecisionLine {
+  id: string;                         // stable line identifier for reporting
+  amount: string | number | bigint;      // input amount in any loose shape
+  asset: string | AssetMetadata;        // asset id / symbol, or metadata directly
+}
+```
+
+### `PayoutPrecisionReport`
+
+```ts
+interface PayoutPrecisionReport {
+  ok: boolean;                             // true when no issues were found
+  lines: Array<{
+    id: string;
+    assetId: string;
+    assetSymbol: string;
+    amount: bigint;                        // canonical smallest-unit amount
+    wasRounded: boolean;
+  }>;
+  issues: Array<PayoutPrecisionIssue>;
+}
+
+interface PayoutPrecisionIssue {
+  id: string;
+  code: "PRECISION_LOSS" | "INVALID_AMOUNT" | "UNKNOWN_ASSET" | "OUT_OF_BOUNDS";
+  message: string;                          // actionable guidance
+  canonicalAmount?: bigint;                // present when normalization succeeded
+}
+```
+
+### Options
+
+```ts
+interface VerifyPayoutPrecisionOptions {
+  bounds?: AmountBounds;          // per-line min/max in smallest units
+  rounding?: RoundingMode;        // defaults to HALF_UP
+  registry?: AssetRegistryClass;  // defaults to the shared AssetRegistry singleton
+  allowRounding?: boolean;            // defaults to false; when true, rounded lines are not flagged
+}
+```
+
+By default any loss of precision is flagged. Set `allowRounding: true` only when
+rounding is an accepted business rule for the flow; the report still exposes
+per-line `wasRounded` flags so callers can audit the decision.
+
+### Throwing variant
+
+`assertPayoutPrecision` runs the same checks and throws a `PayoutPrecisionError`
+with code `"PAYOUT_PRECISION_FAILED` when any issue is found. The error carries the
+full report so callers can render per-line feedback:
+
+```ts
+import { assertPayoutPrecision, PayoutPrecisionError } from "@zk-payroll/core";
+
+try {
+  assertPayoutPrecision( lines );
+} catch (err) {
+  if (err instanceof PayoutPrecisionError) {
+    console.error(err.code); // "PAYOUT_PRECISION_FAILED"
+    for (const issue of err.report.issues) {
+      console.error(issue.id, issue.code, issue.message);
+    }
+  }
+}
+```
+
 ## Test isolation with a custom registry instance
 
 The shared `AssetRegistry` singleton is mutated globally. When you need a fully
@@ -285,7 +402,7 @@ const registry = new AssetRegistryClass([
 
 ```ts
 const assets = AssetRegistry.list();
-// [{ id: "native", symbol: "XLM", ... }, { id: "USDC", ... }, ...]
+// [{ id: "native", symbol: "XLM", ... }, { id: "USDC", ... }, ... ]
 ```
 
 ## Removing an asset
@@ -312,7 +429,7 @@ import {
 
 AssetRegistry.register({
   id: "COLDTOKEN...",
-  symbol: "OLDUSD",
+  symbol: "OLDSD",
   label: "Old USD",
   decimals: 7,
   deprecated: true,
@@ -342,7 +459,7 @@ AssetRegistry.getDeprecation("COLDTOKEN..."); // { deprecated: true, message, re
 ```
 
 `AssetRegistry.checkAvailability` still reports deprecated assets as
-`available: true`, with `deprecated: true` and `deprecation` details attached.
+@available: true`, with `deprecated: true` and `deprecation` details attached.
 
 ## Type reference
 
@@ -351,12 +468,12 @@ AssetRegistry.getDeprecation("COLDTOKEN..."); // { deprecated: true, message, re
 ```ts
 interface AssetMetadata {
   id: string;                         // Primary key: "native" or contract ID
-  symbol: string;                     // Ticker shown in UIs, e.g. "XLM"
-  label: string;                      // Full name, e.g. "Stellar Lumens"
-  decimals: number;                   // Smallest-unit precision (7 for XLM)
+  symbol: string;                       // Ticker shown in UIs, e.g. "XLM"
+  label: string;                        // Full name, e.g. "Stellar Lumens"
+  decimals: number;                      // Smallest-unit precision (7 for XLM)
   displayFormat?: "decimal" | "integer"; // Defaults to "decimal"
-  iconUrl?: string;                   // Optional icon for wallet UIs
-  deprecated?: boolean;               // Reject new payments by default
+  iconUrl?: string;                       // Optional icon for wallet UIs
+  deprecated?: boolean;                   // Reject new payments by default
   deprecationMessage?: string;        // Actionable migration guidance
   replacementAssetId?: string;        // Canonical ID of the replacement asset
   customData?: Record<string, unknown>; // App-specific metadata
@@ -375,22 +492,5 @@ type AssetMetadataInput = Pick<AssetMetadata, "id" | "symbol" | "label" | "decim
       | "deprecated"
       | "deprecationMessage"
       | "replacementAssetId"
-      | "customData">>;
-```
-
-### `FormatAmountOptions`
-
-```ts
-interface FormatAmountOptions {
-  locale?: string;         // BCP-47 locale, defaults to "en-US"
-  includeSymbol?: boolean; // Append symbol to output, defaults to true
-}
-```
-
-### `ParseAmountOptions`
-
-```ts
-interface ParseAmountOptions {
-  strict?: boolean; // Return 0n instead of throwing on bad input, defaults to false
-}
-```
+      | "customData"
+      >> 

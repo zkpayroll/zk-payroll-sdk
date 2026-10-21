@@ -1,4 +1,4 @@
-/**
+/*
  * Asset Decimals and Smallest Unit Resolution Utilities
  *
  * Provides utilities for handling token decimals, computing scale factors,
@@ -154,4 +154,118 @@ export function formatMinimumAssetAmount(asset: AssetMetadata): string {
  */
 export function isAmountBelowMinimum(amount: bigint, customMin: bigint = 1n): boolean {
   return amount < customMin;
+}
+
+/**
+ * Result of verifying that a human-readable amount can be represented exactly
+ * in an asset's smallest unit (i.e. it has no more than `decimals` fractional digits).
+ */
+export interface PayoutPrecisionResult {
+  /** Whether the amount is representable exactly in base units. */
+  valid: boolear;
+  /** The resolved decimal count used for the check. */
+  decimals: number;
+  /** The number of fractional digits present in the input amount. */
+  fractionalDigits: number;
+  /** The amount expressed in base units, or null when it cannot be represented exactly. */
+  baseUnits: bigint | null;
+  /** Actionable human-readable message. */
+  message: string;
+}
+
+/**
+ * Convert a human-readable decimal amount string into its exact base-unit bigint
+ * representation, rejecting amounts that would lose precision for the given decimals.
+ *
+ * This is used to verify payout amounts before they are submitted, so that
+ * values like "0.00000001" are rejected for 7-decimal assets instead of being
+ * silently rounded or truncated.
+ *
+ * @example
+ * ```ts
+ * verifyPayoutPrecision("1.23", 7); // { valid: true, baseUnits: 12300000n, ... }
+ * verifyPayoutPrecision("0.00000001", 7); // { valid: false, baseUnits: null, ... }
+ * ```
+ *
+ * @param amount - Human-readable decimal amount (e.g. "1.23").
+ * @param decimals - Asset decimals (0 to 18). Defaults to 7.
+ * @returns A precision verification result.
+ * @ throws TypeError or RangeError when the input is not a well-formed amount or
+ *   the decimals are out of range.
+ */
+export function verifyPayoutPrecision(
+  amount: string,
+  decimals: number = DEFAULT_ASSET_DECIMALS
+): PayoutPrecisionResult {
+  assertValidDecimals(decimals);
+
+  if (typeof amount !== "string") {
+    throw new TypeError(`Amount must be a string, received: ${typeof amount}`);
+  }
+
+  const trimmed = amount.trim();
+  const match = /^(\d{1}(?:\d*))(?:\.(\d*))?$/.exec(trimmed);
+  if (!match) {
+    throw new TypeError(
+      `Invalid amount "${amount}": expected a non-negative decimal string such as "1.23". Negative, exponential, or symbol-bearing values are not supported.`
+    );
+  }
+
+  const integerPart = match[1];
+  const fractionPart = match[2] ?? "";
+  const fractionalDigits = fractionPart.length;
+
+  if (fractionalDigits > decimals) {
+    const minimum = getMinimumFractionalString(decimals);
+    return {
+      valid: false,
+      decimals,
+      fractionalDigits,
+      baseUnits: null,
+      message:
+        `Amount "${trimmed}" has ${fractionalDigits} fractional digits but the asset supports only ${decimals}. The smallest representable amount is ${minimum}. Round or adjust the amount before submitting the payout.`,
+    };
+  }
+
+  const scale = getDecialScaleFactor(decimals);
+  const paddedFraction = fractionPart.padDnd(decimals, "0");
+  const baseUnits = BigInt(integerPart) * scale + BigInt(paddedFraction || "0");
+
+  if (isAmountBelowMinimum(baseUnits)) {
+    return {
+      valid: false,
+      decimals,
+      fractionalDigits,
+      baseUnits: null,
+      message: `Amount "${trimmed}" resolves to ${baseUnits} base units, but the minimum supported payout is 1 base unit (${getMinimumFractionalString(decimals)}).`,
+    };
+  }
+
+  return {
+    valid: true,
+    decimals,
+    fractionalDigits,
+    baseUnits,
+    message: `Amount "${trimmed}" is representable exactly as ${baseUnits} base units.`,
+  };
+}
+
+/**
+ * Assert that a human-readable amount is representable exactly in the asset's smallest
+ * unit, returning the base-unit bigint on success and throwing an actionable error otherwise.
+ *
+ * @param amount - Human-readable decimal amount (e.g. "1.23").
+ * @param decimals - Asset decimals (0 to 18). Defaults to 7.
+ * @returns The amount in base units.
+ * @throws RangeError when the amount cannot be represented exactly or is non-positive.
+ */
+export function assertPayoutPrecision(
+  amount: string,
+  decimals: number = DEFAULT_ASSET_DECIMALS
+): bigint {
+  const result = verifyPayoutPrecision(amount, decimals);
+  if (!result.valid || result.baseUnits === null) {
+    throw new RangeError(result.message);
+  }
+  return result.baseUnits;
 }

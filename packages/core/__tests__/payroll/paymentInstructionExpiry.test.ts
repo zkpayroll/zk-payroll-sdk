@@ -4,6 +4,8 @@ import {
   isPaymentInstructionValid,
   getTimeUntilPaymentInstructionExpiry,
   validatePayrollAdjustmentApprovalExpiry,
+  validatePayoutPrecision,
+  validatePayoutPrecisionBatch,
 } from "../../src/payroll/paymentInstructionExpiry";
 
 describe("Payment Instruction Expiry Helper", () => {
@@ -287,6 +289,160 @@ describe("Payment Instruction Expiry Helper", () => {
 
       expect(result.isValid).toBe(true);
       expect(result.violation).toBeUndefined();
+    });
+  });
+
+  describe("validatePayoutPrecision", () => {
+    it("validates a payout amount with exact precision", () => {
+      const result = validatePayoutPrecision(
+        {
+          instructionId: "INSTR001",
+          amount: 1234.56,
+          decimals: 2,
+        },
+        { currentTime: now }
+      );
+
+      expect(result.isValid).toBe(true);
+      expect(result.violation).toBeUndefined();
+      expect(result.normalizedAmount).toBe("1234.56");
+    });
+
+    it("rejects a payout amount with excess precision", () => {
+      const result = validatePayoutPrecision(
+        {
+          instructionId: "INSTR001",
+          amount: 1234.567,
+          decimals: 2,
+        },
+        { currentTime: now }
+      );
+
+      expect(result.isValid).toBe(false);
+      expect(result.violation?.code).toBe("EXCESS_PRECISION");
+      expect(result.violation?.message).toContain("precision");
+    });
+
+    it("rejects invalid payout amounts", () => {
+      const result = validatePayoutPrecision(
+        {
+          instructionId: "INSTR001",
+          amount: NaN,
+          decimals: 2,
+        },
+        { currentTime: now }
+      );
+
+      expect(result.isValid).toBe(false);
+      expect(result.violation?.code).toBe("INVALID_AMOUNT");
+    });
+
+    it("rejects negative payout amounts", () => {
+      const result = validatePayoutPrecision(
+        {
+          instructionId: "INSTR001",
+          amount: -10,
+          decimals: 2,
+        },
+        { currentTime: now }
+      );
+
+      expect(result.isValid).toBe(false);
+      expect(result.violation?.code).toBe("INVALID_AMOUNT");
+    });
+
+    it("rejects invalid decimals configuration", () => {
+      const result = validatePayoutPrecision(
+        {
+          instructionId: "INSTR001",
+          amount: 10,
+          decimals: -1,
+        },
+        { currentTime: now }
+      );
+
+      expect(result.isValid).toBe(false);
+      expect(result.violation?.code).toBe("INVALID_DECIMALS");
+    });
+
+    it("redacts instruction ID by default", () => {
+      const result = validatePayoutPrecision(
+        {
+          instructionId: "SECRET_PAYOUT_ID_12345",
+          amount: 1.234,
+          decimals: 2,
+        },
+        { currentTime: now }
+      );
+
+      expect(result.violation?.redactedInstructionId).not.toContain(
+        "SECRET_PAYOUT_ID_12345"
+      );
+      expect(result.violation?.message).toContain("SECRET_PAYOUT_ID_12345");
+      expect(result.violation?.redactedMessage).not.toContain(
+        "SECRET_PAYOUT_ID_12345"
+      );
+    });
+
+    it("shows instruction ID when redaction is disabled", () => {
+      const result = validatePayoutPrecision(
+        {
+          instructionId: "INSTR001",
+          amount: 1.234,
+          decimals: 2,
+        },
+        { currentTime: now, redactInstructionId: false }
+      );
+
+      expect(result.violation?.message).toContain("INSTR001");
+      expect(result.violation?.redactedMessage).not.toContain("INSTR001");
+    });
+
+    it("handles missing instruction ID", () => {
+      const result = validatePayoutPrecision(
+        {
+          amount: 10.5,
+          decimals: 2,
+        },
+        { currentTime: now }
+      );
+
+      expect(result.isValid).toBe(true);
+      expect(result.violation).toBeUndefined();
+    });
+  });
+
+  describe("validatePayoutPrecisionBatch", () => {
+    it("validates multiple payout amounts", () => {
+      const entries = [
+        { instructionId: "INSTR001", amount: 10.5, decimals: 2 },
+        { instructionId: "INSTR002", amount: 20, decimals: 2 },
+        { instructionId: "INSTR003", amount: 30.99, decimals: 2 },
+      ];
+
+      const results = validatePayoutPrecisionBatch(entries, {
+        currentTime: now,
+      });
+
+      expect(results).toHaveLength(3);
+      expect(results.every((r) => r.isValid)).toBe(true);
+    });
+
+    it("reports violations for mixed valid and invalid", () => {
+      const entries = [
+        { instructionId: "INSTR001", amount: 10.5, decimals: 2 },
+        { instructionId: "INSTR002", amount: 10.555, decimals: 2 },
+        { instructionId: "INSTR003", amount: 30.99, decimals: 2 },
+      ];
+
+      const results = validatePayoutPrecisionBatch(entries, {
+        currentTime: now,
+      });
+
+      expect(results[0].isValid).toBe(true);
+      expect(results[1].isValid).toBe(false);
+      expect(results[1].violation?.code).toBe("EXCESS_PRECISION");
+      expect(results[2].isValid).toBe(true);
     });
   });
 

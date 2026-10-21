@@ -403,6 +403,14 @@ export const ERROR_CODE_REGISTRY: Record<string, ErrorCodeEntry> = {
     suggestedMessage:
       "Retry diagnostics are currently unavailable for this payout. The failure record may be missing or incomplete; refresh and try again.",
   },
+  PAYOUT_PRECISION_VERIFICATION_FAILED: {
+    category: ErrorCategory.PAYOUT,
+    meaning:
+      "Payout amount precision verification failed — one or more amounts exceed the asset's supported decimal precision, are non-integer base units, or would lose value when converted.",
+    retryable: false,
+    suggestedMessage:
+      "One or more payout amounts have invalid precision for the target asset. Verify each amount uses the asset's supported decimal places and try again.",
+  },
 
   // &#9989; Payroll Payload Schema Detection &#9989;
   PAYROLL_SCHEMA_VERSION_UNSUPPORTED: {
@@ -419,6 +427,22 @@ export const ERROR_CODE_REGISTRY: Record<string, ErrorCodeEntry> = {
     retryable: false,
     suggestedMessage:
       'The payroll payload could not be inspected. Ensure it is an object carrying a valid `schemaVersion` string such as "1.0" and try again.',
+  },
+  PAYOUT_PRECISION_AMOUNT_INVALID: {
+    category: ErrorCategory.PAYOUT,
+    meaning:
+      "A payout amount is not a valid numeric value — it is negative, NaN, infinite, or otherwise unparseable.",
+    retryable: false,
+    suggestedMessage:
+      "A payout amount is invalid. Amounts must be finite, non-negative numbers expressed in the asset's base units.",
+  },
+  PAYOUT_PRECISION_ASSET_UNSUPPORTED: {
+    category: ErrorCategory.PAYOUT,
+    meaning:
+      "The payout asset has no registered decimal precision, so amount precision cannot be verified.",
+    retryable: false,
+    suggestedMessage:
+      "The payout asset is not supported for precision verification. Register the asset's decimal precision or use a supported asset.",
   },
 };
 

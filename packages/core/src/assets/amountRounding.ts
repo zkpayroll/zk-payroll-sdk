@@ -35,6 +35,29 @@ import { RoundingMode } from "./amountParsing";
 export { RoundingMode };
 
 /**
+ * Validates that a value is a recognized `RoundingMode`.
+ *
+ * Guards against callers passing arbitrary strings (e.g. from JSON config
+ * or user input) that would otherwise silently fall through to truncation.
+ *
+ * @param mode - Value to validate.
+ * @throws {Error} If the value is not a recognized rounding mode.
+ */
+function assertValidRoundingMode(mode: RoundingMode): void {
+  const validModes: readonly RoundingMode[] = [
+    RoundingMode.HALF_UP,
+    RoundingMode.TRUNCATE,
+    RoundingMode.CEIL,
+    RoundingMode.FLOOR,
+  ];
+  if (!validModes.includes(mode)) {
+    throw new Error(
+      `Invalid rounding mode: ${String(mode)}. Expected one of: ${validModes.join(", ")}`
+    );
+  }
+}
+
+/**
  * Options for rounding an amount to a target precision.
  */
 export interface RoundAmountOptions {
@@ -93,6 +116,8 @@ export interface RoundedAmount {
  * @param targetDecimals - Desired decimal precision of the output.
  * @param options        - Rounding mode and options.
  * @returns Rounded amount with metadata.
+ * @throws {Error} If `sourceDecimals` or `targetDecimals` is invalid, or if
+ *   `options.rounding` is not a recognized `RoundingMode`.
  */
 export function roundAmount(
   amount: bigint,
@@ -104,6 +129,7 @@ export function roundAmount(
   assertValidDecimals(targetDecimals);
 
   const rounding = options.rounding ?? RoundingMode.HALF_UP;
+  assertValidRoundingMode(rounding);
 
   // If precisions are the same, no scaling needed
   if (sourceDecimals === targetDecimals) {
@@ -159,8 +185,8 @@ export function roundAmount(
         break;
 
       default:
-        result = quotient;
-        wasRounded = remainder !== 0n;
+        // Unreachable: assertValidRoundingMode above rejects unknown modes.
+        throw new Error(`Unsupported rounding mode: ${String(rounding)}`);
     }
   }
 
@@ -259,7 +285,7 @@ export function roundToIncrement(
   asset: AssetMetadata
 ): RoundedAmount {
   if (increment <= 0n) {
-    throw new Error("Increment must be positive");
+    throw new Error(`Increment must be positive, received ${increment.toString()}`);
   }
 
   const remainder = amount % increment;

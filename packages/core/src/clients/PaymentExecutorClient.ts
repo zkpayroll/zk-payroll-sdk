@@ -14,6 +14,10 @@ import {
   SchedulePaymentRequest,
   ScheduledPayment,
 } from "./types";
+import {
+  verifyPayoutPrecision,
+  type PayoutPrecisionViolationCode,
+} from "../payroll/payoutPrecisionVerification";
 
 export interface ExecutePaymentResponse {
   txHash: string;
@@ -48,6 +52,7 @@ export type PayoutFailureCode =
   | "UNAUTHORIZED"
   | "INVALID_RECIPIENT"
   | "INVALID_AMOUNT"
+  | "PRECISION_LOSS"
   | "CONTRACT_REJECTED"
   | "NETWORK_ERROR"
   | "TIMEOUT"
@@ -218,7 +223,48 @@ export class PaymentExecutorClient extends BaseContractWrapper {
         action: "Set a positive amount in the smallest unit of the asset.",
       };
     }
+
+    // Precision verification: if the caller supplies the asset's
+    // decimals, we can prove the amount is exactly representable and
+    // reject silent rounding drift before it reaches the chain.
+    if (request.assetDecimals !== undefined) {
+      const precisionResult = verifyPayoutPrecision(
+        request.amount,
+        {
+          id: request.asset,
+          symbol: request.assetSymbol ?? "ASSET",
+          label: request.assetSymbol ?? "Asset",
+          decimals: request.assetDecimals,
+        },
+        { sourceDecimals: request.sourceDecimals }
+      );
+      if (!precisionResult.isValid && precisionResult.violation) {
+        const violation = precisionResult.violation;
+        return {
+          retryable: false,
+          code: this.mapPrecisionCode(violation.code),
+          message: violation.message,
+          action: violation.action,
+          cause: violation.code,
+        };
+      }
+    }
+
     return null;
+  }
+
+  private mapPrecisionCode(code: PayoutPrecisionViolationCode): PayoutFailureCode {
+    switch (code) {
+      case "PRECISION_LOSS":
+        return "PRECISION_LOSS";
+      case "NEGATIVE_AMOUNT":
+      case "ZERO_AMOUNT":
+        return "INVALID_AMOUNT";
+      case "INVALID_SOURCE_DECIMALS":
+      case "INVALID_TARGET_DECIMALS":
+      default:
+        return "INVALID_AMOUNT";
+    }
   }
 
   private buildExecutionError(
@@ -404,6 +450,12 @@ export class PaymentExecutorClient extends BaseContractWrapper {
       const u64 = scVal.u64();
       if (u64) {
         return BigInt((u64 as unknown as { toString: () => string }).toString());
+      }
+    } catch {}
+    try {
+      const u32 = scVal.u32();
+      if (u32) {
+        return BigInt((u32 as unknown as { toString: () => string }).toString());
       }
     } catch {}
     return 0n;
