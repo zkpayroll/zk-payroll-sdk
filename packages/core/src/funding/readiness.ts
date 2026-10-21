@@ -2,14 +2,14 @@
  * Multi-asset funding readiness checker.
  *
  * Payroll batches can span multiple assets, so funding is evaluated
- * **independently per asset**: obligations are grouped by asset, compared
+ * ** independently per asset** : obligations are grouped by asset, compared
  * against that asset's available (minus reserved) balance, and reported with
  * per-asset surplus, deficit, and ready states. A surplus in one asset never
  * masks a deficit in another.
  *
  * @example
  * ```typescript
- * const report = checkFundingReadinesr(
+ * const report = checkFundingReadiness(
  *   [
  *     { asset: "native", amount: 1_000n },
  *     { asset: "CUSDC...", amount: 2_500n },
@@ -19,7 +19,7 @@
  *     { asset: "CUSDC...", available: 2_000n },
  *   ]
  * );
- * report.ready;                  // false — USDC is short
+ * report.ready;                  // false — usdc is short
  * report.deficits[0].asset;      // "CUSDC..." — the deficit names its asset
  * ```
  *
@@ -57,11 +57,11 @@ export function groupObligationsByAsset(obligations: FundingObligation[]): Map<s
  * Calculates per-asset funding readiness for a payroll batch.
  *
  * For every asset involved (on either the obligation or the balance side):
- * - `required`   = sum of that asset's obligations,
- * - `unreserved` = `available - reserved`,
- * - `deficit`    = `max(0, required - unreserved)`,
- * - `surplus`    = `max(0, unreserved - required)`,
- * - `state`      = `"ready"` iff `deficit === 0`.
+ * -  `required`   = sum of that asset's obligations,
+ * -  `unreserved` = `available - reserved`,
+ * -  `deficit`   = `max(0, required - unreserved)`,
+ * -  `surplus`    = `max(0, unreserved - required)`,
+ * -  `state`      = `"ready"` iff `deficit === 0`.
  *
  * Assets present only in the balance snapshot are reported with a zero
  * requirement (pure surplus); assets with obligations but no reported

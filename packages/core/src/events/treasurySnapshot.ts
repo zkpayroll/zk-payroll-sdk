@@ -70,14 +70,6 @@ export function decodeTreasurySnapshotEvent(raw: RawContractEvent): TreasurySnap
     }
   }
 
-  console.log(
-    "DEBUG data keys:",
-    Object.keys(data),
-    "employer raw:",
-    decodeString(data.employer),
-    "asset raw:",
-    decodeString(data.asset)
-  );
   const employer = decodeString(data.employer) || topicEmployer;
   const asset = decodeString(data.asset);
   if (!employer || !asset) {

@@ -25,3 +25,16 @@ export {
   validateBatchFundingFailover,
   validateFundingFailoverChain,
 } from "./sourceFailover";
+export type {
+  TreasuryAssetForecast,
+  TreasuryFlow,
+  TreasuryForecastErrorCode,
+  TreasuryForecastInput,
+  TreasuryForecastSafety,
+  TreasuryLiquidityForecastReport,
+} from "./liquidityForecast";
+export {
+  TreasuryForecastError,
+  assertTreasuryLiquiditySafe,
+  forecastTreasuryLiquidity,
+} from "./liquidityForecast";

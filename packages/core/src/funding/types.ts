@@ -12,7 +12,7 @@
 export interface FundingObligation {
   /** Optional caller-facing label (e.g. employee or invoice reference). */
   obligationId?: string;
-  /** Asset identifier (`"native"` or a Soroban token contract ID). */
+  /** Asset identifier (``native`` or a Soroban token contract ID). */
   asset: string;
   /** Required amount in stroops. Must be a non-negative bigint. */
   amount: bigint;
@@ -20,7 +20,7 @@ export interface FundingObligation {
 
 /** A spendable-balance snapshot for one asset. */
 export interface AssetBalanceSnapshot {
-  /** Asset identifier (`"native"` or a Soroban token contract ID). */
+  /** Asset identifier (``native` or a Soroban token contract ID). */
   asset: string;
   /** Total spendable balance in stroops. */
   available: bigint;
@@ -112,4 +112,84 @@ export type FundingReadinessErrorCode =
   | "NEGATIVE_OBLIGATION_AMOUNT"
   | "NEGATIVE_AVAILABLE_BALANCE"
   | "NEGATIVE_RESERVED_BALANCE"
-  | "RESERVED_EXCEEDS_AVAILABLE";
+  | "RESERVED_EXCEEDES_AVAILABLE";
+
+/** A single projected liquidity point for one asset at a future horizon. */
+export interface TreasuryLiquidityForecastPoint {
+  /** Asset identifier (``native` or a Soroban token contract ID). */
+  asset: string;
+  /** Horizon label (e.g. `"immediate"`, `"weekly-forecast`). */
+  horizon: string;
+  /** Projected unreserved balance at this horizon, in stroops. */
+  projectedBalance: bigint;
+  /** Required funding at this horizon, in stroops. */
+  requiredAmount: bigint;
+  /** Positive surplus after covering the requirement, in stroops (0 when deficit). */
+  surplus: bigint;
+  /** Missing funds at this horizon, in stroops (0 when ready). */
+  deficit: bigint;
+  /** Per-horizon readiness state. */
+  state: AssetFundingState;
+  /** Human-readable diagnostic; deficit messages always name the asset. */
+  message: string;
+}
+
+/** Per-asset liquidity forecast across all configured horizons. */
+export interface TreasuryLiquidityAssetForecast {
+  /** Asset identifier this entry describes. */
+  asset: string;
+  /** Horizon points, deterministically ordered as configured. */
+  points: TreasuryLiquidityForecastPoint[];
+  /** True only when every horizon for this asset is ready. */
+  ready: boolean;
+  /** Horizons with a deficit, represented as the minimum projected balance. */
+  worstHorizon?: string;
+  /** Largest deficit across horizons, in stroops (0 when ready). */
+  maxDeficit: bigint;
+}
+
+/** Full treasury liquidity forecast report across all assets and horizons. */
+export interface TreasuryLiquidityForecastReport {
+  /** True only when **every** asset is ready at **every** horizon. */
+  ready: boolean;
+  /** Per-asset forecasts, deterministically sorted by asset identifier. */
+  assets: TreasuryLiquidityAssetForecast[];
+  /** Asset identifiers that fall into deficit at any horizon. */
+  deficitAssetIds: string[];
+  /** Asset identifiers that remain ready at every horizon. */
+  surplusAssetIds: string[];
+  /** Human-readable summary; names every asset with a deficit. */
+  message: string;
+}
+
+/** Options controlling how a treasury liquidity forecast is evaluated. */
+export interface TreasuryLiquidityForecastOptions extends FundingReadinessOptions {
+  /**
+   * Optional per-horizon multipliers applied to the immediate requirement.
+   * The first horizon is always `"immediate"` with a multiplier of 1.
+   * Defaults to the immediate horizon only.
+   */
+  horizons?: Array<{ label: string; multiplier: bigint }>;
+  /**
+   * Optional safety buffer added to each horizon's requirement, in
+   * stroops. Defaults to 0. Must be a non-negative bigint.
+   */
+  safetyBuffer?: bigint;
+}
+
+/** Stable codes for treasury liquidity forecast input validation failures. */
+export type TreasuryLiquidityForecastErrorCode =
+  | FundingReadinessErrorCode
+  | "EMPTY_HORIZON_LABEL"
+  | "DUPLICATE_HORIZON_LABEL"
+  | "NEGATIVE_HORIZON_MULTIPLIER"
+  | "NEGATIVE_SAFETY_BUFFER";
+
+/** Coded error thrown when treasury liquidity forecast inputs are invalid. */
+export class TreasuryLiquidityForecastError extends FundingReadinessError {
+  constructor(code: TreasuryLiquidityForecastErrorCode, message: string, asset?: string) {
+    super(code, message, asset);
+    this.name = "TreasuryLiquidityForecastError";
+    Object.setPrototypeOf(this, new.target);
+  }
+}
