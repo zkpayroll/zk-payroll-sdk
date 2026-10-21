@@ -24,3 +24,4 @@ export * from "../import/resultParser";
 export * from "./versionConflictResponse";
 export * from "./bulkEditConcurrencyControl";
 export * from "./beneficiaryChangeVerification";
+export * from "./commitmentReplacement";

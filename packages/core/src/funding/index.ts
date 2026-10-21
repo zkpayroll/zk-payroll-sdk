@@ -38,3 +38,11 @@ export {
   assertTreasuryLiquiditySafe,
   forecastTreasuryLiquidity,
 } from "./liquidityForecast";
+export {
+  checkFundingAttestationFreshness,
+  FundingAttestationFreshnessCode,
+} from "./attestationFreshness";
+export type {
+  FundingAttestationFreshnessInput,
+  FundingAttestationFreshnessResult,
+} from "./attestationFreshness";
