@@ -92,6 +92,8 @@ export * from "./progress";
 export * from "./roles";
 export {
   IdempotencyRegistry,
+  IdempotencyKeyConflictError,
+  IdempotencyKeyRequiredError,
   createPaymentIdempotencyKey,
   createPayrollIdempotencyKey,
 } from "./core/idempotency";

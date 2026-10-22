@@ -1,5 +1,6 @@
 import {
   IdempotencyRegistry,
+  IdempotencyKeyConflictError,
   createPaymentIdempotencyKey,
   createPayrollIdempotencyKey,
   normalizeIdempotencyKey,
@@ -52,6 +53,30 @@ describe("Idempotency Helpers", () => {
       expect(await p1).toBe("result");
       expect(await p2).toBe("result");
       expect(calls).toBe(1);
+    });
+
+    it("rejects reuse of a key with a different request fingerprint", async () => {
+      const registry = new IdempotencyRegistry<string>();
+      const first = registry.execute("same-key", async () => "result", {
+        fingerprint: "payload-a",
+      });
+
+      await expect(first).resolves.toBe("result");
+      await expect(
+        registry.execute("same-key", async () => "other", { fingerprint: "payload-b" })
+      ).rejects.toBeInstanceOf(IdempotencyKeyConflictError);
+    });
+
+    it("replays the same request at the exact fingerprint boundary", async () => {
+      const registry = new IdempotencyRegistry<string>();
+      const first = await registry.execute("same-key", async () => "result", {
+        fingerprint: "payload-a",
+      });
+      const replay = await registry.execute("same-key", async () => "other", {
+        fingerprint: "payload-a",
+      });
+
+      expect(replay).toBe(first);
     });
   });
 });

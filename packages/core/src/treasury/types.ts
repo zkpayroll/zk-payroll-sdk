@@ -213,6 +213,16 @@ export interface ReserveRequest {
   correlationId?: string;
 }
 
+/** Authorization facts required before reducing or finalizing a reserve. */
+export interface ReserveReductionAuthorizationContext {
+  /** Operator address expected to sign the contract call. */
+  operatorAddress: string;
+  /** Roles resolved for the operator by the integrating application. */
+  roles: readonly string[];
+  /** Optional additional roles required by the integration. */
+  requiredRoles?: readonly string[];
+}
+
 /**
  * Response from a successful reservation creation.
  */

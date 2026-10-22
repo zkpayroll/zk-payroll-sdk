@@ -32,6 +32,7 @@ export const PlanCheckId = {
   TREASURY_SUFFICIENT: "treasury-sufficient",
   PROOF_PROVIDER_READY: "proof-provider-ready",
   SETTLEMENT_WINDOW_STATUS: "settlement-window-status",
+  SETTLEMENT_WINDOW_OVERLAP: "settlement-window-overlap",
   BATCH_COMMITMENT_CONSISTENCY: "batch-commitment-consistency",
   AUTHORIZATION_SIGNATURES: "authorization-signatures",
 } as const;
@@ -152,11 +153,19 @@ export interface SettlementWindowInput {
   closesAt: number;
   /** UTC timestamp (ms) to evaluate against. Defaults to `Date.now()`. */
   now?: number;
+  /** Previously scheduled windows checked for overlap with this window. */
+  existingWindows?: readonly SettlementWindowRange[];
   /**
    * Fraction (0-1) of the window's remaining time under which the check
    * warns that the window is closing soon. Defaults to `0.1` (10%).
    */
   closingSoonThreshold?: number;
+}
+
+/** Half-open settlement interval [opensAt, closesAt). */
+export interface SettlementWindowRange {
+  opensAt: number;
+  closesAt: number;
 }
 
 /** A single salary commitment entry in the payroll batch. */

@@ -221,6 +221,44 @@ describe("PayrollService", () => {
       expect(mockWrapper.privatePay as jest.Mock).toHaveBeenCalledTimes(1);
     });
 
+    it("rejects a reused idempotency key when payment data changes", async () => {
+      const { mockWrapper, mockProofGen, signer } = createMocks();
+      const service = new PayrollService(mockWrapper, mockProofGen, signer);
+
+      await service.processPayment({
+        recipient: "GABC123",
+        amount: 100n,
+        asset: "native",
+        idempotencyKey: "request-key",
+      });
+
+      await expect(
+        service.processPayment({
+          recipient: "GABC123",
+          amount: 101n,
+          asset: "native",
+          idempotencyKey: "request-key",
+        })
+      ).rejects.toMatchObject({ code: "IDEMPOTENCY_KEY_REUSED" });
+      expect(mockWrapper.privatePay as jest.Mock).toHaveBeenCalledTimes(1);
+      expect(mockProofGen.generateProof).toHaveBeenCalledTimes(1);
+    });
+
+    it("requires a non-empty key through the replay-safe helper", async () => {
+      const { mockWrapper, mockProofGen, signer } = createMocks();
+      const service = new PayrollService(mockWrapper, mockProofGen, signer);
+
+      await expect(
+        service.processPaymentReplaySafe({
+          recipient: "GABC123",
+          amount: 100n,
+          asset: "native",
+          idempotencyKey: "   ",
+        })
+      ).rejects.toMatchObject({ code: "IDEMPOTENCY_KEY_REQUIRED" });
+      expect(mockWrapper.privatePay as jest.Mock).not.toHaveBeenCalled();
+    });
+
     it("does not deduplicate when idempotencyKey is omitted", async () => {
       const { mockWrapper, mockProofGen, signer } = createMocks();
       const service = new PayrollService(mockWrapper, mockProofGen, signer);

@@ -29,6 +29,7 @@ import type {
   PlanCheckCategory,
   ProofProviderReadinessInput,
   RequiredSignature,
+  SettlementWindowRange,
   SettlementWindowInput,
   TreasuryReadinessInput,
 } from "./types";
@@ -300,6 +301,57 @@ function buildSettlementWindowCheck(window: SettlementWindowInput | undefined): 
   };
 }
 
+function buildSettlementWindowOverlapCheck(
+  window: SettlementWindowInput | undefined
+): PlanCheck[] {
+  if (!window || window.existingWindows === undefined) return [];
+
+  const existingWindows: readonly SettlementWindowRange[] = window.existingWindows;
+  const validIntervals =
+    Number.isFinite(window.opensAt) &&
+    Number.isFinite(window.closesAt) &&
+    window.closesAt > window.opensAt &&
+    Array.isArray(existingWindows) &&
+    existingWindows.every(
+      (existing) =>
+        Number.isFinite(existing?.opensAt) &&
+        Number.isFinite(existing?.closesAt) &&
+        existing.closesAt > existing.opensAt
+    );
+
+  if (!validIntervals) {
+    return [
+      {
+        id: PlanCheckId.SETTLEMENT_WINDOW_OVERLAP,
+        category: "settlement",
+        label: "Settlement window overlap",
+        status: "fail",
+        message: "Settlement window comparison data is invalid.",
+        remediation: "Provide finite, increasing open and close timestamps for every window.",
+      },
+    ];
+  }
+
+  const overlaps = existingWindows.some(
+    (existing) => window.opensAt < existing.closesAt && existing.opensAt < window.closesAt
+  );
+
+  return [
+    {
+      id: PlanCheckId.SETTLEMENT_WINDOW_OVERLAP,
+      category: "settlement",
+      label: "Settlement window overlap",
+      status: overlaps ? "fail" : "pass",
+      message: overlaps
+        ? "Settlement window overlaps an existing scheduled window."
+        : "Settlement window does not overlap existing scheduled windows.",
+      ...(overlaps
+        ? { remediation: "Adjust the settlement window so it does not intersect another scheduled window." }
+        : {}),
+    },
+  ];
+}
+
 function buildBatchCheck(
   batch: BatchCommitmentInput | undefined,
   employeeCount: number
@@ -503,6 +555,7 @@ export function planPayrollExecution(
     buildTreasuryCheck(input.treasury),
     buildProofCheck(input.proof),
     buildSettlementWindowCheck(input.settlementWindow),
+    ...buildSettlementWindowOverlapCheck(input.settlementWindow),
     buildBatchCheck(input.batch, input.employeeCount),
     authorizationCheck,
   ];

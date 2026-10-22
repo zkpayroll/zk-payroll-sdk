@@ -14,7 +14,12 @@ import {
   assertPayrollOperatorPermission,
   PayrollOperatorPermissionError,
 } from "./roles/capabilityMatrix";
-import { IdempotencyRegistry, createPaymentIdempotencyKey } from "./core/idempotency";
+import {
+  IdempotencyKeyRequiredError,
+  IdempotencyRegistry,
+  createPaymentIdempotencyKey,
+} from "./core/idempotency";
+import { sha256Digest } from "./crypto/hashUtils";
 import { createPayrollProgressEvent } from "./progress";
 import { assertValidPayrollWitness } from "./crypto/proofInputSanitizer";
 import { assertValidPageSize, iterateBatches } from "./batch/paginate";
@@ -240,9 +245,28 @@ export class PayrollService {
       return this.processPaymentInternal(params);
     }
 
-    return this.paymentIdempotency.execute(explicitKey, async () => {
-      return this.processPaymentInternal(params);
+    const fingerprintPayload = JSON.stringify({
+      recipient: params.recipient.trim().toLowerCase(),
+      amount: params.amount.toString(),
+      asset: params.asset.trim().toLowerCase(),
     });
+    const fingerprint = await sha256Digest(new TextEncoder().encode(fingerprintPayload));
+
+    return this.paymentIdempotency.execute(
+      explicitKey,
+      async () => this.processPaymentInternal(params),
+      { fingerprint }
+    );
+  }
+
+  /** Submit a payment with an explicit key bound to its normalized payload. */
+  async processPaymentReplaySafe(
+    params: PaymentParams & { idempotencyKey: string }
+  ): Promise<PaymentResult> {
+    if (typeof params.idempotencyKey !== "string" || params.idempotencyKey.trim().length === 0) {
+      throw new IdempotencyKeyRequiredError();
+    }
+    return this.processPayment({ ...params, idempotencyKey: params.idempotencyKey.trim() });
   }
 
   /**

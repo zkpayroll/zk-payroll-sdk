@@ -217,3 +217,38 @@ const result = validateTreasuryReserveRelease(request, reserve, Date.now(), {}, 
 });
 // throws until the reservations pause is lifted
 ```
+
+## Reserve Reduction Authorization Context (#772)
+
+`TreasuryReservationClient.release` and `.finalize` require an authorization context. The operator address must match the transaction signer, and its resolved roles must include `PAYROLL_ADMIN`, `TREASURY`, or `EMPLOYER`; integrations may narrow that role set with `requiredRoles`. Resolve roles from a trusted authorization source before calling the client. The context is an SDK preflight guard; the contract remains authoritative. Rejections use `ReserveReductionAuthorizationError` with a stable code and do not include operator or payroll data.
+
+## Settlement Window Overlap Preflight (#770)
+
+`planPayrollExecution` can compare a proposed settlement window with scheduled windows by passing `settlementWindow.existingWindows`. Intervals are half-open: a window ending at the exact time another opens is allowed, while any positive intersection blocks the plan with `settlement-window-overlap`. Invalid or non-increasing interval timestamps fail closed with a privacy-safe message.
+
+```typescript
+const plan = planPayrollExecution({
+  ...payrollInputs,
+  settlementWindow: {
+    opensAt,
+    closesAt,
+    existingWindows: scheduledWindows,
+  },
+});
+```
+
+## Concurrent Approval State Changes (#773)
+
+Persist approval changes with `updateApprovalStateIfCurrent(store, expectedVersion, nextState)`. The store must provide an atomic `compareAndSet(expectedVersion, nextVersion, nextState)` operation; do not implement it as a separate read and write. A concurrent update fails with `APPROVAL_CONCURRENT_MODIFICATION`, so stale state is never written over a newer approval. Invalid versions and storage failures use `APPROVAL_VERSION_INVALID` and `APPROVAL_STATE_WRITE_FAILED`. These errors do not include approval payloads.
+
+```typescript
+const committedVersion = await updateApprovalStateIfCurrent(
+  approvalStore,
+  current.version,
+  nextState
+);
+```
+
+## Replay-Safe Payroll Submission (#769)
+
+`PayrollService.processPaymentReplaySafe` requires an explicit non-empty idempotency key and binds it to a SHA-256 fingerprint of the normalized recipient, amount, and asset. Repeating the same request replays the in-flight or cached result; reusing its key for changed payment data fails with `IDEMPOTENCY_KEY_REUSED` before proof generation or contract submission. Missing keys fail with `IDEMPOTENCY_KEY_REQUIRED`. The fingerprint is not returned or logged.

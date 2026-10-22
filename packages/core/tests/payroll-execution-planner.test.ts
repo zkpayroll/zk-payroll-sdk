@@ -360,6 +360,55 @@ describe("planPayrollExecution", () => {
     });
   });
 
+  describe("settlement window overlap preflight", () => {
+    it("passes when scheduled settlement windows do not overlap", () => {
+      const input = readyInput();
+      input.settlementWindow = {
+        opensAt: 100,
+        closesAt: 200,
+        now: 150,
+        existingWindows: [{ opensAt: 201, closesAt: 300 }],
+      };
+
+      const plan = planPayrollExecution(input);
+
+      expect(plan.ready).toBe(true);
+      expect(check(plan, PlanCheckId.SETTLEMENT_WINDOW_OVERLAP).status).toBe("pass");
+    });
+
+    it("blocks overlapping scheduled settlement windows without exposing payroll data", () => {
+      const input = readyInput();
+      input.settlementWindow = {
+        opensAt: 100,
+        closesAt: 200,
+        now: 150,
+        existingWindows: [{ opensAt: 199, closesAt: 300 }],
+      };
+
+      const plan = planPayrollExecution(input);
+      const overlapCheck = check(plan, PlanCheckId.SETTLEMENT_WINDOW_OVERLAP);
+
+      expect(plan.ready).toBe(false);
+      expect(overlapCheck.status).toBe("fail");
+      expect(overlapCheck.message).not.toMatch(/salary|employee|amount/i);
+    });
+
+    it("allows windows that touch at an endpoint", () => {
+      const input = readyInput();
+      input.settlementWindow = {
+        opensAt: 100,
+        closesAt: 200,
+        now: 150,
+        existingWindows: [{ opensAt: 200, closesAt: 300 }],
+      };
+
+      const plan = planPayrollExecution(input);
+
+      expect(plan.ready).toBe(true);
+      expect(check(plan, PlanCheckId.SETTLEMENT_WINDOW_OVERLAP).status).toBe("pass");
+    });
+  });
+
   describe("stale-contract scenario", () => {
     it("warns without blocking when the contract is supported but behind the recommended version", () => {
       const input = readyInput();

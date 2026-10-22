@@ -20,6 +20,12 @@ export const StaleApprovalErrorCode = {
   APPROVAL_SUPERSEDED: "APPROVAL_SUPERSEDED",
   /** The approval record is missing required timestamp metadata. */
   APPROVAL_MISSING_TIMESTAMP: "APPROVAL_MISSING_TIMESTAMP",
+  /** Another writer changed the approval before this update could commit. */
+  APPROVAL_CONCURRENT_MODIFICATION: "APPROVAL_CONCURRENT_MODIFICATION",
+  /** The expected approval version cannot be safely incremented. */
+  APPROVAL_VERSION_INVALID: "APPROVAL_VERSION_INVALID",
+  /** The approval store failed while applying a conditional write. */
+  APPROVAL_STATE_WRITE_FAILED: "APPROVAL_STATE_WRITE_FAILED",
 } as const;
 
 export type StaleApprovalErrorCode =
@@ -64,6 +70,12 @@ export const STALE_APPROVAL_ERROR_MESSAGES: Record<StaleApprovalErrorCode, strin
     "The payroll approval was superseded by a later approval for the same run.",
   [StaleApprovalErrorCode.APPROVAL_MISSING_TIMESTAMP]:
     "The payroll approval is missing a required expiration timestamp. Fetch the latest approval record.",
+  [StaleApprovalErrorCode.APPROVAL_CONCURRENT_MODIFICATION]:
+    "The payroll approval changed before this update was saved. Fetch the latest state and retry.",
+  [StaleApprovalErrorCode.APPROVAL_VERSION_INVALID]:
+    "The payroll approval version is invalid. Fetch the latest approval state before updating.",
+  [StaleApprovalErrorCode.APPROVAL_STATE_WRITE_FAILED]:
+    "The payroll approval update could not be saved. Check the approval store and retry.",
 };
 
 /**

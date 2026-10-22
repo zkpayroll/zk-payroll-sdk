@@ -9,11 +9,34 @@ export interface IdempotencyExecuteOptions {
    * Defaults to false so callers can safely retry after transient errors.
    */
   cacheErrors?: boolean;
+  /** Opaque digest of the request payload bound to this key. */
+  fingerprint?: string;
 }
 
 interface IdempotencyEntry<T> {
   promise: Promise<T>;
   expiresAt: number | null;
+  fingerprint?: string;
+}
+
+/** Raised when a key is reused for a different request payload. */
+export class IdempotencyKeyConflictError extends Error {
+  readonly code = "IDEMPOTENCY_KEY_REUSED" as const;
+
+  constructor() {
+    super("This idempotency key is already bound to a different request.");
+    this.name = "IdempotencyKeyConflictError";
+  }
+}
+
+/** Raised when a replay-safe operation is invoked without a usable key. */
+export class IdempotencyKeyRequiredError extends Error {
+  readonly code = "IDEMPOTENCY_KEY_REQUIRED" as const;
+
+  constructor() {
+    super("A non-empty idempotency key is required for replay-safe submission.");
+    this.name = "IdempotencyKeyRequiredError";
+  }
 }
 
 /**
@@ -41,6 +64,12 @@ export class IdempotencyRegistry<T> {
 
     const existing = this.entries.get(normalizedKey);
     if (existing) {
+      if (
+        options.fingerprint !== undefined &&
+        existing.fingerprint !== options.fingerprint
+      ) {
+        throw new IdempotencyKeyConflictError();
+      }
       return existing.promise;
     }
 
@@ -51,6 +80,7 @@ export class IdempotencyRegistry<T> {
     this.entries.set(normalizedKey, {
       promise,
       expiresAt: ttlMs > 0 ? Date.now() + ttlMs : null,
+      fingerprint: options.fingerprint,
     });
 
     try {

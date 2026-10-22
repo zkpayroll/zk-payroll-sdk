@@ -7,6 +7,11 @@
 
 export { TreasuryReservationClient } from "./TreasuryReservationClient";
 export {
+  assertReserveReductionAuthorized,
+  ReserveReductionAuthorizationError,
+  ReserveReductionAuthorizationErrorCode,
+} from "./authorization";
+export {
   MEMO_MAX_LENGTH,
   MEMO_PREVIEW_LENGTH,
   validateMemo,
@@ -35,6 +40,7 @@ export type {
   FinalizeReservationRequest,
   FinalizeReservationResponse,
   ReservationStatusCheck,
+  ReserveReductionAuthorizationContext,
 } from "./types";
 
 // ── Treasury Readiness Result Types (#276) ────────────────────────────────

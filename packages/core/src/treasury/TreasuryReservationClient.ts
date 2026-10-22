@@ -25,7 +25,9 @@ import {
   FinalizeReservationResponse,
   ReservationStatusCheck,
   ReservationStateSnapshot,
+  ReserveReductionAuthorizationContext,
 } from "./types";
+import { assertReserveReductionAuthorized } from "./authorization";
 
 /**
  * TreasuryReservationClient provides contract methods for managing
@@ -140,8 +142,10 @@ export class TreasuryReservationClient extends BaseContractWrapper {
   async release(
     request: ReleaseReservationRequest,
     signer: Keypair | ISigner,
+    authorizationContext: ReserveReductionAuthorizationContext,
     network?: string
   ): Promise<ReleaseReservationResponse> {
+    await assertReserveReductionAuthorized(signer, authorizationContext);
     const args: xdr.ScVal[] = [
       nativeToScVal(request.reservationId, { type: "string" }),
       nativeToScVal(request.amount, { type: "i128" }),
@@ -193,8 +197,10 @@ export class TreasuryReservationClient extends BaseContractWrapper {
   async finalize(
     request: FinalizeReservationRequest,
     signer: Keypair | ISigner,
+    authorizationContext: ReserveReductionAuthorizationContext,
     network?: string
   ): Promise<FinalizeReservationResponse> {
+    await assertReserveReductionAuthorized(signer, authorizationContext);
     const args: xdr.ScVal[] = [
       nativeToScVal(request.reservationId, { type: "string" }),
       nativeToScVal(request.usedAmount, { type: "i128" }),
