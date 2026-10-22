@@ -176,6 +176,14 @@ export const ERROR_CODE_REGISTRY: Record<string, ErrorCodeEntry> = {
     suggestedMessage:
       "The verification key does not match this proof. Check the circuit version and verification key configuration, then verify again.",
   },
+  DUPLICATE_COMMITMENT: {
+    category: ErrorCategory.PROOF,
+    meaning:
+      "Duplicate commitment hashes were detected in a payroll batch — the same salary commitment or proof artifact would be submitted more than once.",
+    retryable: false,
+    suggestedMessage:
+      "Remove the duplicate batch entry or regenerate a fresh commitment for the underlying salary record before submitting the batch.",
+  },
 
   // ── Contract Execution ──────────────────────────────────────────────────
   SIMULATION_FAILED: {

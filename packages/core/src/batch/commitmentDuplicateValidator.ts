@@ -128,7 +128,7 @@ function normalizeHash(hash: string, caseSensitive: boolean): string {
  * ```
  */
 export function validateCommitmentDuplicates(
-  entries: BatchCommitmentCheckEntry[],
+  entries: readonly BatchCommitmentCheckEntry[],
   options: CommitmentDuplicateValidationOptions = {}
 ): CommitmentDuplicateValidationResult {
   const {
@@ -205,7 +205,7 @@ export function validateCommitmentDuplicates(
  *   invalid commitments are detected. The error message is privacy-safe.
  */
 export function assertNoDuplicateCommitments(
-  entries: BatchCommitmentCheckEntry[],
+  entries: readonly BatchCommitmentCheckEntry[],
   options: CommitmentDuplicateValidationOptions = {}
 ): CommitmentDuplicateValidationResult {
   const result = validateCommitmentDuplicates(entries, options);
@@ -231,7 +231,7 @@ export function assertNoDuplicateCommitments(
  * ```
  */
 export function validateBatchCommitmentHashes(
-  items: Array<{ commitmentHash?: string }>,
+  items: readonly { commitmentHash?: string }[],
   options: CommitmentDuplicateValidationOptions = {}
 ): CommitmentDuplicateValidationResult {
   return validateCommitmentDuplicates(

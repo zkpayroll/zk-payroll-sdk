@@ -31,6 +31,8 @@ export enum DelegatedApproverAssignmentErrorCode {
   DURATION_EXCEEDS_MAXIMUM = "DURATION_EXCEEDS_MAXIMUM",
   /** The original approver role is not authorized to delegate. */
   ORIGINAL_ROLE_CANNOT_DELEGATE = "ORIGINAL_ROLE_CANNOT_DELEGATE",
+  /** The delegation expires after the delegating role's own expiry. */
+  DELEGATION_EXCEEDS_PARENT_ROLE_EXPIRY = "DELEGATION_EXCEEDS_PARENT_ROLE_EXPIRY",
 }
 
 /**
@@ -65,6 +67,12 @@ export interface DelegatedApproverAssignmentRequest {
   effectiveUntil: number;
   /** Optional role of the original approver (for authorization checks). */
   originalApproverRole?: SignerRole;
+  /**
+   * Expiry timestamp (epoch ms) of the role held by the original approver.
+   * When set, the delegation cannot remain active past this moment — a
+   * delegate must never outlive the authority that created it.
+   */
+  parentRoleExpiresAt?: number;
 }
 
 /**
@@ -85,6 +93,8 @@ export interface DelegatedApproverAssignment {
   effectiveUntil: number;
   /** Original approver role if provided. */
   originalApproverRole?: SignerRole;
+  /** Parent role expiry timestamp (epoch ms) if provided. */
+  parentRoleExpiresAt?: number;
 }
 
 /**
@@ -263,6 +273,31 @@ export function assertValidDelegatedApproverAssignment(
     );
   }
 
+  // Delegation cannot outlive the parent role's expiry
+  if (request.parentRoleExpiresAt !== undefined) {
+    if (
+      typeof request.parentRoleExpiresAt !== "number" ||
+      !Number.isFinite(request.parentRoleExpiresAt)
+    ) {
+      throw new DelegatedApproverAssignmentError(
+        "parentRoleExpiresAt must be a valid timestamp when provided.",
+        DelegatedApproverAssignmentErrorCode.MISSING_FIELD,
+        { field: "parentRoleExpiresAt" }
+      );
+    }
+    if (request.effectiveUntil > request.parentRoleExpiresAt) {
+      throw new DelegatedApproverAssignmentError(
+        "effectiveUntil cannot be later than the parent role's expiry.",
+        DelegatedApproverAssignmentErrorCode.DELEGATION_EXCEEDS_PARENT_ROLE_EXPIRY,
+        {
+          field: "effectiveUntil",
+          effectiveUntil: request.effectiveUntil,
+          parentRoleExpiresAt: request.parentRoleExpiresAt,
+        }
+      );
+    }
+  }
+
   // Role authorization check (if role provided)
   if (request.originalApproverRole) {
     if (!DELEGATION_AUTHORIZED_ROLES.includes(request.originalApproverRole)) {
@@ -298,6 +333,7 @@ export function buildDelegatedApproverAssignmentRequest(
     effectiveFrom: request.effectiveFrom,
     effectiveUntil: request.effectiveUntil,
     originalApproverRole: request.originalApproverRole,
+    parentRoleExpiresAt: request.parentRoleExpiresAt,
   };
 }
 

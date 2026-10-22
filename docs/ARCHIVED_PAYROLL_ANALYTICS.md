@@ -405,6 +405,27 @@ export async function GET(req: Request) {
 
 ---
 
+## Read-only archived records
+
+Archived payroll records are historical and must not be edited. Use the
+read-only helpers when handing records to dashboards or analytics code:
+
+```ts
+import { toReadonlyArchivedRecord, toReadonlyArchivedRecords } from "@zk-payroll/core";
+
+const record = toReadonlyArchivedRecord(archivedRecord);
+const page = toReadonlyArchivedRecords(records);
+
+// Throws TypeError: the copy is frozen.
+// record.status = "failed";
+```
+
+`ReadonlyArchivedRecord` rejects field assignment at compile time, and the
+returned object (and array) is frozen at runtime. The source records are not
+modified.
+
+---
+
 ## Related documentation
 
 - [Pagination Helpers](./pagination.md) — full pagination API reference

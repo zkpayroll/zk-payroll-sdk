@@ -15,6 +15,33 @@ export interface ArchivedRecord extends PayrollRecord {
 }
 
 /**
+ * Read-only view of an {@link ArchivedRecord}.
+ *
+ * Archived payroll records are historical and must never be edited by SDK
+ * consumers. Use {@link toReadonlyArchivedRecord} to obtain a frozen copy;
+ * TypeScript rejects field assignment on this type at compile time.
+ */
+export type ReadonlyArchivedRecord = Readonly<ArchivedRecord>;
+
+/**
+ * Returns a frozen, read-only copy of an archived payroll record.
+ * The input record is not modified.
+ */
+export function toReadonlyArchivedRecord(record: ArchivedRecord): ReadonlyArchivedRecord {
+  return Object.freeze({ ...record });
+}
+
+/**
+ * Returns frozen, read-only copies of archived payroll records.
+ * The returned array is frozen as well, so pages cannot be mutated in place.
+ */
+export function toReadonlyArchivedRecords(
+  records: readonly ArchivedRecord[]
+): readonly ReadonlyArchivedRecord[] {
+  return Object.freeze(records.map(toReadonlyArchivedRecord));
+}
+
+/**
  * Plain-object filter argument accepted by `filterArchivedRecords`.
  * Only supports status filtering at the low-level; richer filtering
  * is available through `ArchiveFilterBuilder`.

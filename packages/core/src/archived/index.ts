@@ -1,11 +1,13 @@
 // ── Types ───────────────────────────────────────────────────────────────────
 export type {
   ArchivedRecord,
+  ReadonlyArchivedRecord,
   ArchivedRecordFilter,
   ArchiveQuery,
   ArchiveSummaryReport,
   AssetBreakdownEntry,
 } from "./types";
+export { toReadonlyArchivedRecord, toReadonlyArchivedRecords } from "./types";
 
 // ── Low-level filter ────────────────────────────────────────────────────────
 export { filterArchivedRecords } from "./filters";

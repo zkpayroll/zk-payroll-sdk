@@ -66,6 +66,7 @@ if (isRetryableErrorCode(error.code)) {
 | `RPC_TIMEOUT` | rpc | RPC request did not complete in time. | Yes | The request to the RPC endpoint timed out. The network may be congested; please retry. |
 | `INVALID_RESPONSE` | rpc | RPC returned malformed or unexpected data. | Yes | Received an invalid or malformed response from the RPC node. Please try again. |
 | `PROOF_GENERATION_FAILED` | proof | ZK proof generation failed (witness, circuit, or artifact). | Yes | Zero-knowledge proof generation failed. This may be due to invalid inputs or insufficient system resources. |
+| `DUPLICATE_COMMITMENT` | proof | A payroll batch repeats a commitment hash, which would submit the same salary commitment or proof artifact twice. | No | Remove the duplicate batch entry or regenerate a fresh commitment for the underlying salary record before submitting the batch. |
 | `SIMULATION_FAILED` | contract | Contract simulation failed before submission. | No | The transaction could not be simulated. Please verify your inputs and network connection and try again. |
 | `TRANSACTION_SUBMISSION_FAILED` | contract | Signed transaction was rejected during submission. | Yes | The transaction was rejected by the network. Please check your connection and try again. |
 | `TRANSACTION_TIMEOUT` | contract | Transaction did not confirm within the expected time. | Yes | The transaction did not confirm within the expected time. The network may be congested; please retry. |
