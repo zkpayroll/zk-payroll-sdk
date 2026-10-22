@@ -285,5 +285,8 @@ export * from "./payroll/cacheInvalidator";
 // ── Payroll Review Decision Completeness Validation (#711) ─────────────────
 export * from "./payroll/reviewDecisionCompleteness";
 
+// ── Latest Approved Payroll Revision Reader (#815) ──────────────────────────
+export * from "./payroll/latestApprovedRevisionReader";
+
 // ── Treasury Liquidity Forecast Safeguards ─────────────────────────────────
 export * from "./treasury/liquidityForecastSafeguards";

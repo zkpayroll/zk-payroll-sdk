@@ -43,4 +43,5 @@ export * from "./registryReferenceGuard";
 export * from "./dryRunExecutor";
 export * from "./payoutVariance";
 export * from "./auditTrail";
+export * from "./latestApprovedRevisionReader";
 export * from "../policies";
