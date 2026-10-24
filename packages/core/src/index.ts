@@ -292,3 +292,6 @@ export * from "./payroll/latestApprovedRevisionReader";
 
 // ── Treasury Liquidity Forecast Safeguards ─────────────────────────────────
 export * from "./treasury/liquidityForecastSafeguards";
+
+// Interrupted Payroll Run Recovery Controls (#742)
+export * from "./payroll/runRecovery";
