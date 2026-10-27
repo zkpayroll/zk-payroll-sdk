@@ -11,3 +11,4 @@ export {
   verifyMetadataDigestMatch,
 } from "../receipts/digest";
 export { PayrollReceiptVerificationError } from "../receipts/errors";
+export * from "./employerRoleOwnership";

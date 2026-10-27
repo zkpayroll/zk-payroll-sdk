@@ -297,3 +297,6 @@ export * from "./treasury/liquidityForecastSafeguards";
 export * from "./audit/organizationConfigChangeLedger";
 // Interrupted Payroll Run Recovery Controls (#742)
 export * from "./payroll/runRecovery";
+
+// Pre-Submission Employer Role Ownership Verification (#851)
+export * from "./verification/employerRoleOwnership";
