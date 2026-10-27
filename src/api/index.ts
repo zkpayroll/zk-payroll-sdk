@@ -15,3 +15,4 @@ export type {
   PollTransactionOptions,
   TransactionStatusResult,
 } from "../../packages/core/src/polling";
+export * from "../../packages/core/src/api/auditorArchivedPeriods";

@@ -60,3 +60,4 @@ export type {
 } from "../client";
 
 export * from "../treasury/replenishmentReadiness";
+export * from "./auditorArchivedPeriods";
