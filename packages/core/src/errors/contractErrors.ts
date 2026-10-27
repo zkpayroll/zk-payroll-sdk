@@ -367,3 +367,179 @@ export function mapPausedContractError(
   const msg = error instanceof Error ? error.message : String(error);
   return new ContractExecutionError(msg, ContractErrorCode.UNKNOWN_RPC_ERROR, context, error);
 }
+
+// ── Unsupported Proof Format Error Mapping (#852) ───────────────────────────
+
+export const ProofFormatErrorCode = {
+  UNSUPPORTED_PROOF_FORMAT: "UNSUPPORTED_PROOF_FORMAT",
+} as const;
+
+export type ProofFormatErrorCodeType =
+  (typeof ProofFormatErrorCode)[keyof typeof ProofFormatErrorCode];
+
+export const SUPPORTED_PROOF_FORMATS = ["groth16", "plonk"] as const;
+export type SupportedProofFormat = (typeof SUPPORTED_PROOF_FORMATS)[number];
+
+export const UNSUPPORTED_PROOF_FORMAT_REMEDIATION =
+  "The submitted zero-knowledge proof uses an unsupported proof format or encoding. Generate proofs using a supported proving system (groth16 or plonk) matching the verifier contract configuration. Never log raw witness or salary inputs.";
+
+const UNSUPPORTED_PROOF_FORMAT_PATTERNS: readonly RegExp[] = [
+  /unsupported[\s_-]*proof[\s_-]*format/i,
+  /UNSUPPORTED_PROOF_FORMAT/,
+  /UnsupportedProofFormat/,
+  /invalid[\s_-]*proof[\s_-]*(?:format|scheme|encoding|version)/i,
+  /unknown[\s_-]*proving[\s_-]*(?:system|scheme)/i,
+];
+
+function redactProofSensitiveString(input: string): string {
+  return input
+    .replace(/(recipient|amount|witness|salary|secret|nullifier)\s*[:=]\s*\S+/gi, "$1=[REDACTED]")
+    .replace(/0x[a-fA-F0-9]{32,}/g, "[REDACTED_PROOF_BYTES]");
+}
+
+function sanitizeProofErrorContext(
+  context: Record<string, unknown>
+): Record<string, unknown> {
+  const forbidden = new Set([
+    "recipient",
+    "amount",
+    "witness",
+    "salary",
+    "secret",
+    "nullifier",
+    "rawProof",
+    "proofBytes",
+  ]);
+  const cleaned: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(context)) {
+    cleaned[key] = forbidden.has(key) ? "[REDACTED]" : value;
+  }
+  return cleaned;
+}
+
+/**
+ * Typed SDK error representing an unsupported or unrecognized ZK proof format (#852).
+ */
+export class UnsupportedProofFormatError extends ProofGenerationError {
+  public readonly receivedFormat?: string;
+  public readonly supportedFormats: readonly SupportedProofFormat[];
+
+  constructor(
+    message: string = UNSUPPORTED_PROOF_FORMAT_REMEDIATION,
+    options: {
+      receivedFormat?: string;
+      context?: Record<string, unknown>;
+      cause?: unknown;
+    } = {}
+  ) {
+    const safeMessage = redactProofSensitiveString(message);
+    const safeFormat = options.receivedFormat
+      ? redactProofSensitiveString(String(options.receivedFormat)).slice(0, 48)
+      : undefined;
+    const safeContext = sanitizeProofErrorContext({
+      ...(options.context ?? {}),
+      ...(safeFormat ? { receivedFormat: safeFormat } : {}),
+      supportedFormats: SUPPORTED_PROOF_FORMATS,
+    });
+
+    super(
+      safeMessage,
+      ProofFormatErrorCode.UNSUPPORTED_PROOF_FORMAT,
+      safeContext,
+      options.cause
+    );
+    this.name = "UnsupportedProofFormatError";
+    this.receivedFormat = safeFormat;
+    this.supportedFormats = SUPPORTED_PROOF_FORMATS;
+  }
+}
+
+/**
+ * Returns true when an error indicates an unsupported ZK proof format (#852).
+ */
+export function isUnsupportedProofFormatError(error: unknown): boolean {
+  if (!error) return false;
+  if (error instanceof UnsupportedProofFormatError) return true;
+
+  if (typeof error === "object" && "code" in error) {
+    const code = (error as { code?: unknown }).code;
+    if (
+      code === ProofFormatErrorCode.UNSUPPORTED_PROOF_FORMAT ||
+      code === "UnsupportedProofFormat"
+    ) {
+      return true;
+    }
+  }
+
+  const msg =
+    error instanceof Error
+      ? error.message
+      : typeof error === "string"
+        ? error
+        : typeof error === "object" && error !== null && "message" in error
+          ? String((error as { message: unknown }).message)
+          : "";
+
+  return UNSUPPORTED_PROOF_FORMAT_PATTERNS.some((re) => re.test(msg));
+}
+
+/**
+ * Validates that a proof format identifier is supported by the SDK and contracts (#852).
+ * Throws {@link UnsupportedProofFormatError} when the format is missing or unsupported.
+ */
+export function validateProofFormat(format: unknown): SupportedProofFormat {
+  if (typeof format !== "string" || format.trim().length === 0) {
+    throw new UnsupportedProofFormatError(
+      `Proof format is required and must be one of: ${SUPPORTED_PROOF_FORMATS.join(", ")}.`,
+      { receivedFormat: String(format ?? "empty") }
+    );
+  }
+
+  const normalized = format.trim().toLowerCase();
+  if ((SUPPORTED_PROOF_FORMATS as readonly string[]).includes(normalized)) {
+    return normalized as SupportedProofFormat;
+  }
+
+  throw new UnsupportedProofFormatError(
+    `Proof format "${normalized}" is not supported. Supported formats: ${SUPPORTED_PROOF_FORMATS.join(", ")}.`,
+    { receivedFormat: normalized }
+  );
+}
+
+/**
+ * Returns privacy-safe remediation guidance for an unsupported proof format error (#852).
+ */
+export function getUnsupportedProofFormatRemediation(error: unknown): string {
+  if (isUnsupportedProofFormatError(error)) {
+    return UNSUPPORTED_PROOF_FORMAT_REMEDIATION;
+  }
+  return "Verify that your proof format and circuit artifacts match the target verifier contract.";
+}
+
+/**
+ * Maps a raw contract, RPC, or validation error into a typed
+ * {@link UnsupportedProofFormatError} when it matches unsupported proof format
+ * patterns, or falls back to a standard {@link ZkPayrollError} (#852).
+ */
+export function mapUnsupportedProofFormatError(
+  error: unknown,
+  context: Record<string, unknown> = {}
+): ZkPayrollError {
+  if (error instanceof UnsupportedProofFormatError) {
+    return error;
+  }
+
+  if (isUnsupportedProofFormatError(error)) {
+    const rawMsg = error instanceof Error ? error.message : String(error);
+    const sanitized = redactProofSensitiveString(rawMsg);
+    const message = sanitized
+      ? `${sanitized} — ${UNSUPPORTED_PROOF_FORMAT_REMEDIATION}`
+      : UNSUPPORTED_PROOF_FORMAT_REMEDIATION;
+    return new UnsupportedProofFormatError(message, {
+      context,
+      cause: error,
+    });
+  }
+
+  return mapContractProofError(error, sanitizeProofErrorContext(context));
+}

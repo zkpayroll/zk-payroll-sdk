@@ -297,3 +297,19 @@ export * from "./treasury/liquidityForecastSafeguards";
 export * from "./audit/organizationConfigChangeLedger";
 // Interrupted Payroll Run Recovery Controls (#742)
 export * from "./payroll/runRecovery";
+
+// Unsupported Proof Format Error Mapping (#852)
+export {
+  ProofFormatErrorCode,
+  SUPPORTED_PROOF_FORMATS,
+  UNSUPPORTED_PROOF_FORMAT_REMEDIATION,
+  UnsupportedProofFormatError,
+  isUnsupportedProofFormatError,
+  validateProofFormat,
+  getUnsupportedProofFormatRemediation,
+  mapUnsupportedProofFormatError,
+} from "./errors/contractErrors";
+export type {
+  ProofFormatErrorCodeType,
+  SupportedProofFormat,
+} from "./errors/contractErrors";
