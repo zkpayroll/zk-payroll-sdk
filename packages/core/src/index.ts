@@ -300,3 +300,9 @@ export * from "./treasury/liquidityForecastSafeguards";
 export * from "./audit/organizationConfigChangeLedger";
 // Interrupted Payroll Run Recovery Controls (#742)
 export * from "./payroll/runRecovery";
+
+// ── Payroll Approval Invalidation (#920, #921, #922) ────────────────────────
+export * from "./payroll/approvalInvalidation";
+
+// ── Proof Input Validation Boundaries (#916) ────────────────────────────────
+export * from "./proofs/inputValidation";

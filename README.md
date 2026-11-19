@@ -615,6 +615,10 @@ For settlement receipts, pass a `ReceiptReplayGuard` to
 `verifyPayrollReceipt()` to reject duplicate receipts or reused transaction
 hashes. See [Settlement receipt replay protection](packages/core/docs/settlement-receipt-replay.md).
 
+For draft updates and multi-signature authorization, the SDK invalidates approvals
+when post-approval edits or expiration occur without exposing payroll data. See
+[Payroll approval invalidation](packages/core/docs/approval-invalidation.md).
+
 ## Payroll run summaries
 
 `createExecutionSummary()` builds the normalized summary; pair it with
