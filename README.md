@@ -615,63 +615,9 @@ For settlement receipts, pass a `ReceiptReplayGuard` to
 `verifyPayrollReceipt()` to reject duplicate receipts or reused transaction
 hashes. See [Settlement receipt replay protection](packages/core/docs/settlement-receipt-replay.md).
 
-## Approval invalidation validation
-
-Validate approval invalidations prior to applying state changes using `validateApprovalInvalidation()` or `assertValidApprovalInvalidation()`:
-
-```typescript
-import {
-  validateApprovalInvalidation,
-  assertValidApprovalInvalidation,
-  ApprovalInvalidationError,
-} from "@zk-payroll/core";
-
-const normalized = assertValidApprovalInvalidation({
-  approvalId: "appr_12345",
-  runId: "run_abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
-  reason: "DRAFT_MODIFIED",
-  invalidatedAt: Date.now(),
-  invalidatedBy: "compliance_operator",
-});
-```
-
-## Proof input validation & safe errors
-
-Validate witness parameters before circuit compilation or proof generation with `validateProofInput()` or `assertValidPayrollProofWitness()`:
-
-```typescript
-import {
-  validateProofInput,
-  assertValidPayrollProofWitness,
-  ProofInputValidationError,
-} from "@zk-payroll/core";
-
-const sanitizedWitness = assertValidPayrollProofWitness({
-  recipient: "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5",
-  amount: "5000000000",
-  asset: "native",
-});
-```
-
-## Hardened retention policy state handling
-
-Manage organization and audit retention policies with optimistic concurrency control, statutory floor enforcement, legal hold safeguards, and hash-chained audit histories:
-
-```typescript
-import {
-  RetentionPolicyStateManager,
-  applyRetentionPolicyUpdate,
-} from "@zk-payroll/core";
-
-const manager = new RetentionPolicyStateManager();
-await manager.updatePolicy({
-  policyId: "org-retention-default",
-  expectedVersion: 0,
-  retentionDays: 2555, // 7-year statutory floor
-  updatedBy: "compliance_officer",
-  updateReason: "Initial statutory retention policy",
-});
-```
+For draft updates and multi-signature authorization, the SDK invalidates approvals
+when post-approval edits or expiration occur without exposing payroll data. See
+[Payroll approval invalidation](packages/core/docs/approval-invalidation.md).
 
 ## Payroll run summaries
 

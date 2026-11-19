@@ -311,8 +311,8 @@ export * from "./audit/organizationConfigChangeLedger";
 // Interrupted Payroll Run Recovery Controls (#742)
 export * from "./payroll/runRecovery";
 
-// ── Typed Approval Invalidation Validation (#919) ───────────────────────────
+// ── Payroll Approval Invalidation (#920, #921, #922) ────────────────────────
 export * from "./payroll/approvalInvalidation";
 
-// ── Hardened Retention Policy State Handling (#913) ─────────────────────────
-export * from "./retention";
+// ── Proof Input Validation Boundaries (#916) ────────────────────────────────
+export * from "./proofs/inputValidation";

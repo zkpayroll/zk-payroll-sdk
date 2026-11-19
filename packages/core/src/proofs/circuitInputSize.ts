@@ -43,6 +43,14 @@ export function assertCircuitInputSize(
   witness: Record<string, unknown>,
   limits: Partial<CircuitInputLimits> = {}
 ): void {
+  if (!witness || typeof witness !== "object" || Array.isArray(witness)) {
+    throw new ProofGenerationError(
+      "Circuit input witness must be a valid non-null object.",
+      CIRCUIT_INPUT_TOO_LARGE,
+      { limit: "maxFields", actual: 0 }
+    );
+  }
+
   const max: CircuitInputLimits = { ...DEFAULT_CIRCUIT_INPUT_LIMITS, ...limits };
 
   const fail = (limit: CircuitInputLimitName, actual: number, field?: string): never => {
