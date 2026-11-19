@@ -386,6 +386,21 @@ export function verifyPayrollReceipt(
     }
   }
 
+  // 9. Replay protection (opt-in). Only receipts that pass the other checks
+  // are consumed, so a transient failure cannot poison the replay window.
+  if (options.replayGuard && !issues.some((issue) => issue.severity === "error")) {
+    const replayDecision = options.replayGuard.record(receipt);
+    if (!replayDecision.accepted) {
+      issues.push({
+        code: ReceiptVerificationCode.RECEIPT_REPLAY,
+        field: "receiptId",
+        message: replayDecision.message,
+        severity: "error",
+        critical: true,
+      });
+    }
+  }
+
   const criticalIssues = issues.filter((i) =>
     options.strict ? true : i.critical || i.severity === "error"
   );

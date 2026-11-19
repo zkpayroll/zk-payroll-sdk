@@ -604,6 +604,17 @@ const { timing } = await timeAxiosRequest({ url: artifactUrl }, onTiming, reques
   call, and the error never echoes the rejected value — so free-form text
   such as names or salary amounts can't leak into logs or telemetry.
 
+Run IDs supplied by an external system should be canonicalized with
+`normalizeRunId(runId)` before being used as cache or recovery state keys;
+this accepts both `run_<hex>` and bare hex, trims whitespace, lowercases hex,
+and throws a value-free `ValidationError` for malformed input. See
+[Payroll run identifiers](packages/core/docs/payroll-run-identifiers.md) for
+the full format, failure and compatibility behavior.
+
+For settlement receipts, pass a `ReceiptReplayGuard` to
+`verifyPayrollReceipt()` to reject duplicate receipts or reused transaction
+hashes. See [Settlement receipt replay protection](packages/core/docs/settlement-receipt-replay.md).
+
 ## Payroll run summaries
 
 `createExecutionSummary()` builds the normalized summary; pair it with

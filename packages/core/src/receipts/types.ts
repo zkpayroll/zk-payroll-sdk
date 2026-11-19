@@ -1,4 +1,5 @@
 import type { RedactionOptions } from "../redaction/types";
+import type { ReceiptReplayGuard } from "./receiptReplay";
 
 /**
  * Valid settlement lifecycle states for a payroll receipt.
@@ -88,6 +89,7 @@ export const ReceiptVerificationCode = {
   SIGNATURE_MISSING: "RECEIPT_SIGNATURE_MISSING",
   SIGNATURE_INVALID: "RECEIPT_SIGNATURE_INVALID",
   CUSTOM_VALIDATION_FAILED: "RECEIPT_CUSTOM_VALIDATION_FAILED",
+  RECEIPT_REPLAY: "RECEIPT_REPLAY",
 } as const;
 
 export type ReceiptVerificationCode =
@@ -152,6 +154,12 @@ export interface ReceiptVerificationOptions {
   >;
   /** Optional redaction options when producing sanitized output */
   redactionOptions?: RedactionOptions;
+  /**
+   * Optional replay guard. When supplied, a receipt that passes the other
+   * checks is recorded once during verification; repeated receipts and reused
+   * transaction hashes fail with {@link ReceiptVerificationCode.RECEIPT_REPLAY}.
+   */
+  replayGuard?: ReceiptReplayGuard;
 }
 
 /**

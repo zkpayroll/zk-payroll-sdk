@@ -5,6 +5,7 @@ export * from "./types";
 export * from "./digest";
 export * from "./errors";
 export * from "./receiptVerifier";
+export * from "./receiptReplay";
 export * from "./referenceLookup";
 export * from "./policyRevisionAttachment";
 export * from "./treasuryReleaseResult";
