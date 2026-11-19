@@ -311,8 +311,14 @@ export * from "./audit/organizationConfigChangeLedger";
 // Interrupted Payroll Run Recovery Controls (#742)
 export * from "./payroll/runRecovery";
 
-// ── Payroll Approval Invalidation (#920, #921, #922) ────────────────────────
+// ── Payroll Approval Invalidation (#920, #921, #922, #923) ──────────────────
 export * from "./payroll/approvalInvalidation";
+export * from "./payroll/approvalInvalidationState";
 
-// ── Proof Input Validation Boundaries (#916) ────────────────────────────────
+// ── Proof Input Validation & State (#914, #915, #916, #918) ─────────────────
 export * from "./proofs/inputValidation";
+export * from "./proofs/proofInputValidator";
+export * from "./proofs/proofInputState";
+
+// ── Typed Payroll Run Identifiers (#924) ────────────────────────────────────
+export * from "./identifiers";
