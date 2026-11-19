@@ -147,6 +147,9 @@ export type { ProofVerificationErrorCodeType } from "./proofs/errors";
 // ── Proof Verification Adapter ───────────────────────────────────────────────
 export * from "./proofs/types";
 export * from "./proofs/verifierAdapter";
+
+// ── Payroll Receipts & Replay Protection ─────────────────────────────────────
+export * from "./receipts";
 export { ProofVerificationClient, verifyProofWithAdapter } from "./client";
 
 // ── Proof Artifact Lifecycle ────────────────────────────────────────────────
