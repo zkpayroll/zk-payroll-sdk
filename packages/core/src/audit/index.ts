@@ -12,3 +12,5 @@ export * from "./historicalPayrollAccessAuthorization";
 export * from "./auditRetentionSafeguards";
 export * from "./sequenceVerification";
 export * from "./responsibilityDelegationAudit";
+export * from "./grantExpiryErrors";
+export * from "./grantExpiryValidation";

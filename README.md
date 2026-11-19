@@ -619,6 +619,58 @@ For draft updates and multi-signature authorization, the SDK invalidates approva
 when post-approval edits or expiration occur without exposing payroll data. See
 [Payroll approval invalidation](packages/core/docs/approval-invalidation.md).
 
+## Auditor grant expiry validation
+
+Validate grant expiry descriptors before rendering audit dashboards or gating
+access. Validation accumulates every issue, returns normalized timestamps and
+status, and never echoes auditor identifiers or payroll values:
+
+```typescript
+import {
+  validateAuditorGrantExpiry,
+  assertAuditorGrantActive,
+  AuditorGrantExpiredError,
+} from "@zk-payroll/core";
+
+const result = validateAuditorGrantExpiry({
+  auditorId: auditorId,
+  grantedAt: "2026-01-01T00:00:00.000Z",
+  expiresAt: "2027-01-01T00:00:00.000Z",
+});
+
+if (!result.isValid) {
+  console.error(result.issues.map((issue) => issue.message).join("; "));
+} else {
+  assertAuditorGrantActive({ auditorId, expiresAt: result.normalized.expiresAtMs });
+}
+```
+
+`assertAuditorGrantActive()` throws a privacy-safe `AuditorGrantExpiredError`
+whose message contains only a redacted auditor identifier.
+
+## Payout batch retry state
+
+`PayoutBatchRetryStateManager` hardens retries of partially settled payout
+batches with optimistic concurrency, bounded retry attempts, immutable settled
+items, and a hash-chained revision history:
+
+```typescript
+import { PayoutBatchRetryStateManager } from "@zk-payroll/core";
+
+const retries = new PayoutBatchRetryStateManager();
+retries.initializeBatch("batch-42", failedItemIds, { updatedBy: "operator-1" });
+retries.update({
+  batchId: "batch-42",
+  expectedVersion: 1,
+  targetStatus: "retrying",
+  updatedBy: "operator-2",
+  settledItemIds: ["payout-7"],
+});
+```
+
+Stale writes, retry payloads that still contain settled payouts, and updates to
+closed batches are rejected with a typed `PayoutBatchRetryStateError`.
+
 ## Payroll run summaries
 
 `createExecutionSummary()` builds the normalized summary; pair it with
