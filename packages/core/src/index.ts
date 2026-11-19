@@ -141,8 +141,18 @@ export {
   GENERIC_PROOF_REMEDIATION,
   ProofVerificationError,
   ProofVerificationErrorCode,
+  ProofInputValidationError,
+  ProofInputValidationErrorCode,
+  PROOF_INPUT_VALIDATION_ERROR_MESSAGES,
+  isProofInputValidationError,
+  getProofInputValidationErrorMessage,
+  formatProofInputValidationError,
 } from "./proofs/errors";
-export type { ProofVerificationErrorCodeType } from "./proofs/errors";
+export type {
+  ProofVerificationErrorCodeType,
+  ProofInputViolation,
+} from "./proofs/errors";
+export * from "./proofs/proofInputValidator";
 
 // ── Proof Verification Adapter ───────────────────────────────────────────────
 export * from "./proofs/types";

@@ -288,3 +288,154 @@ export function formatMissingProofError(error: unknown): string {
 }
 
 export const formatProofError = formatMissingProofError;
+
+// ── Proof Input Validation Safe Errors (#914, #915) ──────────────────────────
+
+/**
+ * Machine-readable error codes for proof input validation failures.
+ * Codes are stable, user-facing safe, and never interpolate sensitive witness data.
+ */
+export const ProofInputValidationErrorCode = {
+  /** The witness input is null, undefined, or not a valid object. */
+  INVALID_WITNESS: "PROOF_INPUT_INVALID_WITNESS",
+  /** Recipient address is invalid, malformed, or empty. */
+  INVALID_RECIPIENT: "PROOF_INPUT_INVALID_RECIPIENT",
+  /** Amount is not a valid non-negative integer representation. */
+  INVALID_AMOUNT: "PROOF_INPUT_INVALID_AMOUNT",
+  /** Asset identifier is not a valid non-empty string. */
+  INVALID_ASSET: "PROOF_INPUT_INVALID_ASSET",
+  /** Witness includes sensitive or forbidden keys (e.g. private keys, secrets). */
+  FORBIDDEN_FIELD: "PROOF_INPUT_FORBIDDEN_FIELD",
+  /** A required witness field is missing from the input. */
+  MISSING_REQUIRED_FIELD: "PROOF_INPUT_MISSING_REQUIRED_FIELD",
+  /** Witness size or field length exceeds allowable circuit input bounds. */
+  OVERSIZED_INPUT: "PROOF_INPUT_TOO_LARGE",
+  /** Public signals array is invalid or malformed. */
+  INVALID_PUBLIC_SIGNALS: "PROOF_INPUT_INVALID_PUBLIC_SIGNALS",
+  /** Circuit identifier is invalid or missing. */
+  INVALID_CIRCUIT_ID: "PROOF_INPUT_INVALID_CIRCUIT_ID",
+  /** An unsupported data type was encountered in a witness field. */
+  UNSUPPORTED_FIELD_TYPE: "PROOF_INPUT_UNSUPPORTED_FIELD_TYPE",
+} as const;
+
+export type ProofInputValidationErrorCode =
+  (typeof ProofInputValidationErrorCode)[keyof typeof ProofInputValidationErrorCode];
+
+/**
+ * Human-readable, user-facing safe messages keyed by error code.
+ * Guaranteed never to interpolate sensitive employee IDs, secrets, or amounts.
+ */
+export const PROOF_INPUT_VALIDATION_ERROR_MESSAGES: Record<ProofInputValidationErrorCode, string> = {
+  [ProofInputValidationErrorCode.INVALID_WITNESS]:
+    "Proof witness must be a non-null object.",
+  [ProofInputValidationErrorCode.INVALID_RECIPIENT]:
+    "Recipient address is invalid or empty. Provide a valid Stellar public key.",
+  [ProofInputValidationErrorCode.INVALID_AMOUNT]:
+    "Amount must be a non-negative integer representation (string, bigint, or safe number).",
+  [ProofInputValidationErrorCode.INVALID_ASSET]:
+    "Asset identifier is invalid or empty.",
+  [ProofInputValidationErrorCode.FORBIDDEN_FIELD]:
+    "Sensitive credentials, keys, or forbidden parameters must not appear in proof inputs.",
+  [ProofInputValidationErrorCode.MISSING_REQUIRED_FIELD]:
+    "A required witness field is missing for proof input.",
+  [ProofInputValidationErrorCode.OVERSIZED_INPUT]:
+    "Circuit witness exceeds maximum allowable input bounds.",
+  [ProofInputValidationErrorCode.INVALID_PUBLIC_SIGNALS]:
+    "Public signals payload is invalid or malformed.",
+  [ProofInputValidationErrorCode.INVALID_CIRCUIT_ID]:
+    "Circuit identifier is missing or unsupported.",
+  [ProofInputValidationErrorCode.UNSUPPORTED_FIELD_TYPE]:
+    "One or more witness fields contain an unsupported data type.",
+};
+
+/**
+ * A single structured violation descriptor for proof input validation.
+ */
+export interface ProofInputViolation {
+  readonly code: ProofInputValidationErrorCode;
+  readonly field?: string;
+  readonly message: string;
+  readonly suggestedFix?: string;
+}
+
+/**
+ * Safe error thrown when proof input validation fails.
+ * Extends {@link ZkPayrollError} so it integrates seamlessly with SDK error handling.
+ */
+export class ProofInputValidationError extends ZkPayrollError {
+  public readonly validationCode: ProofInputValidationErrorCode;
+  public readonly violations: readonly ProofInputViolation[];
+
+  constructor(
+    message: string,
+    code: ProofInputValidationErrorCode = ProofInputValidationErrorCode.INVALID_WITNESS,
+    violations: readonly ProofInputViolation[] = [],
+    context: Record<string, unknown> = {},
+    cause?: unknown
+  ) {
+    super(message, code, context, cause);
+    this.name = "ProofInputValidationError";
+    this.validationCode = code;
+    this.violations = violations;
+  }
+}
+
+/**
+ * Type guard returning true if an error is a {@link ProofInputValidationError}.
+ */
+export function isProofInputValidationError(error: unknown): boolean {
+  if (error instanceof ProofInputValidationError) return true;
+  if (
+    error &&
+    typeof error === "object" &&
+    "validationCode" in error &&
+    typeof (error as Record<string, unknown>).validationCode === "string"
+  ) {
+    const code = (error as Record<string, unknown>).validationCode as string;
+    return Object.values(ProofInputValidationErrorCode).includes(
+      code as ProofInputValidationErrorCode
+    );
+  }
+  return false;
+}
+
+/**
+ * Extracts a safe user-facing message for a proof input validation error.
+ * Falls back to a sanitized generic message without leaking inputs.
+ */
+export function getProofInputValidationErrorMessage(error: unknown): string {
+  if (error instanceof ProofInputValidationError) {
+    return error.message;
+  }
+  if (
+    error &&
+    typeof error === "object" &&
+    "code" in error &&
+    typeof (error as Record<string, unknown>).code === "string"
+  ) {
+    const code = (error as Record<string, unknown>).code as ProofInputValidationErrorCode;
+    if (code in PROOF_INPUT_VALIDATION_ERROR_MESSAGES) {
+      return PROOF_INPUT_VALIDATION_ERROR_MESSAGES[code];
+    }
+  }
+  if (error instanceof Error) {
+    return error.message;
+  }
+  return "A proof input validation error occurred. Check witness fields and retry.";
+}
+
+/**
+ * Formats a proof input validation error into an actionable message
+ * with violations and remediation guidance.
+ */
+export function formatProofInputValidationError(error: unknown): string {
+  const baseMessage = getProofInputValidationErrorMessage(error);
+  if (error instanceof ProofInputValidationError && error.violations.length > 0) {
+    const fixes = error.violations
+      .map((v) => (v.field ? `[${v.field}] ${v.suggestedFix ?? v.message}` : v.message))
+      .join("; ");
+    return `${baseMessage} — Issues: ${fixes}`;
+  }
+  return baseMessage;
+}
+
