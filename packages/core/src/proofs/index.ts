@@ -5,3 +5,4 @@ export * from "./reference";
 export * from "./finalizedRunGuard";
 export * from "./circuitInputSize";
 export * from "./duplicateCommitmentFixtures";
+export * from "./proofInputValidator";
