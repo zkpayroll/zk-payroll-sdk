@@ -316,3 +316,10 @@ export * from "./payroll/approvalInvalidation";
 
 // ── Proof Input Validation Boundaries (#916) ────────────────────────────────
 export * from "./proofs/inputValidation";
+
+// ── Auditor Grant Expiry Validation & Safe Errors (#904, #905, #906) ────────
+export * from "./audit/grantExpiryErrors";
+export * from "./audit/grantExpiryValidation";
+
+// ── Payout Batch Retry State Hardening (#903) ───────────────────────────────
+export * from "./batches/retryState";
