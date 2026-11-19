@@ -53,6 +53,12 @@ export type {
   ErrorCodeEntry,
 } from "./errors";
 export {
+  SafePayrollError,
+  InvalidRunIdentifierError,
+  AdministrativePauseError,
+  SettlementReceiptReplayError,
+} from "./errors";
+export {
   DEFAULT_CONFIG,
   ConfigPresets,
   ConfigBuilder,
