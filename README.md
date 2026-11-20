@@ -616,8 +616,14 @@ For settlement receipts, pass a `ReceiptReplayGuard` to
 hashes. See [Settlement receipt replay protection](packages/core/docs/settlement-receipt-replay.md).
 
 For draft updates and multi-signature authorization, the SDK invalidates approvals
-when post-approval edits or expiration occur without exposing payroll data. See
-[Payroll approval invalidation](packages/core/docs/approval-invalidation.md).
+when post-approval edits or expiration occur without exposing payroll data. Hardened
+lifecycle state transitions enforce terminal immutability for executed runs and
+optimistic concurrency versioning. See [Payroll approval invalidation](packages/core/docs/approval-invalidation.md).
+
+Before synthesizing ZK proofs, witness inputs undergo boundary and credential checks
+with state machine guarantees protecting against finalized run submissions. See
+[Proof input validation and lifecycle state handling](packages/core/docs/proof-input-validation.md).
+
 
 ## Auditor grant expiry validation
 

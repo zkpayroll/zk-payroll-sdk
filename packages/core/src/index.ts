@@ -311,21 +311,14 @@ export * from "./audit/organizationConfigChangeLedger";
 // Interrupted Payroll Run Recovery Controls (#742)
 export * from "./payroll/runRecovery";
 
-// ── Payroll Approval Invalidation (#920, #921, #922) ────────────────────────
+// ── Payroll Approval Invalidation (#920, #921, #922, #923) ──────────────────
 export * from "./payroll/approvalInvalidation";
+export * from "./payroll/approvalInvalidationState";
 
-// ── Proof Input Validation Boundaries (#916) ────────────────────────────────
+// ── Proof Input Validation & State (#914, #915, #916, #918) ─────────────────
 export * from "./proofs/inputValidation";
+export * from "./proofs/proofInputValidator";
+export * from "./proofs/proofInputState";
 
-// ── Auditor Grant Expiry Validation & Safe Errors (#904, #905, #906) ────────
-export * from "./audit/grantExpiryErrors";
-export * from "./audit/grantExpiryValidation";
-
-// ── Beneficiary Change Verification (#717, #897, #898) ─────────────────────
-export * from "./employees/beneficiaryChangeVerification";
-
-// ── Payout Batch Retry State Hardening (#903) ───────────────────────────────
-export * from "./batches/retryState";
-
-// ── Payout Batch Retry Typed Validation (#899) ──────────────────────────────
-export * from "./batches/retryValidation";
+// ── Typed Payroll Run Identifiers (#924) ────────────────────────────────────
+export * from "./identifiers";

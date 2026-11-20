@@ -330,3 +330,7 @@ export function assertApprovalsNotInvalidated(
     );
   }
 }
+
+// ── Hardened Approval Invalidation State Handling (#923) ─────────────────────
+export * from "./approvalInvalidationState";
+

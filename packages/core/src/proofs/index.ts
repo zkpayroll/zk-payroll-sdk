@@ -6,3 +6,5 @@ export * from "./finalizedRunGuard";
 export * from "./circuitInputSize";
 export * from "./duplicateCommitmentFixtures";
 export * from "./inputValidation";
+export * from "./proofInputValidator";
+export * from "./proofInputState";

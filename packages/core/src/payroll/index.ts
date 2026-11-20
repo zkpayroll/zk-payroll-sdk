@@ -46,4 +46,5 @@ export * from "./payoutVariance";
 export * from "./auditTrail";
 export * from "./latestApprovedRevisionReader";
 export * from "./approvalInvalidation";
+export * from "./approvalInvalidationState";
 export * from "../policies";
