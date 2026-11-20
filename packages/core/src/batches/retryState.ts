@@ -166,6 +166,7 @@ export const PayoutBatchRetryStateErrorCode = {
   INVALID_TIMESTAMP: "PAYOUT_BATCH_RETRY_INVALID_TIMESTAMP",
   TIMESTAMP_REGRESSION: "PAYOUT_BATCH_RETRY_TIMESTAMP_REGRESSION",
   NO_OP_UPDATE: "PAYOUT_BATCH_RETRY_NO_OP_UPDATE",
+  INVALID_HASH: "PAYOUT_BATCH_RETRY_INVALID_HASH",
 } as const;
 
 export type PayoutBatchRetryStateErrorCode =
@@ -210,6 +211,8 @@ export const PAYOUT_BATCH_RETRY_STATE_ERROR_MESSAGES: Record<
     "The retry-state timestamp cannot move backwards.",
   [PayoutBatchRetryStateErrorCode.NO_OP_UPDATE]:
     "No retry-state changes were detected in the proposed update.",
+  [PayoutBatchRetryStateErrorCode.INVALID_HASH]:
+    "The payout batch retry state hash is invalid or does not match its contents.",
 };
 
 /**
@@ -322,7 +325,15 @@ function resolveTimestamp(timestampMs: number | undefined, options: PayoutBatchR
   return resolved;
 }
 
-function computeStateHash(state: Omit<PayoutBatchRetryState, "hash">): string {
+/**
+ * Compute the SHA-256 hash of a retry-state revision.
+ *
+ * Exposed so persisted snapshots can be re-validated without applying a
+ * transition. `state` must not include its own `hash` field.
+ */
+export function computePayoutBatchRetryStateHash(
+  state: Omit<PayoutBatchRetryState, "hash">
+): string {
   const parts = [
     "zkpayroll:payout-batch-retry:v1",
     state.batchId,
@@ -349,7 +360,7 @@ function sameItemSet(a: readonly string[], b: readonly string[]): boolean {
 }
 
 function buildState(base: Omit<PayoutBatchRetryState, "hash">): PayoutBatchRetryState {
-  const hash = computeStateHash(base);
+  const hash = computePayoutBatchRetryStateHash(base);
   return Object.freeze({
     ...base,
     outstandingItemIds: Object.freeze([...base.outstandingItemIds]),
@@ -767,7 +778,7 @@ export class PayoutBatchRetryStateManager {
       }
 
       const { hash, ...rest } = entry;
-      if (computeStateHash(rest) !== hash) {
+      if (computePayoutBatchRetryStateHash(rest) !== hash) {
         return {
           valid: false,
           brokenAt: i + 1,

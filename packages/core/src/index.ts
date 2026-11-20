@@ -321,5 +321,11 @@ export * from "./proofs/inputValidation";
 export * from "./audit/grantExpiryErrors";
 export * from "./audit/grantExpiryValidation";
 
+// ── Beneficiary Change Verification (#717, #897, #898) ─────────────────────
+export * from "./employees/beneficiaryChangeVerification";
+
 // ── Payout Batch Retry State Hardening (#903) ───────────────────────────────
 export * from "./batches/retryState";
+
+// ── Payout Batch Retry Typed Validation (#899) ──────────────────────────────
+export * from "./batches/retryValidation";

@@ -648,6 +648,42 @@ if (!result.isValid) {
 `assertAuditorGrantActive()` throws a privacy-safe `AuditorGrantExpiredError`
 whose message contains only a redacted auditor identifier.
 
+## Beneficiary change verification
+
+Changing an employee payout destination is a two-step workflow: request the
+change with a caller-minted, time-boxed token, then present that token back
+before expiry. Reviews carry masked destination previews only, never the raw
+addresses.
+
+```typescript
+import {
+  requestBeneficiaryChange,
+  verifyBeneficiaryChange,
+  BeneficiaryChangeStateManager,
+} from "@zk-payroll/core";
+
+const requested = requestBeneficiaryChange({
+  requestId: "beneficiary-change-42",
+  employeeId: "EMP-001",
+  currentDestination: currentPayoutAddress,
+  proposedDestination: newPayoutAddress,
+  verificationToken: serverMintedToken,
+  expiresAt: Date.now() + 15 * 60 * 1000,
+});
+
+if (requested.ok) {
+  const verified = verifyBeneficiaryChange(requested.request, presentedToken, Date.now());
+  // Apply the change only when verified.ok is true.
+}
+```
+
+For persisted or multi-operator flows, `BeneficiaryChangeStateManager` records
+hash-chained revisions, rejects duplicate request ids, consumes a request
+exactly once, locks after repeated wrong tokens, and distinguishes `pending`,
+`verified`, `applied`, `expired`, and `locked` states. See
+[Beneficiary change verification](packages/core/docs/beneficiary-change-verification.md)
+for the lifecycle, error codes, and privacy guarantees.
+
 ## Payout batch retry state
 
 `PayoutBatchRetryStateManager` hardens retries of partially settled payout
@@ -670,6 +706,13 @@ retries.update({
 
 Stale writes, retry payloads that still contain settled payouts, and updates to
 closed batches are rejected with a typed `PayoutBatchRetryStateError`.
+
+Use `validatePayoutBatchRetryUpdate()` when a form or recovery tool should
+collect failures instead of catching exceptions, and
+`validatePayoutBatchRetryState()` before trusting a persisted snapshot. Both
+return structured issues; `assertValidPayoutBatchRetryUpdate()` and
+`assertValidPayoutBatchRetryState()` remain available for exception-based
+callers.
 
 ## Payroll run summaries
 
