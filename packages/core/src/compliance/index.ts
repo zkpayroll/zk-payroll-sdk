@@ -26,5 +26,3 @@ export {
 export type { HoldValidationIssue } from "./HoldRequestBuilder";
 
 export { ComplianceHoldValidationError, HoldReleaseAuthorizationError } from "./errors";
-
-export * from "./holdReasons";

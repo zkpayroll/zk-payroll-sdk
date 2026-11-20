@@ -1,5 +1,5 @@
-import { createHash } from "node:crypto";
-import { hashEmployeeReferenceId } from "../privacy/redaction";
+import { createHash } from 'node:crypto';
+import { hashEmployeeReferenceId } from '../privacy/redaction';
 
 export interface RawObligationInput {
   employeeId: string;
@@ -30,14 +30,14 @@ export function buildObligationSnapshotPlan(
   salt?: string
 ): ObligationSnapshotPlan {
   if (!Array.isArray(obligations) || obligations.length === 0) {
-    throw new Error("Obligations list cannot be empty");
+    throw new Error('Obligations list cannot be empty');
   }
 
   let total = 0n;
   const items: RedactedObligationItem[] = obligations.map((ob) => {
     total += ob.amount;
     return {
-      hashedEmployeeId: hashEmployeeReferenceId(ob.employeeId),
+      hashedEmployeeId: hashEmployeeReferenceId(ob.employeeId, salt),
       amount: ob.amount.toString(),
       asset: ob.asset,
       destinationAddress: ob.destinationAddress,
@@ -51,7 +51,7 @@ export function buildObligationSnapshotPlan(
     items,
   });
 
-  const snapshotHash = createHash("sha256").update(canonicalPayload).digest("hex");
+  const snapshotHash = createHash('sha256').update(canonicalPayload).digest('hex');
 
   return {
     planId,
