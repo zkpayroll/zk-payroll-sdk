@@ -148,10 +148,7 @@ export {
   getProofInputValidationErrorMessage,
   formatProofInputValidationError,
 } from "./proofs/errors";
-export type {
-  ProofVerificationErrorCodeType,
-  ProofInputViolation,
-} from "./proofs/errors";
+export type { ProofVerificationErrorCodeType, ProofInputViolation } from "./proofs/errors";
 export * from "./proofs/proofInputValidator";
 
 // ── Proof Verification Adapter ───────────────────────────────────────────────
@@ -315,10 +312,11 @@ export * from "./payroll/runRecovery";
 export * from "./payroll/approvalInvalidation";
 export * from "./payroll/approvalInvalidationState";
 
-// ── Proof Input Validation & State (#914, #915, #916, #918) ─────────────────
+// ── Proof Input Validation & State (#914, #915, #916, #918, #893) ───────────
 export * from "./proofs/inputValidation";
 export * from "./proofs/proofInputValidator";
 export * from "./proofs/proofInputState";
+export * from "./proofs/salaryCommitmentVersionState";
 
 // ── Typed Payroll Run Identifiers (#924) ────────────────────────────────────
 export * from "./identifiers";
@@ -326,3 +324,6 @@ export * from "./identifiers";
 // ── Treasury Balance Reservations State & Errors (#880, #883) ───────────────
 export * from "./treasury/reservationErrors";
 export * from "./treasury/reservationStateManager";
+
+// ── Employer Role Changes (#884, #885, #886) ───────────────────────────────
+export * from "./access";

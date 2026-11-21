@@ -20,23 +20,21 @@
 import { createHash } from "crypto";
 import { ZkPayrollError } from "../core/errors";
 import { isRunFinalized } from "./finalizedRunGuard";
-import {
-  ProofInputValidationError,
-  ProofInputValidationErrorCode,
-  ProofInputViolation,
-} from "./errors";
+import { ProofInputViolation } from "./errors";
 import { SanitizedProofInputWitness } from "./proofInputValidator";
+import {
+  assertWitnessCommitmentVersion,
+  SalaryCommitmentVersion,
+  SalaryCommitmentVersionError,
+  SalaryCommitmentVersionErrorCode,
+  parseSalaryCommitmentVersion,
+} from "./salaryCommitmentVersionState";
 
 /**
  * Valid lifecycle states for proof input validation sessions.
  */
 export type ProofInputLifecycleState =
-  | "unvalidated"
-  | "validating"
-  | "validated"
-  | "rejected"
-  | "committed"
-  | "expired";
+  "unvalidated" | "validating" | "validated" | "rejected" | "committed" | "expired";
 
 /**
  * Valid state transitions for proof input validation.
@@ -68,6 +66,8 @@ export interface ProofInputSessionRecord {
   readonly rejectedAtMs?: number;
   readonly violations?: readonly ProofInputViolation[];
   readonly sanitizedWitness?: Readonly<SanitizedProofInputWitness>;
+  readonly commitmentVersion?: SalaryCommitmentVersion;
+  readonly commitmentSnapshotId?: string;
   readonly stateHash: string;
 }
 
@@ -100,7 +100,11 @@ export class ProofInputStateError extends ZkPayrollError {
   ) {
     const safeContext: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(context)) {
-      if (!/(salary|recipient|amount|secret|witness|private|key)/i.test(k)) {
+      if (
+        !/(salary|recipient|amount|secret|witness|private|key|nullifier|commitment|digest|hash|blinder|preimage)/i.test(
+          k
+        )
+      ) {
         if (typeof v === "string" || typeof v === "number" || typeof v === "boolean") {
           safeContext[k] = v;
         }
@@ -118,8 +122,10 @@ export class ProofInputStateError extends ZkPayrollError {
 export function computeProofInputStateHash(
   record: Omit<ProofInputSessionRecord, "stateHash">
 ): string {
+  const hasCommitmentBinding =
+    record.commitmentVersion !== undefined || record.commitmentSnapshotId !== undefined;
   const parts = [
-    "zkpayroll:proof-input-state:v1",
+    hasCommitmentBinding ? "zkpayroll:proof-input-state:v2" : "zkpayroll:proof-input-state:v1",
     record.sessionId,
     record.runId ?? "",
     record.circuitId,
@@ -130,6 +136,9 @@ export function computeProofInputStateHash(
     String(record.violations?.length ?? 0),
     record.sanitizedWitness ? "has_witness" : "no_witness",
   ];
+  if (hasCommitmentBinding) {
+    parts.push(String(record.commitmentVersion ?? ""), record.commitmentSnapshotId ?? "");
+  }
   return createHash("sha256").update(parts.join("|")).digest("hex");
 }
 
@@ -148,9 +157,30 @@ export function createProofInputSession(params: {
   sessionId: string;
   circuitId?: string;
   runId?: string;
+  commitmentVersion?: SalaryCommitmentVersion | number | string;
+  commitmentSnapshotId?: string;
   now?: number;
 }): ProofInputSessionRecord {
   const nowMs = params.now ?? Date.now();
+  if ((params.commitmentVersion === undefined) !== (params.commitmentSnapshotId === undefined)) {
+    throw new SalaryCommitmentVersionError(
+      "Salary commitment version and snapshot identifier must be supplied together.",
+      SalaryCommitmentVersionErrorCode.INVALID_IDENTIFIER,
+      { field: "commitmentVersion" }
+    );
+  }
+  const commitmentVersion =
+    params.commitmentVersion === undefined
+      ? undefined
+      : parseSalaryCommitmentVersion(params.commitmentVersion);
+  const commitmentSnapshotId = params.commitmentSnapshotId?.trim();
+  if (commitmentSnapshotId !== undefined && commitmentSnapshotId.length === 0) {
+    throw new SalaryCommitmentVersionError(
+      "Salary commitment snapshot identifier must be non-empty.",
+      SalaryCommitmentVersionErrorCode.INVALID_IDENTIFIER,
+      { field: "commitmentSnapshotId" }
+    );
+  }
   const base = {
     sessionId: params.sessionId,
     runId: params.runId,
@@ -159,6 +189,8 @@ export function createProofInputSession(params: {
     version: 1,
     createdAtMs: nowMs,
     updatedAtMs: nowMs,
+    commitmentVersion,
+    commitmentSnapshotId,
   };
   const stateHash = computeProofInputStateHash(base);
   return Object.freeze({
@@ -183,7 +215,11 @@ export function transitionToValidating(
     throw new ProofInputStateError(
       "Concurrent modification detected during proof input validation start.",
       ProofInputStateErrorCode.CONCURRENT_STATE_MODIFICATION,
-      { sessionId: session.sessionId, expectedVersion: options.expectedVersion, currentVersion: session.version }
+      {
+        sessionId: session.sessionId,
+        expectedVersion: options.expectedVersion,
+        currentVersion: session.version,
+      }
     );
   }
 
@@ -228,7 +264,11 @@ export function transitionToValidated(
     throw new ProofInputStateError(
       "Concurrent modification detected during witness validation completion.",
       ProofInputStateErrorCode.CONCURRENT_STATE_MODIFICATION,
-      { sessionId: session.sessionId, expectedVersion: options.expectedVersion, currentVersion: session.version }
+      {
+        sessionId: session.sessionId,
+        expectedVersion: options.expectedVersion,
+        currentVersion: session.version,
+      }
     );
   }
 
@@ -238,6 +278,10 @@ export function transitionToValidated(
       ProofInputStateErrorCode.ILLEGAL_STATE_TRANSITION,
       { sessionId: session.sessionId, currentState: session.state }
     );
+  }
+
+  if (session.commitmentVersion !== undefined) {
+    assertWitnessCommitmentVersion(sanitizedWitness, session.commitmentVersion);
   }
 
   const nowMs = options.now ?? Date.now();
@@ -269,11 +313,19 @@ export function transitionToRejected(
     throw new ProofInputStateError(
       "Concurrent modification detected during witness rejection.",
       ProofInputStateErrorCode.CONCURRENT_STATE_MODIFICATION,
-      { sessionId: session.sessionId, expectedVersion: options.expectedVersion, currentVersion: session.version }
+      {
+        sessionId: session.sessionId,
+        expectedVersion: options.expectedVersion,
+        currentVersion: session.version,
+      }
     );
   }
 
-  if (session.state === "committed" || session.state === "rejected" || session.state === "expired") {
+  if (
+    session.state === "committed" ||
+    session.state === "rejected" ||
+    session.state === "expired"
+  ) {
     throw new ProofInputStateError(
       `Cannot reject session: session is already in terminal '${session.state}' state.`,
       ProofInputStateErrorCode.ILLEGAL_STATE_TRANSITION,
@@ -309,7 +361,11 @@ export function transitionToCommitted(
     throw new ProofInputStateError(
       "Concurrent modification detected during witness commitment.",
       ProofInputStateErrorCode.CONCURRENT_STATE_MODIFICATION,
-      { sessionId: session.sessionId, expectedVersion: options.expectedVersion, currentVersion: session.version }
+      {
+        sessionId: session.sessionId,
+        expectedVersion: options.expectedVersion,
+        currentVersion: session.version,
+      }
     );
   }
 
