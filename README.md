@@ -1305,13 +1305,10 @@ full contributor workflow, pre-commit hooks, and troubleshooting.
 
 ---
 
-## Employer Role Changes & Administrative Access (#884, #885, #886)
+## Treasury Balance Reservations & State Hardening (#880, #881, #882, #883)
 
-The SDK provides strongly-typed validation and privacy-preserving error handling for employer administrative roles:
-- **Roles**: `EMPLOYER_ADMIN`, `PAYROLL_OPERATOR`, `AUDITOR`, `SIGNER`.
-- **Validation**: Enforces valid Stellar public key formatting, role constraints, expiration horizons, and self-admin preservation via `validateEmployerRoleChange()` and `assertValidEmployerRoleChange()`.
-- **Safe Errors**: Structured error handling (`EmployerRoleError`) ensuring private employee identifiers and salary data are never exposed.
-
-## Salary Commitment Versions (#892)
-
-For full architectural details on cryptographic salary commitments, see [`packages/core/docs/salary-commitment-versions.md`](packages/core/docs/salary-commitment-versions.md) covering V1 (Pedersen), V2 (Poseidon bound), and V3 (Multi-Asset) specifications.
+The SDK provides immutable, versioned state management and safe error handling for treasury reservations:
+- **State Machine**: Tracks reservation lifecycles (`ACTIVE` -> `COMMITTED` / `RELEASED` / `EXPIRED`) with cryptographic SHA-256 state hash chaining via `TreasuryReservationStateManager`.
+- **Double-Spend Protection**: Idempotent commits and releases prevent overallocation and duplicate disbursements.
+- **Safe Error Model**: `SafeTreasuryReservationError` guarantees corporate treasury reserves, individual payouts, and proprietary balances are never leaked.
+- **Documentation**: See [`packages/core/docs/treasury-reservations.md`](packages/core/docs/treasury-reservations.md).

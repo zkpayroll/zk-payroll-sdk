@@ -323,5 +323,6 @@ export * from "./proofs/proofInputState";
 // ── Typed Payroll Run Identifiers (#924) ────────────────────────────────────
 export * from "./identifiers";
 
-// ── Employer Role Changes (#884, #885, #886) ───────────────────────────────
-export * from "./access";
+// ── Treasury Balance Reservations State & Errors (#880, #883) ───────────────
+export * from "./treasury/reservationErrors";
+export * from "./treasury/reservationStateManager";
