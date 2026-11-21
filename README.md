@@ -1302,3 +1302,16 @@ npm run test -w packages/core
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md) and [docs/setup.md](./docs/setup.md) for
 full contributor workflow, pre-commit hooks, and troubleshooting.
+
+---
+
+## Employer Role Changes & Administrative Access (#884, #885, #886)
+
+The SDK provides strongly-typed validation and privacy-preserving error handling for employer administrative roles:
+- **Roles**: `EMPLOYER_ADMIN`, `PAYROLL_OPERATOR`, `AUDITOR`, `SIGNER`.
+- **Validation**: Enforces valid Stellar public key formatting, role constraints, expiration horizons, and self-admin preservation via `validateEmployerRoleChange()` and `assertValidEmployerRoleChange()`.
+- **Safe Errors**: Structured error handling (`EmployerRoleError`) ensuring private employee identifiers and salary data are never exposed.
+
+## Salary Commitment Versions (#892)
+
+For full architectural details on cryptographic salary commitments, see [`packages/core/docs/salary-commitment-versions.md`](packages/core/docs/salary-commitment-versions.md) covering V1 (Pedersen), V2 (Poseidon bound), and V3 (Multi-Asset) specifications.

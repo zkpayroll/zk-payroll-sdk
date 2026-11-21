@@ -322,3 +322,6 @@ export * from "./proofs/proofInputState";
 
 // ── Typed Payroll Run Identifiers (#924) ────────────────────────────────────
 export * from "./identifiers";
+
+// ── Employer Role Changes (#884, #885, #886) ───────────────────────────────
+export * from "./access";
