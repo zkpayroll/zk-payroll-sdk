@@ -1312,3 +1312,20 @@ The SDK provides immutable, versioned state management and safe error handling f
 - **Double-Spend Protection**: Idempotent commits and releases prevent overallocation and duplicate disbursements.
 - **Safe Error Model**: `SafeTreasuryReservationError` guarantees corporate treasury reserves, individual payouts, and proprietary balances are never leaked.
 - **Documentation**: See [`packages/core/docs/treasury-reservations.md`](packages/core/docs/treasury-reservations.md).
+
+---
+
+## Employer Role Changes & Administrative Access (#884, #885, #886)
+
+The SDK provides strongly-typed validation and privacy-preserving error handling for employer administrative roles:
+- **Roles**: `EMPLOYER_ADMIN`, `PAYROLL_OPERATOR`, `AUDITOR`, `SIGNER`.
+- **Validation**: Enforces valid Stellar public key formatting, role constraints, expiration horizons, and self-admin preservation via `validateEmployerRoleChange()` and `assertValidEmployerRoleChange()`.
+- **Safe Errors**: Structured error handling (`EmployerRoleError`) ensuring private employee identifiers and salary data are never exposed.
+
+## Salary Commitment Versions & State Hardening (#892, #893)
+
+The SDK tracks salary commitment versions (V1 Pedersen, V2 Poseidon bound, V3 multi-asset) throughout proof input handling:
+- **Version State**: `SalaryCommitmentVersionStateManager` keeps immutable, SHA-256 hash-chained snapshots, allows same-or-newer versions only, and enforces single-use nullifiers.
+- **Witness Checks**: Version headers are validated before witness compilation and bound to proof input session integrity hashes.
+- **Safe Errors**: `SalaryCommitmentVersionError` provides actionable codes without exposing salaries, preimages, employees, nullifiers, or digests.
+- **Documentation**: See [`packages/core/docs/salary-commitment-versions.md`](packages/core/docs/salary-commitment-versions.md).

@@ -47,3 +47,42 @@ $$C_{v3} = \text{Poseidon}(\text{amount}, \text{assetTag}, \text{blinder}, \text
    Blinders must be generated using cryptographically secure random number generators (CSPRNG) with at least 256 bits of entropy.
 3. **Privacy Invariant**:
    Commitment preimage reconstruction is strictly performed in the client enclave or zero-knowledge worker; preimage arguments are never emitted in telemetry, error payloads, or public RPC calls.
+
+---
+
+## Version State Handling (#893)
+
+`SalaryCommitmentVersionStateManager` in `packages/core/src/proofs/salaryCommitmentVersionState.ts` enforces the version header contract at proof-input time. Only typed versions `1`, `2`, and `3` (also accepted as `V1`, `V2`, `V3` headers) are supported; unknown, fractional, or out-of-range versions fail closed before witness compilation.
+
+### Snapshot model
+
+Each registration creates an immutable, SHA-256 hash-chained snapshot:
+
+| Field | Purpose |
+| :--- | :--- |
+| `snapshotId` / `scopeId` | Opaque identifiers for the snapshot and its payroll run scope. |
+| `commitmentVersion` | The salary commitment version (`1`, `2`, or `3`). |
+| `commitmentDigest` | A 32-byte hexadecimal digest of the commitment, never the salary or preimage. |
+| `nullifierDigest` | Optional digest of the proof nullifier, accepted only in hashed form. |
+| `status` | `ACTIVE`, `SUPERSEDED`, or `RETIRED`. |
+| `revision` | Optimistic-concurrency counter, distinct from the commitment version. |
+| `previousHash` / `stateHash` | Tamper-evident chain link and snapshot integrity fingerprint. |
+
+### State rules
+
+1. `registerSnapshot()` creates an `ACTIVE` snapshot; re-registering the identical snapshot is idempotent.
+2. A new snapshot for the same scope may keep or upgrade the active version (`V1 -> V2 -> V3`). Downgrades and same-version digest rewrites are rejected; the prior snapshot becomes `SUPERSEDED`.
+3. A nullifier digest is single-use and cannot be rebound to another snapshot, including after supersession.
+4. `assertWitnessVersion()` checks the active snapshot, its integrity hash, optional expected revision, and the witness version header before circuit synthesis.
+5. `retireSnapshot()` moves the active snapshot to a terminal `RETIRED` state; later assertions for that scope fail.
+6. `verifyIntegrity()` recomputes the snapshot hash to detect tampering.
+
+### Proof input session binding
+
+`createProofInputSession()` accepts optional `commitmentVersion` and `commitmentSnapshotId` values, which must be supplied together. They are bound into the session integrity hash using hash domain `v2`; sessions without commitment binding retain the original `v1` hash. `transitionToValidated()` requires the sanitized witness to carry a matching `commitmentVersion` header whenever the session is version-bound.
+
+### Safe error model
+
+`SalaryCommitmentVersionError` extends `ZkPayrollError` and exposes stable `versionCode` values: `SALARY_COMMITMENT_VERSION_UNSUPPORTED`, `_MISMATCH`, `_HEADER_MISSING`, `_DOWNGRADE`, `SALARY_COMMITMENT_DIGEST_MISMATCH`, `SALARY_COMMITMENT_SNAPSHOT_NOT_FOUND`, `_NOT_ACTIVE`, `SALARY_COMMITMENT_SNAPSHOT_DUPLICATE`, `SALARY_COMMITMENT_NULLIFIER_REUSE`, `SALARY_COMMITMENT_STALE_REVISION`, `SALARY_COMMITMENT_STATE_INTEGRITY_COMPROMISED`, `SALARY_COMMITMENT_INVALID_IDENTIFIER`, and `SALARY_COMMITMENT_INVALID_DIGEST`.
+
+Messages give a concrete recovery action and never include salary values, employee identifiers, commitment preimages, raw nullifiers, or digests; error contexts allowlist only non-sensitive diagnostic keys.

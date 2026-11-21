@@ -8,3 +8,4 @@ export * from "./duplicateCommitmentFixtures";
 export * from "./inputValidation";
 export * from "./proofInputValidator";
 export * from "./proofInputState";
+export * from "./salaryCommitmentVersionState";
