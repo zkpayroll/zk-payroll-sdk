@@ -1337,3 +1337,10 @@ Maintains state consistency and safe error management across batch payouts and p
 - Strongly typed payroll period request validation logic (`packages/core/src/payroll/periodValidation.ts`)
 - Safe custom error types with actionable messages for payroll periods (`packages/core/src/payroll/periodErrors.ts`)
 - Payroll period state manager for transitions and queries (`packages/core/src/payroll/periodStateManager.ts`)
+
+## Payroll Period Boundaries & Treasury Validation
+
+Provides robust validation and documentation for payroll period boundaries and treasury reservations:
+- Period boundary edge cases documentation and comprehensive test suite (`packages/core/docs/payroll-period-boundaries.md`, `packages/core/tests/payroll/payroll-period-boundaries.test.ts`)
+- Employer role change documentation and edge cases (`packages/core/docs/employer-role-changes.md`)
+- Strongly typed treasury reservation validation logic (`packages/core/src/treasury/reservationValidation.ts`)

@@ -333,3 +333,6 @@ export * from "./batches/partialBatchFailure";
 export * from "./payroll/periodValidation";
 export * from "./payroll/periodErrors";
 export * from "./payroll/periodStateManager";
+
+// ── Treasury Reservation Validation (#879) ──────────────────────────────────
+export * from "./treasury/reservationValidation";
