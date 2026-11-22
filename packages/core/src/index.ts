@@ -312,7 +312,7 @@ export * from "./payroll/runRecovery";
 export * from "./payroll/approvalInvalidation";
 export * from "./payroll/approvalInvalidationState";
 
-// ── Proof Input Validation & State (#914, #915, #916, #918, #893) ───────────
+// ── Proof Input Validation & State (#914, #915, #916, #918, #889, #890, #893) ─
 export * from "./proofs/inputValidation";
 export * from "./proofs/proofInputValidator";
 export * from "./proofs/proofInputState";
@@ -325,7 +325,7 @@ export * from "./identifiers";
 export * from "./treasury/reservationErrors";
 export * from "./treasury/reservationStateManager";
 
-// ── Employer Role Changes (#884, #885, #886) ───────────────────────────────
+// ── Employer Role Changes (#884, #885, #886, #888) ─────────────────────────
 export * from "./access";
 
 // ── Partial Batch Failure Recovery & Payroll Period State Management (#856, #874, #875, #878) ──

@@ -1315,19 +1315,22 @@ The SDK provides immutable, versioned state management and safe error handling f
 
 ---
 
-## Employer Role Changes & Administrative Access (#884, #885, #886)
+## Employer Role Changes & Administrative Access (#884, #885, #886, #888)
 
-The SDK provides strongly-typed validation and privacy-preserving error handling for employer administrative roles:
+The SDK provides strongly-typed validation, hardened state handling, and privacy-preserving error handling for employer administrative roles:
 - **Roles**: `EMPLOYER_ADMIN`, `PAYROLL_OPERATOR`, `AUDITOR`, `SIGNER`.
 - **Validation**: Enforces valid Stellar public key formatting, role constraints, expiration horizons, and self-admin preservation via `validateEmployerRoleChange()` and `assertValidEmployerRoleChange()`.
+- **Role State**: `EmployerRoleStateManager` stores immutable, SHA-256 hash-chained grant/revoke/transfer records with idempotency, revision checks, atomic transfers, last-admin protection, and scope integrity verification.
 - **Safe Errors**: Structured error handling (`EmployerRoleError`) ensuring private employee identifiers and salary data are never exposed.
+- **Documentation**: See [`packages/core/docs/employer-role-changes.md`](packages/core/docs/employer-role-changes.md).
 
-## Salary Commitment Versions & State Hardening (#892, #893)
+## Salary Commitment Versions & State Hardening (#889, #890, #891, #892, #893)
 
 The SDK tracks salary commitment versions (V1 Pedersen, V2 Poseidon bound, V3 multi-asset) throughout proof input handling:
 - **Version State**: `SalaryCommitmentVersionStateManager` keeps immutable, SHA-256 hash-chained snapshots, allows same-or-newer versions only, and enforces single-use nullifiers.
+- **Typed Validation**: `validateSalaryCommitmentVersion()` and `validateWitnessCommitmentVersion()` return typed results instead of leaking rejected values; assertion helpers are available for exception-based flows.
 - **Witness Checks**: Version headers are validated before witness compilation and bound to proof input session integrity hashes.
-- **Safe Errors**: `SalaryCommitmentVersionError` provides actionable codes without exposing salaries, preimages, employees, nullifiers, or digests.
+- **Safe Errors**: `SalaryCommitmentVersionError` and `SalaryCommitmentVersionValidationError` provide actionable codes without exposing salaries, preimages, employees, nullifiers, or digests.
 - **Documentation**: See [`packages/core/docs/salary-commitment-versions.md`](packages/core/docs/salary-commitment-versions.md).
 
 ## Partial Batch Failure Recovery & Payroll Period State Management
