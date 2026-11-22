@@ -86,3 +86,27 @@ Each registration creates an immutable, SHA-256 hash-chained snapshot:
 `SalaryCommitmentVersionError` extends `ZkPayrollError` and exposes stable `versionCode` values: `SALARY_COMMITMENT_VERSION_UNSUPPORTED`, `_MISMATCH`, `_HEADER_MISSING`, `_DOWNGRADE`, `SALARY_COMMITMENT_DIGEST_MISMATCH`, `SALARY_COMMITMENT_SNAPSHOT_NOT_FOUND`, `_NOT_ACTIVE`, `SALARY_COMMITMENT_SNAPSHOT_DUPLICATE`, `SALARY_COMMITMENT_NULLIFIER_REUSE`, `SALARY_COMMITMENT_STALE_REVISION`, `SALARY_COMMITMENT_STATE_INTEGRITY_COMPROMISED`, `SALARY_COMMITMENT_INVALID_IDENTIFIER`, and `SALARY_COMMITMENT_INVALID_DIGEST`.
 
 Messages give a concrete recovery action and never include salary values, employee identifiers, commitment preimages, raw nullifiers, or digests; error contexts allowlist only non-sensitive diagnostic keys.
+
+### Typed Version Validation (#889)
+
+`validateSalaryCommitmentVersion(value, expected?)` and `validateWitnessCommitmentVersion(witness, expected?)`
+in `packages/core/src/proofs/salaryCommitmentVersionValidation.ts` return a discriminated result:
+`{ ok: true, version, issues: [] }` or `{ ok: false, version: undefined, issues }`. Rejected values are
+never copied into the result, so a malformed header cannot smuggle salary or preimage data into logs.
+`assertValidSalaryCommitmentVersion()` and `assertValidWitnessCommitmentVersion()` provide throwing
+variants for call sites that prefer exceptions.
+
+### Safe Validation Errors (#890)
+
+`SalaryCommitmentVersionValidationError` extends `SalaryCommitmentVersionError` and exposes a frozen
+`issues` array with `HEADER_MISSING`, `TYPE_INVALID`, `UNSUPPORTED`, and `MISMATCH` codes. Each issue
+is produced by `formatSafeSalaryCommitmentVersionIssue()` with a fixed, actionable message. Issue codes
+map to the stable `SalaryCommitmentVersionErrorCode` values used by snapshot state management, and
+context filtering drops salary, employee, nullifier, digest, and hash keys.
+
+### Boundary Coverage (#891)
+
+Focused tests in `packages/core/tests/proofs/salary-commitment-version-boundaries.test.ts` cover
+version headers at both ends (`1`/`3`), string normalization (`v1`, ` V2 `, `V3`), unsupported and
+wrong-typed headers, missing witness headers, mismatch against an active snapshot, exact and
+off-by-one digest lengths, revision `0` versus `1`, nullifier reuse, and the retired-snapshot state.
