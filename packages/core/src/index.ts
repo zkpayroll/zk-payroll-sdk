@@ -327,3 +327,9 @@ export * from "./treasury/reservationStateManager";
 
 // ── Employer Role Changes (#884, #885, #886) ───────────────────────────────
 export * from "./access";
+
+// ── Partial Batch Failure Recovery & Payroll Period State Management (#856, #874, #875, #878) ──
+export * from "./batches/partialBatchFailure";
+export * from "./payroll/periodValidation";
+export * from "./payroll/periodErrors";
+export * from "./payroll/periodStateManager";

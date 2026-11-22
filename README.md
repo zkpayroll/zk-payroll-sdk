@@ -1329,3 +1329,11 @@ The SDK tracks salary commitment versions (V1 Pedersen, V2 Poseidon bound, V3 mu
 - **Witness Checks**: Version headers are validated before witness compilation and bound to proof input session integrity hashes.
 - **Safe Errors**: `SalaryCommitmentVersionError` provides actionable codes without exposing salaries, preimages, employees, nullifiers, or digests.
 - **Documentation**: See [`packages/core/docs/salary-commitment-versions.md`](packages/core/docs/salary-commitment-versions.md).
+
+## Partial Batch Failure Recovery & Payroll Period State Management
+
+Maintains state consistency and safe error management across batch payouts and payroll periods:
+- State consistency during partial batch failure recovery with test suite (`packages/core/src/batches/partialBatchFailure.ts`, `packages/core/tests/batches/partial-batch-failure.test.ts`)
+- Strongly typed payroll period request validation logic (`packages/core/src/payroll/periodValidation.ts`)
+- Safe custom error types with actionable messages for payroll periods (`packages/core/src/payroll/periodErrors.ts`)
+- Payroll period state manager for transitions and queries (`packages/core/src/payroll/periodStateManager.ts`)
