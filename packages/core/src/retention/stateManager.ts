@@ -43,7 +43,7 @@ const SENSITIVE_KEYWORD_REGEX = /\b(salary|wage|balance|ssn|secret|private[_-]?k
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-function computePolicyHash(policy: Omit<RetentionPolicy, "hash">): string {
+export function computeRetentionPolicyHash(policy: Omit<RetentionPolicy, "hash">): string {
   const parts = [
     "zkpayroll:retention-policy:v1",
     policy.policyId,
@@ -291,7 +291,8 @@ export function applyRetentionPolicyUpdate(
 
   // 8. Legal Hold Invariant Protection
   const currentLegalHold = current ? current.legalHoldActive : false;
-  const targetLegalHold = input.legalHoldActive !== undefined ? Boolean(input.legalHoldActive) : currentLegalHold;
+  const targetLegalHold =
+    input.legalHoldActive !== undefined ? Boolean(input.legalHoldActive) : currentLegalHold;
 
   if (currentLegalHold) {
     if (retentionDays < current!.retentionDays) {
@@ -349,7 +350,7 @@ export function applyRetentionPolicyUpdate(
     ...(input.metadata ? { metadata: sanitizeMetadata(input.metadata) } : {}),
   };
 
-  const hash = computePolicyHash(policyWithoutHash);
+  const hash = computeRetentionPolicyHash(policyWithoutHash);
   const updatedPolicy: RetentionPolicy = Object.freeze({
     ...policyWithoutHash,
     hash,
@@ -410,7 +411,11 @@ export class RetentionPolicyStateManager {
     return Object.freeze([...(this.history.get(policyId) ?? [])]);
   }
 
-  public verifyHistoryIntegrity(policyId: string): { valid: boolean; brokenAt?: number; reason?: string } {
+  public verifyHistoryIntegrity(policyId: string): {
+    valid: boolean;
+    brokenAt?: number;
+    reason?: string;
+  } {
     const hist = this.history.get(policyId);
     if (!hist || hist.length === 0) {
       return { valid: true };
@@ -429,7 +434,7 @@ export class RetentionPolicyStateManager {
       }
 
       const { hash, ...rest } = entry;
-      const recomputed = computePolicyHash(rest);
+      const recomputed = computeRetentionPolicyHash(rest);
       if (recomputed !== hash) {
         return {
           valid: false,

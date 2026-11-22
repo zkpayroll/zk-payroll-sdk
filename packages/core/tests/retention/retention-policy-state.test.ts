@@ -43,7 +43,9 @@ describe("Hardened Retention Policy State Handling (#913)", () => {
     });
 
     it("applies valid version transition incrementing version and linking hashes", () => {
-      const initial = applyRetentionPolicyUpdate(null, sampleCreationInput, { now: fixedNow }).updatedPolicy;
+      const initial = applyRetentionPolicyUpdate(null, sampleCreationInput, {
+        now: fixedNow,
+      }).updatedPolicy;
 
       const updateInput: RetentionPolicyUpdateInput = {
         policyId: "org-retention-01",
@@ -91,12 +93,18 @@ describe("Hardened Retention Policy State Handling (#913)", () => {
   describe("Failure & Concurrency Guard Cases", () => {
     it("rejects creation if expectedVersion is not 0", () => {
       expect(() =>
-        applyRetentionPolicyUpdate(null, { ...sampleCreationInput, expectedVersion: 1 }, { now: fixedNow })
+        applyRetentionPolicyUpdate(
+          null,
+          { ...sampleCreationInput, expectedVersion: 1 },
+          { now: fixedNow }
+        )
       ).toThrow(RetentionPolicyError);
     });
 
     it("rejects update when expectedVersion does not match current version (concurrency conflict)", () => {
-      const initial = applyRetentionPolicyUpdate(null, sampleCreationInput, { now: fixedNow }).updatedPolicy;
+      const initial = applyRetentionPolicyUpdate(null, sampleCreationInput, {
+        now: fixedNow,
+      }).updatedPolicy;
       expect(() =>
         applyRetentionPolicyUpdate(
           initial,
@@ -114,16 +122,26 @@ describe("Hardened Retention Policy State Handling (#913)", () => {
 
     it("rejects empty actor or reason", () => {
       expect(() =>
-        applyRetentionPolicyUpdate(null, { ...sampleCreationInput, updatedBy: "" }, { now: fixedNow })
+        applyRetentionPolicyUpdate(
+          null,
+          { ...sampleCreationInput, updatedBy: "" },
+          { now: fixedNow }
+        )
       ).toThrow(RetentionPolicyError);
 
       expect(() =>
-        applyRetentionPolicyUpdate(null, { ...sampleCreationInput, updateReason: "   " }, { now: fixedNow })
+        applyRetentionPolicyUpdate(
+          null,
+          { ...sampleCreationInput, updateReason: "   " },
+          { now: fixedNow }
+        )
       ).toThrow(RetentionPolicyError);
     });
 
     it("rejects no-op updates where no configuration changed", () => {
-      const initial = applyRetentionPolicyUpdate(null, sampleCreationInput, { now: fixedNow }).updatedPolicy;
+      const initial = applyRetentionPolicyUpdate(null, sampleCreationInput, {
+        now: fixedNow,
+      }).updatedPolicy;
       expect(() =>
         applyRetentionPolicyUpdate(
           initial,
@@ -142,7 +160,9 @@ describe("Hardened Retention Policy State Handling (#913)", () => {
     });
 
     it("rejects updates to superseded terminal policies", () => {
-      const initial = applyRetentionPolicyUpdate(null, sampleCreationInput, { now: fixedNow }).updatedPolicy;
+      const initial = applyRetentionPolicyUpdate(null, sampleCreationInput, {
+        now: fixedNow,
+      }).updatedPolicy;
       const superseded = applyRetentionPolicyUpdate(
         initial,
         {
@@ -268,12 +288,16 @@ describe("Hardened Retention Policy State Handling (#913)", () => {
     });
 
     it("isRetentionPolicyError and getRetentionPolicyErrorMessage work properly", () => {
-      const err = new RetentionPolicyError("Version conflict", RetentionPolicyErrorCode.VERSION_MISMATCH);
+      const err = new RetentionPolicyError(
+        "Version conflict",
+        RetentionPolicyErrorCode.VERSION_MISMATCH
+      );
       expect(isRetentionPolicyError(err)).toBe(true);
       expect(isRetentionPolicyError(new Error("Generic"))).toBe(false);
       expect(getRetentionPolicyErrorMessage(err)).toBe("Version conflict");
-      expect(getRetentionPolicyErrorMessage({ code: RetentionPolicyErrorCode.ACTOR_REQUIRED }))
-        .toBe(RETENTION_POLICY_ERROR_MESSAGES[RetentionPolicyErrorCode.ACTOR_REQUIRED]);
+      expect(
+        getRetentionPolicyErrorMessage({ code: RetentionPolicyErrorCode.ACTOR_REQUIRED })
+      ).toBe(RETENTION_POLICY_ERROR_MESSAGES[RetentionPolicyErrorCode.ACTOR_REQUIRED]);
       expect(getRetentionPolicyErrorMessage(null)).toMatch(/retention policy error/i);
     });
 

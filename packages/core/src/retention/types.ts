@@ -10,12 +10,7 @@
 /**
  * Valid lifecycle states for a retention policy.
  */
-export const RETENTION_POLICY_STATUSES = [
-  "draft",
-  "active",
-  "superseded",
-  "suspended",
-] as const;
+export const RETENTION_POLICY_STATUSES = ["draft", "active", "superseded", "suspended"] as const;
 
 export type RetentionPolicyStatus = (typeof RETENTION_POLICY_STATUSES)[number];
 

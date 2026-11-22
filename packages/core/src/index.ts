@@ -336,3 +336,6 @@ export * from "./payroll/periodStateManager";
 
 // ── Treasury Reservation Validation (#879) ──────────────────────────────────
 export * from "./treasury/reservationValidation";
+
+// ── Retention Policy Updates (#909, #910, #911, #912) ───────────────────────
+export * from "./retention";

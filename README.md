@@ -1333,6 +1333,33 @@ The SDK tracks salary commitment versions (V1 Pedersen, V2 Poseidon bound, V3 mu
 - **Safe Errors**: `SalaryCommitmentVersionError` and `SalaryCommitmentVersionValidationError` provide actionable codes without exposing salaries, preimages, employees, nullifiers, or digests.
 - **Documentation**: See [`packages/core/docs/salary-commitment-versions.md`](packages/core/docs/salary-commitment-versions.md).
 
+## Retention Policy Updates & Safe Validation (#909, #910, #911, #912)
+
+The SDK provides hardened, privacy-preserving retention policy update handling:
+- **Typed validation**: `validateRetentionPolicyUpdate()` and `validateRetentionPolicyState()` accumulate structural, compliance, statutory-floor, legal-hold, and timestamp issues without leaking sensitive values. Throwing `assert*` variants are available for fail-fast flows.
+- **Safe errors**: `RetentionPolicyError` carries stable `retentionCode` values and structured `issues`. `formatRetentionPolicyError()` and `redactPolicyActorId()` produce actionable diagnostics without exposing salaries, employee identifiers, secrets, or full actor IDs.
+- **State hardening**: `applyRetentionPolicyUpdate()` and `RetentionPolicyStateManager` enforce optimistic concurrency, hash-chained immutable revisions, statutory floor checks, and legal-hold protections.
+- **Documentation**: See [`packages/core/docs/retention-policy-updates.md`](packages/core/docs/retention-policy-updates.md).
+
+```typescript
+import {
+  validateRetentionPolicyUpdate,
+  formatRetentionPolicyError,
+} from "@zk-payroll/core";
+
+const result = validateRetentionPolicyUpdate(currentPolicy, {
+  policyId: "org-retention-default",
+  expectedVersion: currentPolicy.version,
+  retentionDays: 2555,
+  updatedBy: "compliance-officer-01",
+  updateReason: "Maintain 7-year statutory retention window",
+});
+
+if (!result.isValid) {
+  console.error(formatRetentionPolicyError(result.issues));
+}
+```
+
 ## Partial Batch Failure Recovery & Payroll Period State Management
 
 Maintains state consistency and safe error management across batch payouts and payroll periods:
