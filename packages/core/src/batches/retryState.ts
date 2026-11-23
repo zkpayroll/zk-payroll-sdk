@@ -773,7 +773,7 @@ export class PayoutBatchRetryStateManager {
         return {
           valid: false,
           brokenAt: i + 1,
-          reason: `Hash link broken at revision ${entry.version}.`,
+          reason: `Integrity check failed: hash link broken at revision ${entry.version}.`,
         };
       }
 
