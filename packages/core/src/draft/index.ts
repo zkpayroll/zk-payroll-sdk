@@ -34,3 +34,4 @@ export {
 } from "./draftChecksum";
 export * from "./draftLockInspection";
 export * from "./draftComparisonSnapshot";
+export * from "./revisionLineage";

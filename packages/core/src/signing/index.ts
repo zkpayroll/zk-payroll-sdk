@@ -16,3 +16,4 @@
 export { buildSigningPayload, computeBatchCommitment, verifyBatchCommitment } from "./inspector";
 
 export type { PayrollSigningPayload, SigningAssetGroup } from "./types";
+export { analyzeApprovalInvalidation } from "./invalidationAnalyzer";
