@@ -1,5 +1,6 @@
 import { createPaymentIdempotencyKey } from "../core/idempotency";
 import { buildDuplicateEmployeeValidationErrors } from "./employeeDuplicates";
+import { validateSettlementStartLedger } from "../payroll/settlementStartLedger";
 import {
   PayrollRequest,
   PayrollRequestEntry,
@@ -119,6 +120,20 @@ export class PayrollRequestBuilder {
    */
   validate(): PayrollRequestValidationReport {
     const errors: PayrollRequestValidationEntry[] = [];
+
+    if (this.context.settlementStartLedger !== undefined) {
+      const ledger = validateSettlementStartLedger({
+        settlementStartLedger: this.context.settlementStartLedger,
+      });
+      if (!ledger.ok) {
+        errors.push({
+          index: -1,
+          field: "settlementStartLedger",
+          code: ledger.code,
+          message: ledger.message,
+        });
+      }
+    }
 
     if (this.entries.length === 0) {
       errors.push({

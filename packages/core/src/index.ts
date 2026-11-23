@@ -241,6 +241,8 @@ export * from "./archived";
 
 // ── Redaction Utilities ─────────────────────────────────────────────────────
 export * from "./redaction";
+export * from "./payroll/settlementStartLedger";
+export * from "./payroll/runLookup";
 
 // ── Multi-Asset Metadata ────────────────────────────────────────────────────
 export * from "./assets";
