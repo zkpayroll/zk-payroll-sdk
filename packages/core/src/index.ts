@@ -241,3 +241,41 @@ export * from "./treasury/reservations";
 
 // Employee Payment Destination Confirmation (#698)
 export * from "./employees/destinationConfirmation";
+
+export {
+  type SettlementStatus,
+  type RetentionPurgeRecord,
+  type RetentionPurgeOptions,
+  type RetentionPurgeResult,
+  RetentionPurgeBlockedError,
+  isSettlementPending,
+  assertRetentionPurgeAllowed,
+  purgeRetentionRecords,
+} from "./retention";
+
+export {
+  type RetryOutcomeStatus,
+  type RetrySettlementOutcome,
+  type TreasuryRetryReconciliationInput,
+  type TreasuryRetryReconciliationResult,
+  SafeTreasuryRetryReconciliationError,
+  reconcileTreasuryReservationsAfterRetries,
+  assertTreasuryReservationReconciliation,
+} from "./treasury/reservationReconciliation";
+
+export {
+  type SettlementSortableEvent,
+  compareSettlementEvents,
+  sortSettlementEventsDeterministically,
+  isEventsSortedDeterministically,
+} from "./events/deterministicEventSort";
+
+export {
+  type PayoutItem,
+  type PayoutComparisonStatus,
+  type PayoutReservationComparisonInput,
+  type PayoutReservationComparisonResult,
+  SafePayoutReservationMismatchError,
+  comparePayoutTotalWithReservedFunds,
+  assertPayoutWithinReservedFunds,
+} from "./receipts/payoutReservationComparison";
