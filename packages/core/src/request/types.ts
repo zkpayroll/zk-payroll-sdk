@@ -14,6 +14,8 @@ export interface SubmissionContext {
   network?: string;
   contractId?: string;
   nonce?: string;
+  /** Ledger sequence observed before settlement/request creation. */
+  settlementStartLedger?: number | bigint | string;
 }
 
 export interface PayrollRequest {
