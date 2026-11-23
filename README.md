@@ -720,6 +720,10 @@ return structured issues; `assertValidPayoutBatchRetryUpdate()` and
 `assertValidPayoutBatchRetryState()` remain available for exception-based
 callers.
 
+See [Payout batch retries](packages/core/docs/payout-batch-retries.md) for the
+lifecycle, attempt and item-set rules, error codes, clock boundaries, and
+privacy guarantees.
+
 ## Payroll run summaries
 
 `createExecutionSummary()` builds the normalized summary; pair it with
@@ -1332,6 +1336,16 @@ The SDK tracks salary commitment versions (V1 Pedersen, V2 Poseidon bound, V3 mu
 - **Witness Checks**: Version headers are validated before witness compilation and bound to proof input session integrity hashes.
 - **Safe Errors**: `SalaryCommitmentVersionError` and `SalaryCommitmentVersionValidationError` provide actionable codes without exposing salaries, preimages, employees, nullifiers, or digests.
 - **Documentation**: See [`packages/core/docs/salary-commitment-versions.md`](packages/core/docs/salary-commitment-versions.md).
+
+## Payout Batch Retries (#902)
+
+The SDK documents and enforces a single batch-level retry contract:
+
+- **State machine**: Versioned transitions with optimistic concurrency, terminal `completed`/`exhausted` states, and a SHA-256 hash-chained history.
+- **Bounded retries**: Attempt accounting, immutable `maxAttempts`, and settled-item protection prevent duplicate payouts.
+- **Typed validation**: `validatePayoutBatchRetryUpdate()` and `validatePayoutBatchRetryState()` collect structured issues without throwing; `assert*` variants are available for fail-fast flows.
+- **Safe errors**: `PayoutBatchRetryStateError` reports stable codes and actionable messages without exposing employee, recipient, salary, or free-text failure data.
+- **Documentation**: See [`packages/core/docs/payout-batch-retries.md`](packages/core/docs/payout-batch-retries.md).
 
 ## Retention Policy Updates & Safe Validation (#909, #910, #911, #912)
 

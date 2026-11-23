@@ -339,3 +339,7 @@ export * from "./treasury/reservationValidation";
 
 // ── Retention Policy Updates (#909, #910, #911, #912) ───────────────────────
 export * from "./retention";
+
+// ── Payout Batch Retry State & Validation (#899, #901, #902, #903) ──────────
+export * from "./batches/retryState";
+export * from "./batches/retryValidation";
