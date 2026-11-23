@@ -26,4 +26,6 @@ A payroll period defines the temporal bounding box for work accrual, compensatio
 - **Non-Overlap Invariant**: Sequential payroll periods for the same employer and asset class cannot overlap:
   $$\text{Period}_B.\text{start} \ge \text{Period}_A.\text{end}$$
 - **Lifecycle Immutability**: Once a period reaches `CLOSED` or `ARCHIVED` status, it cannot be modified or reopened without explicit cryptographic override.
+- **Late Payroll Adjustment Escalation**: Adjustments submitted after `cutoff` but before `end` are not applied to the current period. They must be escalated as late adjustments and carried into the next period's accrual window, with the escalation recorded for audit. Adjustments submitted after `end` are rejected with an actionable error referencing the period identifier and the `cutoff` timestamp.
+- **Escalation Validation**: An escalation request must reference a period in `CLOSED` or pre-`CLOSED` status and must include the originating period identifier. Requests referencing an `ARCHIVED` period are rejected and must be resubmitted against the next open period.
 - **Privacy Model**: Period boundaries disclose only temporal and scheduling metadata. No individual employee compensation details or headcount volumes are exposed.

@@ -9,6 +9,11 @@
  * - No payroll values (amounts, salaries, employee counts) are exposed in messages
  * - Period identifiers are masked by default in user-facing messages
  * - Only stable codes and actionable messages are returned
+ *
+ * ## Late Payroll Adjustment Escalation
+ * When a period is no longer eligible for a standard reopen because it is too
+ * old, the result includes an `escalation` descriptor so integrators can route
+ * the request to a late-adjustment review queue instead of silently failing.
  */
 
 /** Codes indicating why a period cannot be reopened */
@@ -21,6 +26,9 @@ export type ReopenEligibilityCode =
   | "SETTLEMENT_IN_PROGRESS"
   | "ARCHIVE_LOCKED"
   | "INVALID_PERIOD_ID";
+
+/** Escalation route for late payroll adjustments */
+export type LateAdjustmentEscalationRoute = "LATE_ADJUSTMENT_REVIEW" | "NONE";
 
 /** Payroll period information needed for reopen eligibility evaluation */
 export interface PayrollPeriod {
@@ -46,6 +54,25 @@ export interface ReopenEligibilityOptions {
   allowWithPendingCorrections?: boolean;
   /** Mask period IDs in user-facing messages (default: true) */
   redactPeriodId?: boolean;
+  /** Whether to produce a late-adjustment escalation descriptor for TOO_OLD periods (default: true) */
+  escalateLateAdjustments?: boolean;
+  /** Maximum age in milliseconds for late-adjustment escalation (default: 365 days) */
+  maxLateAdjustmentAgeMs?: number;
+}
+
+/**
+ * Escalation descriptor for late payroll adjustments on reopen evaluation.
+ *
+ * Named distinctly from the `LateAdjustmentEscalation` type in `./types` to
+ * avoid a conflicting re-export through the payroll barrel module.
+ */
+export interface LateAdjustmentReopenEscalation {
+  /** Route the request should be sent to */
+  route: LateAdjustmentEscalationRoute;
+  /** Whether the period is within the late-adjustment escalation window */
+  escalatable: boolean;
+  /** Actionable guidance for the integrator */
+  guidance: string;
 }
 
 /** Evaluation result */
@@ -60,10 +87,15 @@ export interface ReopenEligibilityResult {
   periodId: string;
   /** Days since the period was closed */
   daysSinceClosure?: number;
+  /** Late-adjustment escalation descriptor (present for PERIOD_TOO_OLD) */
+  escalation?: LateAdjustmentReopenEscalation;
 }
 
 /** Default maximum period age: 90 days */
 export const DEFAULT_MAX_PERIOD_AGE_MS = 90 * 24 * 60 * 60 * 1000;
+
+/** Default maximum age for late-adjustment escalation: 365 days */
+export const DEFAULT_MAX_LATE_ADJUSTMENT_AGE_MS = 365 * 24 * 60 * 60 * 1000;
 
 /**
  * Masks a period ID for safe display in logs and user-facing messages
@@ -73,6 +105,40 @@ function maskPeriodId(id: string): string {
   const clean = id.trim();
   if (clean.length <= 6) return "[PERIOD_REDACTED]";
   return `${clean.slice(0, 3)}...${clean.slice(-3)}`;
+}
+
+/**
+ * Builds the late-adjustment escalation descriptor for a period that is too old
+ * for a standard reopen.
+ */
+function buildLateAdjustmentEscalation(
+  ageMs: number,
+  options: ReopenEligibilityOptions
+): LateAdjustmentReopenEscalation {
+  const enabled = options.escalateLateAdjustments !== false;
+  const maxLateAge = options.maxLateAdjustmentAgeMs ?? DEFAULT_MAX_LATE_ADJUSTMENT_AGE_MS;
+
+  if (!enabled) {
+    return {
+      route: "NONE",
+      escalatable: false,
+      guidance: "Late-adjustment escalation is disabled; a new payroll period must be used for corrections",
+    };
+  }
+
+  if (ageMs > maxLateAge) {
+    return {
+      route: "NONE",
+      escalatable: false,
+      guidance: "Period is beyond the late-adjustment escalation window; record the correction in a current period",
+    };
+  }
+
+  return {
+    route: "LATE_ADJUSTMENT_REVIEW",
+    escalatable: true,
+    guidance: "Submit a late payroll adjustment request for manual review before any reopen",
+  };
 }
 
 /**
@@ -120,18 +186,24 @@ export function isPayrollPeriodReopenEligible(
     };
   }
 
-  // Check if too old
+  // Check if too old; route to late-adjustment escalation when permitted
   if (period.closedAt) {
     const now = Date.now();
     const ageMs = now - period.closedAt;
     if (ageMs > maxAge) {
       const daysSince = Math.floor(ageMs / (24 * 60 * 60 * 1000));
+      const escalation = buildLateAdjustmentEscalation(ageMs, options);
+      const suffix =
+        escalation.route === "LATE_ADJUSTMENT_REVIEW"
+          ? "; route to late payroll adjustment review"
+          : "";
       return {
         eligible: false,
         code: "PERIOD_TOO_OLD",
-        message: `Period ${displayId} was closed ${daysSince} days ago and is no longer eligible for reopening`,
+        message: `Period ${displayId} was closed ${daysSince} days ago and is no longer eligible for standard reopening${suffix}`,
         periodId: displayId,
         daysSinceClosure: daysSince,
+        escalation,
       };
     }
   }
@@ -206,6 +278,25 @@ export function filterEligibleReopenPeriods(
 }
 
 /**
+ * Filters periods that should be routed to late-adjustment review
+ *
+ * @param periods - Array of payroll periods
+ * @param options - Configuration options
+ * @returns Periods whose evaluation carries a LATE_ADJUSTMENT_REVIEW escalation
+ */
+export function filterLateAdjustmentEscalations(
+  periods: PayrollPeriod[],
+  options: ReopenEligibilityOptions = {}
+): { period: PayrollPeriod; result: ReopenEligibilityResult }[] {
+  return evaluateBatchReopenEligibility(periods, options)
+    .map((result, index) => ({ period: periods[index], result }))
+    .filter(
+      ({ result }) =>
+        result.escalation?.route === "LATE_ADJUSTMENT_REVIEW" && result.escalation.escalatable
+    );
+}
+
+/**
  * Summarizes reopen eligibility results for multiple periods
  *
  * @param results - Array of eligibility results
@@ -215,6 +306,7 @@ export function summarizeReopenEligibility(results: ReopenEligibilityResult[]): 
   total: number;
   eligibleCount: number;
   ineligibleCount: number;
+  escalatableCount: number;
   reasonCounts: Record<string, number>;
 } {
   const reasonCounts: Record<string, number> = {};
@@ -224,11 +316,15 @@ export function summarizeReopenEligibility(results: ReopenEligibilityResult[]): 
   }
 
   const eligibleCount = results.filter((r) => r.eligible).length;
+  const escalatableCount = results.filter(
+    (r) => r.escalation?.route === "LATE_ADJUSTMENT_REVIEW" && r.escalation.escalatable
+  ).length;
 
   return {
     total: results.length,
     eligibleCount,
     ineligibleCount: results.length - eligibleCount,
+    escalatableCount,
     reasonCounts,
   };
 }
