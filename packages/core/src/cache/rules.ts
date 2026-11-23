@@ -341,6 +341,53 @@ export const PAYROLL_CACHE_INVALIDATION_RULES: readonly CacheInvalidationRule[] 
       `Payment ${payload.paymentId ?? "unknown"} cancelled. Released treasury reservation and updated balance.`,
   },
 
+  // ── RULE 8b: Payment Failed (#826) ────────────────────────────────────────
+  {
+    id: "RULE-TRS-004-FAILED",
+    trigger: "event:payment_failed",
+    domains: ["treasury", "payroll"],
+    description:
+      "Disbursement attempt failed on-chain (e.g. after submission). The balance actually consumed by the failed attempt (fees, or a partial state change) can differ from what was cached before the attempt, and any reservation held for it must not stay locked indefinitely — invalidate treasury balance and the payment's reservation so the next retry reads a fresh balance instead of trusting pre-failure state.",
+    riskPrevented: "incorrect_warning",
+    resolveTargets: (payload) => {
+      const companyId = String(payload.contractId || payload.companyId || payload.employer || "");
+      const asset = String(payload.asset || "");
+      const paymentId = payload.paymentId !== undefined ? String(payload.paymentId) : "";
+      const txHash = String(payload.txHash || "");
+      const targets: InvalidationTarget[] = [];
+
+      if (companyId) {
+        targets.push({
+          namespace: CacheNamespace.TREASURY,
+          key: buildTreasuryCacheKey({ subscope: "balance", companyId, asset }),
+        });
+        targets.push({
+          namespace: CacheNamespace.TREASURY,
+          key: buildTreasuryCacheKey({ subscope: "reservations", companyId }),
+        });
+      }
+      if (companyId && paymentId) {
+        targets.push({
+          namespace: CacheNamespace.TREASURY,
+          key: buildTreasuryCacheKey({
+            subscope: "reservation",
+            companyId,
+            reservationId: paymentId,
+          }),
+        });
+      }
+      if (txHash) {
+        targets.push({
+          namespace: CacheNamespace.PAYROLL,
+          key: buildPayrollCacheKey({ subscope: "status", runId: txHash }),
+        });
+      }
+      return targets;
+    },
+    explanation: (payload) =>
+      `Payment ${payload.paymentId ?? "unknown"} failed. Refreshed treasury balance and released its reservation rather than trusting the pre-failure cache.`,
+  },
+
   // ── RULE 9: Manual Payroll Draft Modified ─────────────────────────────────
   {
     id: "RULE-MAN-001-DRAFT",

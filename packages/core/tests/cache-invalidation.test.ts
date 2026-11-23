@@ -481,6 +481,44 @@ describe("Cache Invalidation Helpers", () => {
       expect(await serverCache.get(CacheNamespace.TREASURY, resKey)).toBeNull();
     });
 
+    it("refreshes treasury balance and releases the reservation on a failed transfer (#826)", async () => {
+      // A failed on-chain transfer can still differ from the pre-attempt
+      // cached balance (fees, partial state), and must not leave its
+      // reservation locked forever — RULE-TRS-004-FAILED invalidates both
+      // instead of letting the next retry trust stale pre-failure state.
+      const balanceKey = buildTreasuryCacheKey({
+        subscope: "balance",
+        companyId: EMPLOYER_1,
+        asset: "USDC",
+      });
+      const resKey = buildTreasuryCacheKey({ subscope: "reservations", companyId: EMPLOYER_1 });
+      const reservationKey = buildTreasuryCacheKey({
+        subscope: "reservation",
+        companyId: EMPLOYER_1,
+        reservationId: "77",
+      });
+      const statusKey = buildPayrollCacheKey({ subscope: "status", runId: "tx-hash-failed-1" });
+
+      await serverCache.set(CacheNamespace.TREASURY, balanceKey, "100000");
+      await serverCache.set(CacheNamespace.TREASURY, resKey, "reservations-list");
+      await serverCache.set(CacheNamespace.TREASURY, reservationKey, "reserved");
+      await serverCache.set(CacheNamespace.PAYROLL, statusKey, "pending");
+
+      const result = await invalidator.invalidateFromEvent({
+        type: "payment_failed",
+        contractId: EMPLOYER_1,
+        asset: "USDC",
+        paymentId: 77n,
+        txHash: "tx-hash-failed-1",
+      });
+
+      expect(result.success).toBe(true);
+      expect(await serverCache.get(CacheNamespace.TREASURY, balanceKey)).toBeNull();
+      expect(await serverCache.get(CacheNamespace.TREASURY, resKey)).toBeNull();
+      expect(await serverCache.get(CacheNamespace.TREASURY, reservationKey)).toBeNull();
+      expect(await serverCache.get(CacheNamespace.PAYROLL, statusKey)).toBeNull();
+    });
+
     it("bridges TransactionWatcher events to invalidator", async () => {
       const emitter = new EventEmitter();
       const unsubscribe = attachCacheInvalidatorToWatcher(

@@ -348,6 +348,33 @@ describe("commitment generator", () => {
     expect(first[0].commitmentHash).not.toBe(second[0].commitmentHash);
   });
 
+  it("binds the commitment hash to the employee identifier, not just salary/period/asset (#827)", () => {
+    // Two different employees paid the identical amount in the identical
+    // period must get different commitments — otherwise employee B's
+    // identifier could be swapped onto employee A's commitment (or vice
+    // versa) without changing the hash, letting a commitment be replayed
+    // against the wrong employee record on-chain.
+    const period = {
+      periodId: "2025-Q1",
+      startDate: "2025-01-01",
+      endDate: "2025-01-15",
+    };
+    const empA = { id: "emp-001", address: ALICE_ADDRESS, salaryAmount: 1_000_000n, asset: "native" };
+    const empB = { id: "emp-002", address: ALICE_ADDRESS, salaryAmount: 1_000_000n, asset: "native" };
+
+    const [commitmentA] = generateCommitments([empA], period);
+    const [commitmentB] = generateCommitments([empB], period);
+
+    expect(commitmentA.commitmentHash).not.toBe(commitmentB.commitmentHash);
+
+    // Re-labeling empA's commitment with empB's id must not coincide with
+    // empB's real commitment — i.e. the hash is bound to the id that was
+    // actually used to compute it, not just carried alongside it.
+    expect({ ...commitmentA, employeeId: empB.id }.commitmentHash).not.toBe(
+      commitmentB.commitmentHash,
+    );
+  });
+
   it("commitment hash does not reveal the salary amount", () => {
     const employees = [
       {
