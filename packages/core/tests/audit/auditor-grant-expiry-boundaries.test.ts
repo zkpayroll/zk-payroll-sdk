@@ -2,6 +2,7 @@ import {
   assertAuditorGrantActive,
   validateAuditorGrantExpiry,
 } from "../../src/audit/grantExpiryValidation";
+import type { AuditorGrantExpiryValidationResult } from "../../src/audit/grantExpiryValidation";
 import {
   DEFAULT_ACCESS_EXPIRING_SOON_THRESHOLD_MS,
   DEFAULT_AUDIT_ACCESS_RETENTION_WINDOW_MS,
@@ -16,7 +17,10 @@ const ONE_HOUR_MS = 60 * 60 * 1000;
 const ONE_DAY_MS = 24 * ONE_HOUR_MS;
 const AUDITOR_ID = "GAUDITOR123456789WXYZ";
 
-function check(expiresAt: number | string | Date, overrides: Record<string, unknown> = {}) {
+function check(
+  expiresAt: number | string | Date,
+  overrides: Record<string, unknown> = {}
+): AuditorGrantExpiryValidationResult {
   return validateAuditorGrantExpiry({
     auditorId: AUDITOR_ID,
     expiresAt,
@@ -125,7 +129,7 @@ describe("Auditor grant expiry boundaries (#906)", () => {
     });
 
     it("keeps a future descriptor unpurged even with a zero retention window", () => {
-      const result = check(BASE_TIME + ONE_DAY_MS, { retentionWindowMs: 0 });
+      const result = check(BASE_TIME + 3 * ONE_DAY_MS, { retentionWindowMs: 0 });
       expect(result.normalized!.status).toBe("active");
       expect(result.normalized!.isPurged).toBe(false);
     });
@@ -186,11 +190,13 @@ describe("Auditor grant expiry boundaries (#906)", () => {
 
   describe("access gate boundaries", () => {
     it("throws an expired error exactly at the expiration instant", () => {
-      expect(() => assertAuditorGrantActive({
-        auditorId: AUDITOR_ID,
-        expiresAt: BASE_TIME,
-        referenceTime: BASE_TIME,
-      })).toThrow(AuditorGrantExpiredError);
+      expect(() =>
+        assertAuditorGrantActive({
+          auditorId: AUDITOR_ID,
+          expiresAt: BASE_TIME,
+          referenceTime: BASE_TIME,
+        })
+      ).toThrow(AuditorGrantExpiredError);
     });
 
     it("allows access one millisecond before expiration", () => {

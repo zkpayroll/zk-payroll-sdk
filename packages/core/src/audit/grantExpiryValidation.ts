@@ -100,7 +100,7 @@ export interface AuditorGrantExpiryValidationResult {
   /** Whether every check passed. */
   readonly isValid: boolean;
   /** Accumulated validation issues (empty when valid). */
-  readonly issues: AuditorGrantExpiryIssue[];
+  readonly issues: readonly AuditorGrantExpiryIssue[];
   /** Normalized values, present only when validation passed. */
   readonly normalized?: NormalizedAuditorGrantExpiry;
 }
@@ -112,11 +112,11 @@ function issue(
   field: string,
   message?: string
 ): AuditorGrantExpiryIssue {
-  return {
+  return Object.freeze({
     code,
     field,
     message: message ?? AUDITOR_GRANT_EXPIRY_ERROR_MESSAGES[code],
-  };
+  });
 }
 
 function resolveReferenceTimeCandidate(
@@ -154,10 +154,10 @@ export function validateAuditorGrantExpiry(
   }
 
   if (!input || typeof input !== "object" || Array.isArray(input)) {
-    return {
-      isValid: false,
-      issues: [issue(AuditorGrantExpiryErrorCode.INVALID_INPUT, "input")],
-    };
+    return Object.freeze({
+      isValid: false as const,
+      issues: Object.freeze([issue(AuditorGrantExpiryErrorCode.INVALID_INPUT, "input")]),
+    });
   }
 
   const issues: AuditorGrantExpiryIssue[] = [];
@@ -194,9 +194,7 @@ export function validateAuditorGrantExpiry(
     } else {
       grantedAtMs = parsed;
       if (expiresAtMs !== null && expiresAtMs <= parsed) {
-        issues.push(
-          issue(AuditorGrantExpiryErrorCode.EXPIRES_BEFORE_GRANTED, "expiresAt")
-        );
+        issues.push(issue(AuditorGrantExpiryErrorCode.EXPIRES_BEFORE_GRANTED, "expiresAt"));
       }
     }
   }
@@ -219,14 +217,18 @@ export function validateAuditorGrantExpiry(
   if (input.retentionWindowMs !== undefined) {
     const window = input.retentionWindowMs;
     if (!Number.isFinite(window) || window < 0) {
-      issues.push(
-        issue(AuditorGrantExpiryErrorCode.RETENTION_WINDOW_INVALID, "retentionWindowMs")
-      );
+      issues.push(issue(AuditorGrantExpiryErrorCode.RETENTION_WINDOW_INVALID, "retentionWindowMs"));
     }
   }
 
   // 6. Reference time
-  let referenceTimeMs = options.now ?? Date.now();
+  const optionsNow = options.now;
+  const hasValidOptionsNow =
+    optionsNow !== undefined && Number.isFinite(optionsNow) && optionsNow > 0;
+  if (optionsNow !== undefined && !hasValidOptionsNow) {
+    issues.push(issue(AuditorGrantExpiryErrorCode.REFERENCE_TIME_INVALID, "now"));
+  }
+  let referenceTimeMs = hasValidOptionsNow ? (optionsNow as number) : Date.now();
   if (input.referenceTime !== undefined) {
     const resolved = resolveReferenceTimeCandidate(input.referenceTime);
     if (resolved === null) {
@@ -247,35 +249,34 @@ export function validateAuditorGrantExpiry(
   }
 
   if (issues.length > 0 || expiresAtMs === null) {
-    return { isValid: false, issues };
+    return Object.freeze({
+      isValid: false as const,
+      issues: Object.freeze([...issues]),
+    });
   }
 
-  const warningThresholdMs =
-    input.warningThresholdMs ?? DEFAULT_ACCESS_EXPIRING_SOON_THRESHOLD_MS;
-  const retentionWindowMs =
-    input.retentionWindowMs ?? DEFAULT_AUDIT_ACCESS_RETENTION_WINDOW_MS;
+  const warningThresholdMs = input.warningThresholdMs ?? DEFAULT_ACCESS_EXPIRING_SOON_THRESHOLD_MS;
+  const retentionWindowMs = input.retentionWindowMs ?? DEFAULT_AUDIT_ACCESS_RETENTION_WINDOW_MS;
 
   const status = getAuditorAccessExpiryStatus(input.expiresAt, {
     referenceTime: referenceTimeMs,
     warningThresholdMs,
   });
-  const isPurged = isAuditorAccessPurged(
-    input.expiresAt,
-    retentionWindowMs,
-    referenceTimeMs
+  const isPurged = isAuditorAccessPurged(input.expiresAt, retentionWindowMs, referenceTimeMs);
+  const descriptor = Object.freeze(
+    formatAuditorAccessExpiry({
+      expiresAt: input.expiresAt,
+      ...(auditorId !== undefined ? { auditorId } : {}),
+      referenceTime: referenceTimeMs,
+      warningThresholdMs,
+      retentionWindowMs,
+    })
   );
-  const descriptor = formatAuditorAccessExpiry({
-    ...input,
-    ...(auditorId !== undefined ? { auditorId } : {}),
-    referenceTime: referenceTimeMs,
-    warningThresholdMs,
-    retentionWindowMs,
-  });
 
-  return {
-    isValid: true,
-    issues: [],
-    normalized: {
+  return Object.freeze({
+    isValid: true as const,
+    issues: Object.freeze([]) as readonly AuditorGrantExpiryIssue[],
+    normalized: Object.freeze({
       ...(auditorId !== undefined ? { auditorId } : {}),
       expiresAtMs,
       ...(grantedAtMs !== undefined ? { grantedAtMs } : {}),
@@ -285,8 +286,8 @@ export function validateAuditorGrantExpiry(
       status,
       isPurged,
       descriptor,
-    },
-  };
+    }),
+  });
 }
 
 /**
@@ -302,9 +303,7 @@ export function assertValidAuditorGrantExpiry(
   const result = validateAuditorGrantExpiry(input, options);
   if (!result.isValid || !result.normalized) {
     const first = result.issues[0];
-    const detail = result.issues
-      .map((entry) => `${entry.field}: ${entry.message}`)
-      .join("; ");
+    const detail = result.issues.map((entry) => `${entry.field}: ${entry.message}`).join("; ");
     throw new AuditorGrantExpiryError(
       `Auditor grant expiry validation failed: ${detail}`,
       first?.code ?? AuditorGrantExpiryErrorCode.INVALID_INPUT,

@@ -177,8 +177,7 @@ export const PAYOUT_BATCH_RETRY_STATE_ERROR_MESSAGES: Record<
   PayoutBatchRetryStateErrorCode,
   string
 > = {
-  [PayoutBatchRetryStateErrorCode.BATCH_ID_REQUIRED]:
-    "A payout batch identifier is required.",
+  [PayoutBatchRetryStateErrorCode.BATCH_ID_REQUIRED]: "A payout batch identifier is required.",
   [PayoutBatchRetryStateErrorCode.ACTOR_REQUIRED]:
     "An operator identity is required to record a retry-state change.",
   [PayoutBatchRetryStateErrorCode.BATCH_NOT_FOUND]:
@@ -215,28 +214,130 @@ export const PAYOUT_BATCH_RETRY_STATE_ERROR_MESSAGES: Record<
     "The payout batch retry state hash is invalid or does not match its contents.",
 };
 
+/** A stable, privacy-safe issue attached to a retry-state error. */
+export interface PayoutBatchRetrySafeIssue {
+  readonly code: PayoutBatchRetryStateErrorCode;
+  readonly field: string;
+  readonly message: string;
+}
+
+const SAFE_RETRY_CONTEXT_KEYS = new Set([
+  "field",
+  "code",
+  "issueCount",
+  "version",
+  "expectedVersion",
+  "attempt",
+  "maxAttempts",
+  "itemId",
+  "outstandingCount",
+  "status",
+  "currentMaxAttempts",
+  "requestedMaxAttempts",
+  "currentUpdatedAtMs",
+  "targetStatus",
+  "maxLength",
+  "timestampMs",
+]);
+
+function sanitizeRetryContext(context: Record<string, unknown>): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(context)) {
+    if (!SAFE_RETRY_CONTEXT_KEYS.has(key)) continue;
+    if (typeof value === "number" && Number.isFinite(value)) {
+      result[key] = value;
+    } else if (typeof value === "string" && value.length <= 128) {
+      result[key] = value;
+    }
+  }
+  return Object.freeze(result);
+}
+
 /**
  * Safe error thrown for invalid payout batch retry state operations.
  * Extends {@link ZkPayrollError} so SDK consumers can catch it centrally.
  */
 export class PayoutBatchRetryStateError extends ZkPayrollError {
   public readonly retryCode: PayoutBatchRetryStateErrorCode;
+  public readonly issues: readonly PayoutBatchRetrySafeIssue[];
 
   constructor(
     message: string,
     code: PayoutBatchRetryStateErrorCode = PayoutBatchRetryStateErrorCode.INVALID_STATE_TRANSITION,
     context: Record<string, unknown> = {},
-    cause?: unknown
+    cause?: unknown,
+    issues: readonly PayoutBatchRetrySafeIssue[] = []
   ) {
-    super(message, code, context, cause);
+    super(message, code, sanitizeRetryContext(context), cause);
     this.name = "PayoutBatchRetryStateError";
     this.retryCode = code;
+    this.issues = Object.freeze(
+      issues.map((issue) =>
+        Object.freeze({ code: issue.code, field: issue.field, message: issue.message })
+      )
+    );
   }
 }
 
+function resolveRetryErrorCode(error: unknown): PayoutBatchRetryStateErrorCode | undefined {
+  if (error instanceof PayoutBatchRetryStateError) return error.retryCode;
+  if (!error || typeof error !== "object") return undefined;
+  const candidate = error as Record<string, unknown>;
+  const raw = candidate.retryCode ?? candidate.code;
+  if (typeof raw !== "string") return undefined;
+  return Object.values(PayoutBatchRetryStateErrorCode).includes(
+    raw as PayoutBatchRetryStateErrorCode
+  )
+    ? (raw as PayoutBatchRetryStateErrorCode)
+    : undefined;
+}
+
 /** Type guard for {@link PayoutBatchRetryStateError}. */
-export function isPayoutBatchRetryStateError(error: unknown): boolean {
-  return error instanceof PayoutBatchRetryStateError;
+export function isPayoutBatchRetryStateError(error: unknown): error is PayoutBatchRetryStateError {
+  return error instanceof PayoutBatchRetryStateError || resolveRetryErrorCode(error) !== undefined;
+}
+
+/**
+ * Extract a safe, canonical message from a payout batch retry-state error.
+ * Arbitrary error messages are never returned because they may contain amounts,
+ * recipients, or free-text failure notes.
+ */
+export function getPayoutBatchRetryStateErrorMessage(error: unknown): string {
+  const code = resolveRetryErrorCode(error);
+  if (code !== undefined) return PAYOUT_BATCH_RETRY_STATE_ERROR_MESSAGES[code];
+  return "A payout batch retry error occurred. Verify the retry state and try again.";
+}
+
+/**
+ * Format a retry-state error, or a list of validation issues, for operator UI.
+ * Only stable codes and bounded field names are emitted.
+ */
+export function formatPayoutBatchRetryStateError(error: unknown): string {
+  const input = Array.isArray(error) ? error[0] : error;
+  const base = getPayoutBatchRetryStateErrorMessage(input);
+  const rawIssues = Array.isArray(error)
+    ? error
+    : error && typeof error === "object" && "issues" in error
+      ? (error as { issues?: unknown }).issues
+      : undefined;
+  if (!Array.isArray(rawIssues) || rawIssues.length === 0) return base;
+
+  const details = rawIssues
+    .filter((entry): entry is PayoutBatchRetrySafeIssue => {
+      if (!entry || typeof entry !== "object") return false;
+      const candidate = entry as Record<string, unknown>;
+      return (
+        typeof candidate.field === "string" &&
+        typeof candidate.message === "string" &&
+        resolveRetryErrorCode(entry) !== undefined
+      );
+    })
+    .map((issue) => {
+      const field = issue.field.length <= 64 ? issue.field : "input";
+      const code = resolveRetryErrorCode(issue)!;
+      return `[${field}] ${PAYOUT_BATCH_RETRY_STATE_ERROR_MESSAGES[code]}`;
+    });
+  return details.length > 0 ? `${base} — Issues: ${details.join("; ")}` : base;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -293,9 +394,7 @@ function normalizeMaxAttempts(value: number | undefined, fallback: number): numb
   if (value === undefined) return fallback;
   if (!Number.isSafeInteger(value) || value <= 0) {
     throw new PayoutBatchRetryStateError(
-      PAYOUT_BATCH_RETRY_STATE_ERROR_MESSAGES[
-        PayoutBatchRetryStateErrorCode.INVALID_MAX_ATTEMPTS
-      ],
+      PAYOUT_BATCH_RETRY_STATE_ERROR_MESSAGES[PayoutBatchRetryStateErrorCode.INVALID_MAX_ATTEMPTS],
       PayoutBatchRetryStateErrorCode.INVALID_MAX_ATTEMPTS,
       { maxAttempts: value }
     );
@@ -303,7 +402,10 @@ function normalizeMaxAttempts(value: number | undefined, fallback: number): numb
   return value;
 }
 
-function resolveTimestamp(timestampMs: number | undefined, options: PayoutBatchRetryValidationOptions): number {
+function resolveTimestamp(
+  timestampMs: number | undefined,
+  options: PayoutBatchRetryValidationOptions
+): number {
   const now = options.now ?? Date.now();
   const maxClockSkew = options.maxClockSkewMs ?? DEFAULT_RETRY_STATE_MAX_CLOCK_SKEW_MS;
   const resolved = timestampMs ?? now;
@@ -395,9 +497,7 @@ export function applyPayoutBatchRetryUpdate(
   // 1. Identity & actor
   if (typeof input.batchId !== "string" || input.batchId.trim().length === 0) {
     throw new PayoutBatchRetryStateError(
-      PAYOUT_BATCH_RETRY_STATE_ERROR_MESSAGES[
-        PayoutBatchRetryStateErrorCode.BATCH_ID_REQUIRED
-      ],
+      PAYOUT_BATCH_RETRY_STATE_ERROR_MESSAGES[PayoutBatchRetryStateErrorCode.BATCH_ID_REQUIRED],
       PayoutBatchRetryStateErrorCode.BATCH_ID_REQUIRED,
       { field: "batchId" }
     );
@@ -406,9 +506,7 @@ export function applyPayoutBatchRetryUpdate(
 
   if (typeof input.updatedBy !== "string" || input.updatedBy.trim().length === 0) {
     throw new PayoutBatchRetryStateError(
-      PAYOUT_BATCH_RETRY_STATE_ERROR_MESSAGES[
-        PayoutBatchRetryStateErrorCode.ACTOR_REQUIRED
-      ],
+      PAYOUT_BATCH_RETRY_STATE_ERROR_MESSAGES[PayoutBatchRetryStateErrorCode.ACTOR_REQUIRED],
       PayoutBatchRetryStateErrorCode.ACTOR_REQUIRED,
       { field: "updatedBy" }
     );
@@ -452,9 +550,7 @@ export function applyPayoutBatchRetryUpdate(
   const targetStatus = input.targetStatus;
   if (!PAYOUT_BATCH_RETRY_STATUSES.includes(targetStatus)) {
     throw new PayoutBatchRetryStateError(
-      PAYOUT_BATCH_RETRY_STATE_ERROR_MESSAGES[
-        PayoutBatchRetryStateErrorCode.INVALID_STATUS
-      ],
+      PAYOUT_BATCH_RETRY_STATE_ERROR_MESSAGES[PayoutBatchRetryStateErrorCode.INVALID_STATUS],
       PayoutBatchRetryStateErrorCode.INVALID_STATUS,
       { targetStatus }
     );
@@ -501,9 +597,7 @@ export function applyPayoutBatchRetryUpdate(
 
   if (startingRetry && attempt > maxAttempts) {
     throw new PayoutBatchRetryStateError(
-      PAYOUT_BATCH_RETRY_STATE_ERROR_MESSAGES[
-        PayoutBatchRetryStateErrorCode.ATTEMPTS_EXHAUSTED
-      ],
+      PAYOUT_BATCH_RETRY_STATE_ERROR_MESSAGES[PayoutBatchRetryStateErrorCode.ATTEMPTS_EXHAUSTED],
       PayoutBatchRetryStateErrorCode.ATTEMPTS_EXHAUSTED,
       { attempt, maxAttempts }
     );
@@ -593,14 +687,9 @@ export function applyPayoutBatchRetryUpdate(
   // 6. Failure code (machine-readable only)
   let lastErrorCode: string | undefined;
   if (input.lastErrorCode !== undefined) {
-    if (
-      typeof input.lastErrorCode !== "string" ||
-      !ERROR_CODE_PATTERN.test(input.lastErrorCode)
-    ) {
+    if (typeof input.lastErrorCode !== "string" || !ERROR_CODE_PATTERN.test(input.lastErrorCode)) {
       throw new PayoutBatchRetryStateError(
-        PAYOUT_BATCH_RETRY_STATE_ERROR_MESSAGES[
-          PayoutBatchRetryStateErrorCode.INVALID_ERROR_CODE
-        ],
+        PAYOUT_BATCH_RETRY_STATE_ERROR_MESSAGES[PayoutBatchRetryStateErrorCode.INVALID_ERROR_CODE],
         PayoutBatchRetryStateErrorCode.INVALID_ERROR_CODE,
         { field: "lastErrorCode" }
       );
@@ -614,9 +703,7 @@ export function applyPayoutBatchRetryUpdate(
   const updatedAtMs = resolveTimestamp(input.timestampMs, options);
   if (current && updatedAtMs < current.updatedAtMs) {
     throw new PayoutBatchRetryStateError(
-      PAYOUT_BATCH_RETRY_STATE_ERROR_MESSAGES[
-        PayoutBatchRetryStateErrorCode.TIMESTAMP_REGRESSION
-      ],
+      PAYOUT_BATCH_RETRY_STATE_ERROR_MESSAGES[PayoutBatchRetryStateErrorCode.TIMESTAMP_REGRESSION],
       PayoutBatchRetryStateErrorCode.TIMESTAMP_REGRESSION,
       { timestampMs: updatedAtMs, currentUpdatedAtMs: current.updatedAtMs }
     );
@@ -694,7 +781,11 @@ export class PayoutBatchRetryStateManager {
   public initializeBatch(
     batchId: string,
     outstandingItemIds: readonly string[],
-    options: { updatedBy: string; maxAttempts?: number; timestampMs?: number } & PayoutBatchRetryValidationOptions
+    options: {
+      updatedBy: string;
+      maxAttempts?: number;
+      timestampMs?: number;
+    } & PayoutBatchRetryValidationOptions
   ): PayoutBatchRetryTransitionResult {
     if (this.states.has(batchId)) {
       throw new PayoutBatchRetryStateError(
@@ -766,14 +857,13 @@ export class PayoutBatchRetryStateManager {
 
     for (let i = 0; i < revisions.length; i++) {
       const entry = revisions[i];
-      const expectedPrevious =
-        i === 0 ? PAYOUT_BATCH_RETRY_GENESIS_HASH : revisions[i - 1].hash;
+      const expectedPrevious = i === 0 ? PAYOUT_BATCH_RETRY_GENESIS_HASH : revisions[i - 1].hash;
 
       if (entry.previousHash !== expectedPrevious) {
         return {
           valid: false,
           brokenAt: i + 1,
-          reason: `Hash link broken at revision ${entry.version}.`,
+          reason: `Integrity check failed: hash link broken at revision ${entry.version}.`,
         };
       }
 

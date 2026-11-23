@@ -18,7 +18,15 @@ const ONE_HOUR_MS = 60 * 60 * 1000;
 const ONE_DAY_MS = 24 * ONE_HOUR_MS;
 const AUDITOR_ID = "GAUDITOR123456789WXYZ";
 
-function validInput(overrides: Record<string, unknown> = {}) {
+interface ValidGrantInput {
+  auditorId: string;
+  expiresAt: string | number | Date;
+  grantedAt: string | number | Date;
+  referenceTime: number | Date;
+  [key: string]: unknown;
+}
+
+function validInput(overrides: Record<string, unknown> = {}): ValidGrantInput {
   return {
     auditorId: AUDITOR_ID,
     expiresAt: BASE_TIME + 5 * ONE_DAY_MS,
@@ -65,9 +73,7 @@ describe("Typed validation for auditor grant expiry (#904)", () => {
     });
 
     it("accepts expired grants because they are still reportable", () => {
-      const result = validateAuditorGrantExpiry(
-        validInput({ expiresAt: BASE_TIME - ONE_DAY_MS })
-      );
+      const result = validateAuditorGrantExpiry(validInput({ expiresAt: BASE_TIME - ONE_DAY_MS }));
       expect(result.isValid).toBe(true);
       expect(result.normalized!.status).toBe("expired");
     });
@@ -85,9 +91,9 @@ describe("Typed validation for auditor grant expiry (#904)", () => {
       for (const expiresAt of [null, undefined, ""]) {
         const result = validateAuditorGrantExpiry(validInput({ expiresAt }));
         expect(result.isValid).toBe(false);
-        expect(result.issues.some((i) => i.code === AuditorGrantExpiryErrorCode.EXPIRES_AT_REQUIRED)).toBe(
-          true
-        );
+        expect(
+          result.issues.some((i) => i.code === AuditorGrantExpiryErrorCode.EXPIRES_AT_REQUIRED)
+        ).toBe(true);
       }
     });
 
@@ -99,9 +105,9 @@ describe("Typed validation for auditor grant expiry (#904)", () => {
 
     it("rejects empty and oversized auditor identifiers", () => {
       const empty = validateAuditorGrantExpiry(validInput({ auditorId: "   " }));
-      expect(empty.issues.some((i) => i.code === AuditorGrantExpiryErrorCode.AUDITOR_ID_INVALID)).toBe(
-        true
-      );
+      expect(
+        empty.issues.some((i) => i.code === AuditorGrantExpiryErrorCode.AUDITOR_ID_INVALID)
+      ).toBe(true);
 
       const oversized = validateAuditorGrantExpiry(validInput({ auditorId: "G".repeat(129) }));
       expect(
@@ -117,9 +123,7 @@ describe("Typed validation for auditor grant expiry (#904)", () => {
 
     it("rejects an expiration at or before the issuance time", () => {
       for (const expiresAt of [BASE_TIME, BASE_TIME - ONE_HOUR_MS]) {
-        const result = validateAuditorGrantExpiry(
-          validInput({ grantedAt: BASE_TIME, expiresAt })
-        );
+        const result = validateAuditorGrantExpiry(validInput({ grantedAt: BASE_TIME, expiresAt }));
         expect(
           result.issues.some((i) => i.code === AuditorGrantExpiryErrorCode.EXPIRES_BEFORE_GRANTED)
         ).toBe(true);
@@ -127,7 +131,12 @@ describe("Typed validation for auditor grant expiry (#904)", () => {
     });
 
     it("rejects invalid warning thresholds", () => {
-      for (const warningThresholdMs of [-1, Number.NaN, Number.POSITIVE_INFINITY, 366 * ONE_DAY_MS]) {
+      for (const warningThresholdMs of [
+        -1,
+        Number.NaN,
+        Number.POSITIVE_INFINITY,
+        366 * ONE_DAY_MS,
+      ]) {
         const result = validateAuditorGrantExpiry(validInput({ warningThresholdMs }));
         expect(
           result.issues.some(
@@ -186,9 +195,9 @@ describe("Typed validation for auditor grant expiry (#904)", () => {
     });
 
     it("throws RangeError for an invalid maxGrantLifetimeMs option", () => {
-      expect(() =>
-        validateAuditorGrantExpiry(validInput(), { maxGrantLifetimeMs: 0 })
-      ).toThrow(RangeError);
+      expect(() => validateAuditorGrantExpiry(validInput(), { maxGrantLifetimeMs: 0 })).toThrow(
+        RangeError
+      );
     });
   });
 
@@ -225,9 +234,7 @@ describe("Typed validation for auditor grant expiry (#904)", () => {
 
     it("throws a safe expired error without echoing the raw auditor id", () => {
       try {
-        assertAuditorGrantActive(
-          validInput({ expiresAt: BASE_TIME - ONE_HOUR_MS })
-        );
+        assertAuditorGrantActive(validInput({ expiresAt: BASE_TIME - ONE_HOUR_MS }));
         fail("should have thrown");
       } catch (error) {
         expect(error).toBeInstanceOf(AuditorGrantExpiredError);
@@ -260,7 +267,21 @@ describe("Typed validation for auditor grant expiry (#904)", () => {
     it("returns a safe fallback for unknown errors", () => {
       expect(isAuditorGrantExpiryError(new Error("boom"))).toBe(false);
       expect(getAuditorGrantExpiryErrorMessage(42)).toContain("auditor grant expiry error");
-      expect(formatAuditorGrantExpiryError(new Error("boom"))).toBe("boom");
+      expect(formatAuditorGrantExpiryError(new Error("boom"))).toContain(
+        "auditor grant expiry error"
+      );
+      expect(formatAuditorGrantExpiryError(new Error("boom"))).not.toContain("boom");
+    });
+
+    it("keeps expired-error details bounded and redacted", () => {
+      const error = new AuditorGrantExpiredError(AUDITOR_ID, BASE_TIME, { amount: 42 });
+
+      expect(error.redactedAuditorId).toBe("GAU***XYZ");
+      expect(error.message).toContain("GAU***XYZ");
+      expect(error.message).toContain(new Date(BASE_TIME).toISOString());
+      expect(error.message).not.toContain(AUDITOR_ID);
+      expect(JSON.stringify(error.context)).not.toContain("amount");
+      expect(Object.isFrozen(error.issues)).toBe(true);
     });
 
     it("never interpolates auditor identifiers or payroll values into issues", () => {

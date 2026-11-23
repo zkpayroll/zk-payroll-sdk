@@ -194,6 +194,12 @@ export type {
   ResolvedAuditGrant,
 } from "./audit/grantScope";
 
+// ── Auditor Grant Expiry (#904, #905, #907, #908) ────────────────────────────
+export * from "./audit/accessExpiry";
+export * from "./audit/grantExpiryErrors";
+export * from "./audit/grantExpiryValidation";
+export * from "./audit/grantExpiryState";
+
 // ── Transaction Simulation ──────────────────────────────────────────────────
 export * from "./simulation";
 
@@ -330,6 +336,8 @@ export * from "./access";
 
 // ── Partial Batch Failure Recovery & Payroll Period State Management (#856, #874, #875, #878) ──
 export * from "./batches/partialBatchFailure";
+export * from "./batches/retryState";
+export * from "./batches/retryValidation";
 export * from "./payroll/periodValidation";
 export * from "./payroll/periodErrors";
 export * from "./payroll/periodStateManager";
