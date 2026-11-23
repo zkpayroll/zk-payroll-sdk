@@ -31,3 +31,16 @@ export type {
   MetadataValidationResult,
   MetadataValidationError,
 } from "../metadata";
+
+export {
+  RetentionPurgeBlockedError,
+  isSettlementPending,
+  assertRetentionPurgeAllowed,
+  purgeRetentionRecords,
+} from "../retention";
+export type {
+  SettlementStatus,
+  RetentionPurgeRecord,
+  RetentionPurgeOptions,
+  RetentionPurgeResult,
+} from "../retention";

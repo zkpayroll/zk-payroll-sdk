@@ -12,3 +12,15 @@ export type { ClientConfig } from "../config";
 export type { PayrollRecord, Network } from "../types";
 export { pollTransaction } from "../../packages/core/src/polling";
 export type { PollTransactionOptions, TransactionStatusResult } from "../../packages/core/src/polling";
+export {
+  RetentionPurgeBlockedError,
+  isSettlementPending,
+  assertRetentionPurgeAllowed,
+  purgeRetentionRecords,
+} from "../../packages/core/src/retention";
+export type {
+  SettlementStatus,
+  RetentionPurgeRecord,
+  RetentionPurgeOptions,
+  RetentionPurgeResult,
+} from "../../packages/core/src/retention";
