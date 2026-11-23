@@ -205,4 +205,6 @@ export interface InvalidationAnalysisResult {
   invalidatedApprovalsCount: number;
   reasons: string[];
   changedFields: string[];
+  /** Stable, privacy-safe invalidation reason codes. */
+  reasonCodes?: string[];
 }

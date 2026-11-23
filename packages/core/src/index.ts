@@ -249,6 +249,9 @@ export * from "./assets";
 
 // ── Settlement & Destination Validation ──────────────────────────────────────
 export * from "./settlement";
+export * from "./summary";
+export * from "./signing";
+export * from "./payroll/approvalInvalidationReasons";
 
 // ── Compliance Holds ─────────────────────────────────────────────────────────
 export * from "./compliance";
