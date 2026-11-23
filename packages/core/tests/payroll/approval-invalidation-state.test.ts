@@ -14,6 +14,8 @@ import {
   ApprovalInvalidationStateManager,
   ApprovalInvalidationError,
   ApprovalInvalidationErrorCode,
+  isApprovalStateStaleForRevision,
+  invalidateApprovalStateForRevision,
 } from "../../src/payroll/approvalInvalidationState";
 
 describe("Hardened Approval Invalidation State Handling (#923)", () => {
@@ -172,6 +174,78 @@ describe("Hardened Approval Invalidation State Handling (#923)", () => {
 
       expect(res.nextState.status).toBe("invalidated");
       expect(manager.get("draft_mgr_1")?.status).toBe("invalidated");
+    });
+
+    it("invalidates an approved state that is behind the draft's current revision (#829)", () => {
+      const manager = new ApprovalInvalidationStateManager();
+      manager.register(
+        createApprovalStateRecord({
+          draftId: "draft_rev_1",
+          revision: 1,
+          status: "approved",
+          approvalCount: 2,
+          requiredApprovalsCount: 2,
+        })
+      );
+
+      const result = manager.invalidateForRevision("draft_rev_1", 2);
+
+      expect(result?.nextState.status).toBe("invalidated");
+      expect(result?.nextState.revision).toBe(2);
+      expect(result?.nextState.invalidationCode).toBe(
+        ApprovalInvalidationErrorCode.APPROVAL_INVALIDATED_MODIFICATION
+      );
+      expect(manager.get("draft_rev_1")?.status).toBe("invalidated");
+      expect(manager.get("draft_rev_1")?.revision).toBe(2);
+    });
+
+    it("does nothing when the registered state already matches the draft's current revision", () => {
+      const manager = new ApprovalInvalidationStateManager();
+      manager.register(
+        createApprovalStateRecord({ draftId: "draft_rev_2", revision: 3, status: "approved" })
+      );
+
+      const result = manager.invalidateForRevision("draft_rev_2", 3);
+
+      expect(result).toBeUndefined();
+      expect(manager.get("draft_rev_2")?.status).toBe("approved");
+    });
+
+    it("does not re-flag a run that already executed at an older revision as newly invalidated", () => {
+      // Terminal states are immutable — a later draft revision must not
+      // retroactively mark a finalized, already-paid-out run as invalidated.
+      const manager = new ApprovalInvalidationStateManager();
+      manager.register(
+        createApprovalStateRecord({ draftId: "draft_rev_3", revision: 1, status: "executed" })
+      );
+
+      const result = manager.invalidateForRevision("draft_rev_3", 5);
+
+      expect(result).toBeUndefined();
+      expect(manager.get("draft_rev_3")?.status).toBe("executed");
+    });
+
+    it("returns undefined for a draft with no registered approval state", () => {
+      const manager = new ApprovalInvalidationStateManager();
+      expect(manager.invalidateForRevision("never_registered", 2)).toBeUndefined();
+    });
+  });
+
+  describe("isApprovalStateStaleForRevision / invalidateApprovalStateForRevision (pure functions, #829)", () => {
+    it("flags a pending approval behind the current revision as stale, but not one already current", () => {
+      const pending = createApprovalStateRecord({ draftId: "draft_pure_1", revision: 1, status: "pending" });
+      expect(isApprovalStateStaleForRevision(pending, 2)).toBe(true);
+      expect(isApprovalStateStaleForRevision(pending, 1)).toBe(false);
+    });
+
+    it("never flags a superseded or already-invalidated state as stale", () => {
+      const superseded = createApprovalStateRecord({
+        draftId: "draft_pure_2",
+        revision: 1,
+        status: "superseded",
+      });
+      expect(isApprovalStateStaleForRevision(superseded, 99)).toBe(false);
+      expect(invalidateApprovalStateForRevision(superseded, 99)).toBeUndefined();
     });
   });
 });

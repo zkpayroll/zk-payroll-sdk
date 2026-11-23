@@ -56,6 +56,7 @@ export type InvalidationTriggerType =
   | "event:payment_executed"
   | "event:payment_scheduled"
   | "event:payment_cancelled"
+  | "event:payment_failed"
   // Manual / Administrative triggers
   | "manual:payroll_draft_modified"
   | "manual:payroll_run_reset"

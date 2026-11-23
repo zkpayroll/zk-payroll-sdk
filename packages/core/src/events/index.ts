@@ -16,6 +16,7 @@ export * from "./reservations";
 export * from "./treasuryDeposit";
 export * from "./employeeStatus";
 export * from "./employerUpdated";
+export * from "./executionKeyRotation";
 export {
   decodeTreasurySnapshotEvent,
   decodeTreasurySnapshotEvents,

@@ -309,6 +309,59 @@ export function transitionApprovalStateToInvalidated(
 }
 
 /**
+ * Returns true when a stored approval state was recorded for an older draft
+ * revision than the one currently live — i.e. it was never actually
+ * invalidated when the draft was revised, and trusting it (e.g. "approved")
+ * would sign off on a draft body that no longer exists. #829
+ *
+ * A terminal state (`executed`, `superseded`) or one already `invalidated`
+ * is never considered stale by this check — there is nothing left to
+ * invalidate, and re-flagging it would be misleading.
+ */
+export function isApprovalStateStaleForRevision(
+  state: PayrollApprovalStateRecord,
+  currentDraftRevision: number
+): boolean {
+  if (state.status === "executed" || state.status === "superseded" || state.status === "invalidated") {
+    return false;
+  }
+  return state.revision < currentDraftRevision;
+}
+
+/**
+ * If `state` was recorded against an older draft revision than
+ * `currentDraftRevision`, transitions it to `invalidated` (reason code
+ * `APPROVAL_INVALIDATED_MODIFICATION`) and stamps the new revision onto the
+ * resulting record so a later re-approval is tracked against the current
+ * draft body. Returns `undefined` when the state is already current (no
+ * transition needed) — callers should keep using the existing state as-is.
+ */
+export function invalidateApprovalStateForRevision(
+  state: PayrollApprovalStateRecord,
+  currentDraftRevision: number,
+  options: Pick<InvalidateApprovalStateInput, "invalidatedBy" | "now"> = {}
+): ApprovalStateTransitionResult | undefined {
+  if (!isApprovalStateStaleForRevision(state, currentDraftRevision)) {
+    return undefined;
+  }
+
+  const result = transitionApprovalStateToInvalidated(state, {
+    draftId: state.draftId,
+    code: ApprovalInvalidationErrorCode.APPROVAL_INVALIDATED_MODIFICATION,
+    changedFields: ["revision"],
+    invalidatedBy: options.invalidatedBy,
+    now: options.now,
+  });
+
+  const nextUnfrozen = { ...result.nextState, revision: currentDraftRevision };
+  const stateHash = computeApprovalStateHash(nextUnfrozen);
+  return {
+    ...result,
+    nextState: Object.freeze({ ...nextUnfrozen, stateHash }),
+  };
+}
+
+/**
  * State manager for tracking and hardening payroll approval states across operations.
  */
 export class ApprovalInvalidationStateManager {
@@ -350,6 +403,28 @@ export class ApprovalInvalidationStateManager {
 
     const result = transitionApprovalStateToInvalidated(current, input);
     this.records.set(input.draftId, result.nextState);
+    return result;
+  }
+
+  /**
+   * Call this whenever a draft's revision advances (the draft content
+   * changed). If the registered approval state is still at an older
+   * revision, it is transitioned to `invalidated` and the record is updated
+   * to the new revision; returns `undefined` with no store mutation if the
+   * draft has no registered state, or its state is already current. #829
+   */
+  public invalidateForRevision(
+    draftId: string,
+    currentDraftRevision: number,
+    options: Pick<InvalidateApprovalStateInput, "invalidatedBy" | "now"> = {}
+  ): ApprovalStateTransitionResult | undefined {
+    const current = this.records.get(draftId);
+    if (!current) return undefined;
+
+    const result = invalidateApprovalStateForRevision(current, currentDraftRevision, options);
+    if (!result) return undefined;
+
+    this.records.set(draftId, result.nextState);
     return result;
   }
 }
