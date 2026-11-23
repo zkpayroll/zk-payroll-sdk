@@ -233,6 +233,8 @@ validation code.
 ## Related
 
 - [Audit View-Key Helpers](./audit-view-keys.md) — create and revoke view keys
+- [Auditor Grant Expiry](./auditor-grant-expiry.md) — expiry statuses, purge
+  boundaries, and versioned state
 - [Selective-Disclosure Audit Packages](./audit-packages.md) — build the
   packages a scoped auditor is allowed to receive
 - [Safe Credential Handling](./SAFE_CREDENTIAL_HANDLING.md) — keeping keys and

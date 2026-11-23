@@ -652,7 +652,17 @@ if (!result.isValid) {
 ```
 
 `assertAuditorGrantActive()` throws a privacy-safe `AuditorGrantExpiredError`
-whose message contains only a redacted auditor identifier.
+whose message contains only a redacted auditor identifier and the bounded
+expiry timestamp. Versioned state transitions and the full status/retention
+contract are described in [Auditor grant expiry](./docs/auditor-grant-expiry.md).
+
+## Payout batch retry errors
+
+Retry failures expose stable codes and canonical operator messages through
+`getPayoutBatchRetryStateErrorMessage()` and
+`formatPayoutBatchRetryStateError()`. Raw processor text, amounts, and
+recipients are never echoed. See
+[Payout batch retry errors](./docs/payout-batch-retry-errors.md).
 
 ## Beneficiary change verification
 
@@ -1275,6 +1285,8 @@ For complete architectural patterns, threat models, and an incident response che
 - [API Reference](./docs/API.md) - Complete API documentation
 - [Pagination Helpers](./docs/pagination.md) - Cursor- and offset-based pagination for payroll history and audit records
 - [Audit Grant Scope Reader](./docs/audit-grant-scope.md) - Effective audit scope and lifecycle state for an auditor's grants
+- [Auditor Grant Expiry](./docs/auditor-grant-expiry.md) - Expiry statuses, retention/purging, safe errors, and versioned grant state
+- [Payout Batch Retry Errors](./docs/payout-batch-retry-errors.md) - Privacy-safe retry diagnostics and public formatting helpers
 - [Payroll UX Helpers](./docs/payroll-ux-helpers.md) - Configurable logging, completion polling, run summaries, and command serialization
 - [Cache Invalidation Helpers](./docs/CACHE_INVALIDATION.md) - Predictable event-driven and manual cache invalidation, key management, and staleness detection
 - [Deterministic Test Fixtures](./docs/DETERMINISTIC_FIXTURES.md) - Reusable fixture builders and valid/invalid scenarios for batches, employees, transactions, proofs, and reconciliation

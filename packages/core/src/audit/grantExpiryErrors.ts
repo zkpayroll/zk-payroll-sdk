@@ -1,5 +1,5 @@
 /**
- * Safe Errors for Auditor Grant Expiry (#905)
+ * Safe Errors for Auditor Grant Expiry (#905, #908)
  *
  * Auditor grant records feed compliance dashboards and, in some integrations,
  * access gates. Failures must therefore be *actionable* to the operator while
@@ -12,7 +12,8 @@
  * - {@link AuditorGrantExpiryError} — typed validation failure carrying stable
  *   codes and structured issues.
  * - {@link AuditorGrantExpiredError} — thrown when access is denied because the
- *   grant has lapsed; carries only a redacted auditor identifier.
+ *   grant has lapsed; carries only a redacted auditor identifier and a bounded
+ *   expiry timestamp.
  * - Helpers to detect, extract, and format these errors for UI/CLI output.
  *
  * @module
@@ -45,6 +46,16 @@ export const AuditorGrantExpiryErrorCode = {
   MAX_LIFETIME_EXCEEDED: "AUDITOR_GRANT_EXPIRY_MAX_LIFETIME_EXCEEDED",
   /** Access was requested with an expired (or unknown) grant. */
   GRANT_EXPIRED: "AUDITOR_GRANT_EXPIRED",
+  /** A grant identifier is missing or already registered. */
+  DUPLICATE_GRANT: "AUDITOR_GRANT_EXPIRY_DUPLICATE_GRANT",
+  /** The update was derived from a stale state revision. */
+  STALE_REVISION: "AUDITOR_GRANT_EXPIRY_STALE_REVISION",
+  /** The requested lifecycle transition is not permitted. */
+  INVALID_STATE_TRANSITION: "AUDITOR_GRANT_EXPIRY_INVALID_STATE_TRANSITION",
+  /** The grant state is terminal and cannot be modified. */
+  TERMINAL_STATE: "AUDITOR_GRANT_EXPIRY_TERMINAL_STATE",
+  /** Persisted grant-expiry state failed its hash-chain verification. */
+  STATE_INTEGRITY_COMPROMISED: "AUDITOR_GRANT_EXPIRY_STATE_INTEGRITY_COMPROMISED",
 } as const;
 
 export type AuditorGrantExpiryErrorCode =
@@ -77,7 +88,46 @@ export const AUDITOR_GRANT_EXPIRY_ERROR_MESSAGES: Record<AuditorGrantExpiryError
     "The auditor grant lifetime exceeds the maximum allowed duration.",
   [AuditorGrantExpiryErrorCode.GRANT_EXPIRED]:
     "Auditor access has expired. Request a new grant before accessing payroll data.",
+  [AuditorGrantExpiryErrorCode.DUPLICATE_GRANT]:
+    "A grant state is already registered for this grant. Reload it before applying another update.",
+  [AuditorGrantExpiryErrorCode.STALE_REVISION]:
+    "Auditor grant state changed since it was read. Refresh the grant and retry.",
+  [AuditorGrantExpiryErrorCode.INVALID_STATE_TRANSITION]:
+    "The requested auditor grant expiry transition is not permitted.",
+  [AuditorGrantExpiryErrorCode.TERMINAL_STATE]:
+    "This auditor grant state is terminal and cannot be modified.",
+  [AuditorGrantExpiryErrorCode.STATE_INTEGRITY_COMPROMISED]:
+    "The auditor grant expiry state hash is invalid or does not match its contents.",
 };
+
+const SAFE_CONTEXT_KEYS = new Set([
+  "field",
+  "code",
+  "issueCount",
+  "status",
+  "expectedRevision",
+  "revision",
+  "grantedAtMs",
+  "expiresAtMs",
+  "referenceTimeMs",
+  "warningThresholdMs",
+  "retentionWindowMs",
+  "maxLifetimeMs",
+  "redactedAuditorId",
+]);
+
+function safeContext(context: Record<string, unknown>): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(context)) {
+    if (!SAFE_CONTEXT_KEYS.has(key)) continue;
+    if (typeof value === "number" && Number.isFinite(value)) {
+      result[key] = value;
+    } else if (typeof value === "string" && value.length <= 128) {
+      result[key] = value;
+    }
+  }
+  return Object.freeze(result);
+}
 
 /** A single structured validation issue for auditor grant expiry. */
 export interface AuditorGrantExpiryIssue {
@@ -104,10 +154,14 @@ export class AuditorGrantExpiryError extends ZkPayrollError {
     context: Record<string, unknown> = {},
     cause?: unknown
   ) {
-    super(message, code, context, cause);
+    super(message, code, safeContext(context), cause);
     this.name = "AuditorGrantExpiryError";
     this.expiryCode = code;
-    this.issues = issues;
+    this.issues = Object.freeze(
+      issues.map((entry) =>
+        Object.freeze({ code: entry.code, field: entry.field, message: entry.message })
+      )
+    );
   }
 }
 
@@ -116,7 +170,8 @@ export class AuditorGrantExpiryError extends ZkPayrollError {
  * expired (or carries no usable expiration).
  *
  * The identifier is redacted before it reaches `message` or `context`, so the
- * error may be logged verbatim.
+ * error may be logged verbatim. The expiry timestamp is included only as a
+ * bounded ISO-8601 value.
  */
 export class AuditorGrantExpiredError extends AuditorGrantExpiryError {
   /** Redacted auditor identifier, safe for logs and UI. */
@@ -128,11 +183,11 @@ export class AuditorGrantExpiredError extends AuditorGrantExpiryError {
     context: Record<string, unknown> = {},
     cause?: unknown
   ) {
-    const redacted = redactAuditorId(auditorId);
-    const detail =
-      expiresAtMs === null
-        ? "no expiration is recorded"
-        : `it expired at ${new Date(expiresAtMs).toISOString()}`;
+    const redacted = redactAuditorId(typeof auditorId === "string" ? auditorId : undefined);
+    const hasExpiry = typeof expiresAtMs === "number" && Number.isFinite(expiresAtMs);
+    const detail = hasExpiry
+      ? `it expired at ${new Date(expiresAtMs).toISOString()}`
+      : "no expiration is recorded";
     super(
       `${AUDITOR_GRANT_EXPIRY_ERROR_MESSAGES[AuditorGrantExpiryErrorCode.GRANT_EXPIRED]} (${redacted}: ${detail})`,
       AuditorGrantExpiryErrorCode.GRANT_EXPIRED,
@@ -151,48 +206,36 @@ export class AuditorGrantExpiredError extends AuditorGrantExpiryError {
   }
 }
 
+function resolveErrorCode(error: unknown): AuditorGrantExpiryErrorCode | undefined {
+  if (error instanceof AuditorGrantExpiryError) return error.expiryCode;
+  if (!error || typeof error !== "object") return undefined;
+  const candidate = error as Record<string, unknown>;
+  const raw = candidate.expiryCode ?? candidate.code;
+  if (typeof raw !== "string") return undefined;
+  return Object.values(AuditorGrantExpiryErrorCode).includes(raw as AuditorGrantExpiryErrorCode)
+    ? (raw as AuditorGrantExpiryErrorCode)
+    : undefined;
+}
+
 /** Type guard for {@link AuditorGrantExpiryError} and subclasses. */
-export function isAuditorGrantExpiryError(error: unknown): boolean {
-  if (error instanceof AuditorGrantExpiryError) return true;
-  if (
-    error &&
-    typeof error === "object" &&
-    "expiryCode" in error &&
-    typeof (error as Record<string, unknown>).expiryCode === "string"
-  ) {
-    return Object.values(AuditorGrantExpiryErrorCode).includes(
-      (error as Record<string, unknown>).expiryCode as AuditorGrantExpiryErrorCode
-    );
-  }
-  return false;
+export function isAuditorGrantExpiryError(error: unknown): error is AuditorGrantExpiryError {
+  return error instanceof AuditorGrantExpiryError || resolveErrorCode(error) !== undefined;
 }
 
 /** Type guard for {@link AuditorGrantExpiredError}. */
-export function isAuditorGrantExpiredError(error: unknown): boolean {
+export function isAuditorGrantExpiredError(error: unknown): error is AuditorGrantExpiredError {
   return error instanceof AuditorGrantExpiredError;
 }
 
 /**
- * Extract a safe message for an auditor grant expiry error.
- * Falls back to the code's canonical message, then to a generic safe string.
+ * Extract a safe, canonical message for an auditor grant expiry error.
+ * Arbitrary error messages are never returned because they may contain private
+ * payroll data.
  */
 export function getAuditorGrantExpiryErrorMessage(error: unknown): string {
-  if (error instanceof AuditorGrantExpiryError) {
-    return error.message;
-  }
-  if (
-    error &&
-    typeof error === "object" &&
-    "expiryCode" in error &&
-    typeof (error as Record<string, unknown>).expiryCode === "string"
-  ) {
-    const code = (error as Record<string, unknown>).expiryCode as AuditorGrantExpiryErrorCode;
-    if (code in AUDITOR_GRANT_EXPIRY_ERROR_MESSAGES) {
-      return AUDITOR_GRANT_EXPIRY_ERROR_MESSAGES[code];
-    }
-  }
-  if (error instanceof Error) {
-    return error.message;
+  const code = resolveErrorCode(error);
+  if (code !== undefined) {
+    return AUDITOR_GRANT_EXPIRY_ERROR_MESSAGES[code];
   }
   return "An auditor grant expiry error occurred. Verify the grant and retry.";
 }
@@ -203,9 +246,27 @@ export function getAuditorGrantExpiryErrorMessage(error: unknown): string {
  */
 export function formatAuditorGrantExpiryError(error: unknown): string {
   const base = getAuditorGrantExpiryErrorMessage(error);
-  if (error instanceof AuditorGrantExpiryError && error.issues.length > 0) {
-    const details = error.issues.map((issue) => `[${issue.field}] ${issue.message}`).join("; ");
-    return `${base} — Issues: ${details}`;
-  }
-  return base;
+  const issues =
+    error instanceof AuditorGrantExpiryError ||
+    (error && typeof error === "object" && "issues" in error)
+      ? (error as { issues?: unknown }).issues
+      : undefined;
+  if (!Array.isArray(issues) || issues.length === 0) return base;
+
+  const details = issues
+    .filter((entry): entry is AuditorGrantExpiryIssue => {
+      if (!entry || typeof entry !== "object") return false;
+      const candidate = entry as Record<string, unknown>;
+      return (
+        typeof candidate.field === "string" &&
+        typeof candidate.message === "string" &&
+        resolveErrorCode(entry) !== undefined
+      );
+    })
+    .map((entry) => {
+      const field = entry.field.length <= 64 ? entry.field : "input";
+      const code = resolveErrorCode(entry)!;
+      return `[${field}] ${AUDITOR_GRANT_EXPIRY_ERROR_MESSAGES[code]}`;
+    });
+  return details.length > 0 ? `${base} — Issues: ${details.join("; ")}` : base;
 }

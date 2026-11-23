@@ -273,7 +273,9 @@ export function assertValidPayoutBatchRetryUpdate(
           PayoutBatchRetryStateErrorCode.INVALID_STATE_TRANSITION
         ],
       first?.code ?? PayoutBatchRetryStateErrorCode.INVALID_STATE_TRANSITION,
-      first?.context ?? {}
+      first?.context ?? {},
+      undefined,
+      result.issues
     );
   }
   return result.transition;
@@ -417,7 +419,9 @@ export function assertValidPayoutBatchRetryState(
           PayoutBatchRetryStateErrorCode.INVALID_STATE_TRANSITION
         ],
       first?.code ?? PayoutBatchRetryStateErrorCode.INVALID_STATE_TRANSITION,
-      first?.context ?? {}
+      first?.context ?? {},
+      undefined,
+      result.issues
     );
   }
   return state;

@@ -14,3 +14,4 @@ export * from "./sequenceVerification";
 export * from "./responsibilityDelegationAudit";
 export * from "./grantExpiryErrors";
 export * from "./grantExpiryValidation";
+export * from "./grantExpiryState";
