@@ -374,8 +374,8 @@ try {
 ## Decimal precision errors
 
 The low-level decimal helpers in `assets/decimals` (`assertValidDecimals`,
-`getDecimalScaleFactor`, `getMinimumFractionalString`, `resolveAssetDecimals`,
-and the single-amount `verifyPayoutPrecision` / `assertPayoutPrecision`) throw a
+`getDecimalScaleFactor`, `getMinimumFractionalString`, `resolveAssetDecimals`)
+and the registry's `register` throw a
 typed, privacy-safe `AssetDecimalPrecisionError`. It extends `ValidationError`
 (and therefore `ZkPayrollError`), and carries:
 
@@ -420,13 +420,15 @@ try {
 }
 ```
 
-Excess-precision failures from `assertPayoutPrecision` carry
-`code === "ASSET_AMOUNT_EXCESS_FRACTIONAL_DIGITS"` and an action such as
+Excess-precision failures carry `code === "ASSET_AMOUNT_EXCESS_FRACTIONAL_DIGITS"`
+and an action such as
 `"Round or adjust the amount to at most 7 decimal places before submitting the payout."`
 
-The non-throwing `verifyPayoutPrecision(amount, decimals)` from `assets/decimals`
-returns `{ valid: false, code, message, action }` for excess-precision and
-below-minimum amounts, and throws only for invalid decimals or malformed input.
+> **Note:** the package root exports the payroll-level `verifyPayoutPrecision` /
+> `assertPayoutPrecision` (see [Payout precision verification](#payout-precision-verification),
+> which use `PayoutPrecisionError`). The single-string variants in
+> `assets/decimals` are internal helpers; for a single amount use
+> `validateAssetAmountPrecision` below.
 
 ### Typed, non-throwing validation
 

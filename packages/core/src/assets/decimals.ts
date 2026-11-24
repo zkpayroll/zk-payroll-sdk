@@ -275,7 +275,7 @@ export function verifyPayoutPrecision(
   }
 
   const trimmed = amount.trim();
-  const match = /^(\d+)(?:\.(\d*))?$/.exec(trimmed);
+  const match = trimmed.match(/^(\d+)(?:\.(\d*))?$/);
   if (!match) {
     throw new AssetDecimalPrecisionError(
       AssetDecimalPrecisionErrorCode.AMOUNT_MALFORMED,
