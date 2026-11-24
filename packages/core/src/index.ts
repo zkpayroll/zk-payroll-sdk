@@ -318,6 +318,15 @@ export * from "./treasury/liquidityForecastSafeguards";
 export * from "./audit/organizationConfigChangeLedger";
 // Interrupted Payroll Run Recovery Controls (#742)
 export * from "./payroll/runRecovery";
+// Payroll run status transition validation (#978)
+export {
+  PAYROLL_RUN_STATUS_TRANSITIONS,
+  PayrollRunStatusTransitionError,
+  assertPayrollRunStatusTransition,
+  canTransitionPayrollRunStatus,
+  getAllowedPayrollRunStatusTransitions,
+} from "./payroll/runStatus";
+export type { PayrollRunStatusTransitionErrorCode } from "./payroll/runStatus";
 
 // ── Payroll Approval Invalidation (#920, #921, #922, #923) ──────────────────
 export * from "./payroll/approvalInvalidation";
