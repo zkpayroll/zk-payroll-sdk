@@ -8,3 +8,4 @@ export * from "./contractBatchLimit";
 export * from "./batchExecutionDependencyValidator";
 export * from "./commitmentDuplicateValidator";
 export * from "./payoutRetryTotals";
+export * from "./batchCorrectionRequest";

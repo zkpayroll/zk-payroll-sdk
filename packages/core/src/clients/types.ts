@@ -74,6 +74,9 @@ export interface ExecutePaymentRequest {
   amount: bigint;
   asset: string;
   memo?: string;
+  assetDecimals?: number;
+  assetSymbol?: string;
+  sourceDecimals?: number;
 }
 
 export interface SchedulePaymentRequest {

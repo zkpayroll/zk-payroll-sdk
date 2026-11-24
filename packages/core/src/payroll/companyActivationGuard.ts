@@ -43,7 +43,9 @@ export interface CompanyActivationState {
   status: CompanyActivationStatus;
   /** Whether the company is allowed to reserve funds right now. */
   canReserveFunds: boolean;
-  /** Block reason when `canReserveFunds` is false; `"none"` otherwise. */
+  /** Whether the company is allowed to submit payroll right now (#995). */
+  canSubmitPayroll: boolean;
+  /** Block reason when `canReserveFunds` or `canSubmitPayroll` is false; `"none"` otherwise. */
   blockReason: CompanyActivationBlockReason;
   /** Unix timestamp (ms) when activation was established, if recorded. */
   activatedAt?: number;
@@ -182,6 +184,7 @@ export function evaluateCompanyActivation(
   const explicitOk = requireExplicitActivation ? input.isActivated === true : true;
   const statusOk = allowedStatuses.includes(status);
   const canReserveFunds = statusOk && explicitOk;
+  const canSubmitPayroll = statusOk && explicitOk;
 
   let blockReason: CompanyActivationBlockReason = "none";
   if (!statusOk) {
@@ -195,6 +198,7 @@ export function evaluateCompanyActivation(
     redactedCompany: maskAddress(input.company),
     status,
     canReserveFunds,
+    canSubmitPayroll,
     blockReason,
     activatedAt: input.activatedAt,
     fetchedAt: now(),
@@ -276,3 +280,81 @@ export function guardFundReservation(
   assertCompanyCanReserveFunds(state);
   return state;
 }
+
+// ── Payroll Submission Guards (#995) ──────────────────────────────────────────
+
+/**
+ * Exception thrown when payroll submission is attempted for a company that
+ * is not in an activated state (#995). The message is privacy-safe and actionable.
+ */
+export class PayrollSubmissionCompanyNotActivatedError extends Error {
+  public readonly code: CompanyActivationErrorCode;
+  public readonly state: CompanyActivationState;
+
+  constructor(state: CompanyActivationState) {
+    const code =
+      BLOCK_TO_ERROR[state.blockReason] ?? ("COMPANY_STATE_UNKNOWN" as CompanyActivationErrorCode);
+    super(
+      `Cannot submit payroll: company ${state.redactedCompany} is not activated (status: ${state.status}). ` +
+        `Complete company activation before submitting payroll.`
+    );
+    this.name = "PayrollSubmissionCompanyNotActivatedError";
+    this.code = code;
+    this.state = state;
+  }
+}
+
+/**
+ * Assert that a company is activated and allowed to submit payroll (#995).
+ *
+ * @param state - A {@link CompanyActivationState} from {@link evaluateCompanyActivation}
+ * @throws {PayrollSubmissionCompanyNotActivatedError} when the company cannot submit payroll
+ *
+ * @example
+ * ```ts
+ * const state = evaluateCompanyActivation({ company, rawStatus: "active" });
+ * assertCompanyCanSubmitPayroll(state); // passes
+ * ```
+ */
+export function assertCompanyCanSubmitPayroll(state: CompanyActivationState): void {
+  if (!state.canSubmitPayroll) {
+    throw new PayrollSubmissionCompanyNotActivatedError(state);
+  }
+}
+
+/**
+ * Convenience guard: evaluate activation from input and assert company can submit payroll (#995).
+ * Returns the activation state when the company is allowed to submit payroll.
+ *
+ * @throws {PayrollSubmissionCompanyNotActivatedError} when the company cannot submit payroll
+ */
+export function guardPayrollSubmission(
+  input: CompanyActivationInput,
+  options: CompanyActivationCheckOptions = {}
+): CompanyActivationState {
+  const state = evaluateCompanyActivation(input, options);
+  assertCompanyCanSubmitPayroll(state);
+  return state;
+}
+
+/**
+ * Non-throwing helper: validates whether a company can submit payroll (#995).
+ */
+export function validateCompanyActivationForSubmission(
+  input: CompanyActivationInput,
+  options: CompanyActivationCheckOptions = {}
+): { canSubmit: boolean; error?: string; state: CompanyActivationState } {
+  const state = evaluateCompanyActivation(input, options);
+  if (!state.canSubmitPayroll) {
+    return {
+      canSubmit: false,
+      error: `Company ${state.redactedCompany} is not activated (status: ${state.status}). Complete company activation before submitting payroll.`,
+      state,
+    };
+  }
+  return {
+    canSubmit: true,
+    state,
+  };
+}
+

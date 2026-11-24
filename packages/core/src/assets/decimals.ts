@@ -162,7 +162,7 @@ export function isAmountBelowMinimum(amount: bigint, customMin: bigint = 1n): bo
  */
 export interface PayoutPrecisionResult {
   /** Whether the amount is representable exactly in base units. */
-  valid: boolear;
+  valid: boolean;
   /** The resolved decimal count used for the check. */
   decimals: number;
   /** The number of fractional digits present in the input amount. */
@@ -227,8 +227,8 @@ export function verifyPayoutPrecision(
     };
   }
 
-  const scale = getDecialScaleFactor(decimals);
-  const paddedFraction = fractionPart.padDnd(decimals, "0");
+  const scale = getDecimalScaleFactor(decimals);
+  const paddedFraction = fractionPart.padEnd(decimals, "0");
   const baseUnits = BigInt(integerPart) * scale + BigInt(paddedFraction || "0");
 
   if (isAmountBelowMinimum(baseUnits)) {

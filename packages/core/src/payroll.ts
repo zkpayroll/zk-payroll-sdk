@@ -45,6 +45,12 @@ import {
   type SafeBatchErrorDetail,
 } from "./payroll/safeBatchSubmitter";
 import {
+  guardPayrollSubmission,
+  assertCompanyCanSubmitPayroll,
+  type CompanyActivationInput,
+  type CompanyActivationState,
+} from "./payroll/companyActivationGuard";
+import {
   createBatchResumeToken,
   decodeBatchResumeToken,
   resolveResumeStart,
@@ -208,6 +214,11 @@ export interface FilterCriteria {
 export interface PayrollServiceOptions {
   /** Resolve authoritative role assignments for an operator before payroll submission. */
   resolveOperatorRoles?: (operatorAddress: string) => Promise<readonly string[]>;
+  /** Resolve or validate company activation state before payroll submission (#995). */
+  checkCompanyActivation?: () =>
+    | Promise<CompanyActivationInput | CompanyActivationState>
+    | CompanyActivationInput
+    | CompanyActivationState;
 }
 
 /**
@@ -350,6 +361,16 @@ export class PayrollService {
           "Unable to verify payroll operator permissions. Check the role registry connection and retry.",
           error
         );
+      }
+    }
+
+    // 1c. Validate company activation state before payroll submission (#995)
+    if (this.options.checkCompanyActivation) {
+      const activationData = await this.options.checkCompanyActivation();
+      if ("canSubmitPayroll" in activationData) {
+        assertCompanyCanSubmitPayroll(activationData);
+      } else {
+        guardPayrollSubmission(activationData);
       }
     }
 

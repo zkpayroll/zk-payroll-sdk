@@ -359,3 +359,15 @@ export * from "./retention";
 // ── Payout Batch Retry State & Validation (#899, #901, #902, #903) ──────────
 export * from "./batches/retryState";
 export * from "./batches/retryValidation";
+
+// ── Precision Validation, Hash Normalization, Batch Corrections, & Activation (#991, #995, #996, #999) ──
+export * from "./payroll/payoutPrecisionVerification";
+export * from "./receipts/hashNormalization";
+export * from "./batch/batchCorrectionRequest";
+export {
+  assertCompanyCanSubmitPayroll,
+  guardPayrollSubmission,
+  validateCompanyActivationForSubmission,
+  PayrollSubmissionCompanyNotActivatedError,
+} from "./payroll/companyActivationGuard";
+
