@@ -13,6 +13,12 @@
  */
 
 import { AssetMetadata } from "./types";
+import {
+  AssetDecimalPrecisionError,
+  AssetDecimalPrecisionErrorCode,
+  AssetDecimalPrecisionErrorCodeType,
+  describeValueType,
+} from "./decimalPrecisionErrors";
 
 /** Default decimal places for Stellar/Soroban native and standard assets */
 export const DEFAULT_ASSET_DECIMALS = 7;
@@ -44,16 +50,40 @@ export function isValidDecimals(decimals: unknown): decimals is number {
 /**
  * Assert that a decimal value is an integer within [0, 18].
  *
+ * The thrown error never echoes non-integer input (which may be a mis-passed
+ * amount); it reports only the received type. Out-of-range integers are
+ * reported because they are asset metadata, not payroll data.
+ *
  * @param decimals - The decimals value to validate.
- * @throws RangeError or TypeError if invalid.
+ * @throws {AssetDecimalPrecisionError} with code `ASSET_DECIMALS_NOT_INTEGER`
+ *   or `ASSET_DECIMALS_OUT_OF_RANGE` if invalid.
  */
 export function assertValidDecimals(decimals: number): void {
   if (typeof decimals !== "number" || !Number.isInteger(decimals)) {
-    throw new TypeError(`Decimals must be an integer, received: ${decimals}`);
+    throw new AssetDecimalPrecisionError(
+      AssetDecimalPrecisionErrorCode.DECIMALS_NOT_INTEGER,
+      `Asset decimals must be an integer, but a non-integer value of type "${describeValueType(decimals)}" was provided.`,
+      `Use an integer between ${MIN_SUPPORTED_DECIMALS} and ${MAX_SUPPORTED_DECIMALS} from the asset's metadata.`,
+      "decimals",
+      {
+        receivedType: describeValueType(decimals),
+        minDecimals: MIN_SUPPORTED_DECIMALS,
+        maxDecimals: MAX_SUPPORTED_DECIMALS,
+      }
+    );
   }
   if (decimals < MIN_SUPPORTED_DECIMALS || decimals > MAX_SUPPORTED_DECIMALS) {
-    throw new RangeError(
-      `Decimals must be between ${MIN_SUPPORTED_DECIMALS} and ${MAX_SUPPORTED_DECIMALS}, received: ${decimals}`
+    const safeReceived = Number.isSafeInteger(decimals) ? decimals : undefined;
+    throw new AssetDecimalPrecisionError(
+      AssetDecimalPrecisionErrorCode.DECIMALS_OUT_OF_RANGE,
+      `Asset decimals${safeReceived !== undefined ? ` (${safeReceived})` : ""} are outside the supported range ${MIN_SUPPORTED_DECIMALS}-${MAX_SUPPORTED_DECIMALS}.`,
+      `Check the asset's metadata; supported assets use between ${MIN_SUPPORTED_DECIMALS} and ${MAX_SUPPORTED_DECIMALS} decimals.`,
+      "decimals",
+      {
+        receivedDecimals: safeReceived,
+        minDecimals: MIN_SUPPORTED_DECIMALS,
+        maxDecimals: MAX_SUPPORTED_DECIMALS,
+      }
     );
   }
 }
@@ -169,8 +199,15 @@ export interface PayoutPrecisionResult {
   fractionalDigits: number;
   /** The amount expressed in base units, or null when it cannot be represented exactly. */
   baseUnits: bigint | null;
-  /** Actionable human-readable message. */
+  /**
+   * Actionable human-readable message. Never contains the amount or its
+   * base-unit value, so it is safe to log or surface to end users.
+   */
   message: string;
+  /** Stable failure code; present only when `valid` is `false`. */
+  code?: AssetDecimalPrecisionErrorCodeType;
+  /** Actionable guidance; present only when `valid` is `false`. */
+  action?: string;
 }
 
 /**
@@ -189,9 +226,10 @@ export interface PayoutPrecisionResult {
  *
  * @param amount - Human-readable decimal amount (e.g. "1.23").
  * @param decimals - Asset decimals (0 to 18). Defaults to 7.
- * @returns A precision verification result.
- * @ throws TypeError or RangeError when the input is not a well-formed amount or
- *   the decimals are out of range.
+ * @returns A precision verification result. Messages never include the amount.
+ * @throws {AssetDecimalPrecisionError} when the decimals are invalid
+ *   (`ASSET_DECIMALS_*`) or the amount is not a well-formed decimal string
+ *   (`ASSET_AMOUNT_NOT_STRING`, `ASSET_AMOUNT_MALFORMED`).
  */
 export function verifyPayoutPrecision(
   amount: string,
@@ -200,30 +238,41 @@ export function verifyPayoutPrecision(
   assertValidDecimals(decimals);
 
   if (typeof amount !== "string") {
-    throw new TypeError(`Amount must be a string, received: ${typeof amount}`);
+    throw new AssetDecimalPrecisionError(
+      AssetDecimalPrecisionErrorCode.AMOUNT_NOT_STRING,
+      `Amount must be a decimal string, but a value of type "${describeValueType(amount)}" was provided.`,
+      `Pass the amount as a string such as "1.23" to avoid floating-point precision loss.`,
+      "amount",
+      { receivedType: describeValueType(amount), decimals }
+    );
   }
 
   const trimmed = amount.trim();
-  const match = /^(\d{1}(?:\d*))(?:\.(\d*))?$/.exec(trimmed);
+  const match = /^(\d+)(?:\.(\d*))?$/.exec(trimmed);
   if (!match) {
-    throw new TypeError(
-      `Invalid amount "${amount}": expected a non-negative decimal string such as "1.23". Negative, exponential, or symbol-bearing values are not supported.`
+    throw new AssetDecimalPrecisionError(
+      AssetDecimalPrecisionErrorCode.AMOUNT_MALFORMED,
+      "Amount is not a valid non-negative decimal string.",
+      `Use plain digits with an optional decimal point, such as "1.23". Negative, exponential, grouped, or symbol-bearing values are not supported.`,
+      "amount",
+      { decimals }
     );
   }
 
   const integerPart = match[1];
   const fractionPart = match[2] ?? "";
   const fractionalDigits = fractionPart.length;
+  const minimumAmount = getMinimumFractionalString(decimals);
 
   if (fractionalDigits > decimals) {
-    const minimum = getMinimumFractionalString(decimals);
     return {
       valid: false,
       decimals,
       fractionalDigits,
       baseUnits: null,
-      message:
-        `Amount "${trimmed}" has ${fractionalDigits} fractional digits but the asset supports only ${decimals}. The smallest representable amount is ${minimum}. Round or adjust the amount before submitting the payout.`,
+      code: AssetDecimalPrecisionErrorCode.EXCESS_FRACTIONAL_DIGITS,
+      message: `Amount has ${fractionalDigits} fractional digits but the asset supports only ${decimals}. The smallest representable amount is ${minimumAmount}.`,
+      action: `Round or adjust the amount to at most ${decimals} decimal places before submitting the payout.`,
     };
   }
 
@@ -237,7 +286,9 @@ export function verifyPayoutPrecision(
       decimals,
       fractionalDigits,
       baseUnits: null,
-      message: `Amount "${trimmed}" resolves to ${baseUnits} base units, but the minimum supported payout is 1 base unit (${getMinimumFractionalString(decimals)}).`,
+      code: AssetDecimalPrecisionErrorCode.BELOW_MINIMUM_UNIT,
+      message: `Amount is below the asset's smallest unit. The minimum supported payout is 1 base unit (${minimumAmount}).`,
+      action: `Increase the amount to at least ${minimumAmount}.`,
     };
   }
 
@@ -246,7 +297,7 @@ export function verifyPayoutPrecision(
     decimals,
     fractionalDigits,
     baseUnits,
-    message: `Amount "${trimmed}" is representable exactly as ${baseUnits} base units.`,
+    message: "Amount is representable exactly in the asset's base units.",
   };
 }
 
@@ -257,7 +308,9 @@ export function verifyPayoutPrecision(
  * @param amount - Human-readable decimal amount (e.g. "1.23").
  * @param decimals - Asset decimals (0 to 18). Defaults to 7.
  * @returns The amount in base units.
- * @throws RangeError when the amount cannot be represented exactly or is non-positive.
+ * @throws {AssetDecimalPrecisionError} when the decimals or amount are invalid,
+ *   the amount has excess fractional digits, or it is below the smallest unit.
+ *   The error never includes the amount itself.
  */
 export function assertPayoutPrecision(
   amount: string,
@@ -265,7 +318,17 @@ export function assertPayoutPrecision(
 ): bigint {
   const result = verifyPayoutPrecision(amount, decimals);
   if (!result.valid || result.baseUnits === null) {
-    throw new RangeError(result.message);
+    throw new AssetDecimalPrecisionError(
+      result.code ?? AssetDecimalPrecisionErrorCode.EXCESS_FRACTIONAL_DIGITS,
+      result.message,
+      result.action ?? `Adjust the amount to at most ${result.decimals} decimal places.`,
+      "amount",
+      {
+        decimals: result.decimals,
+        fractionalDigits: result.fractionalDigits,
+        minimumAmount: getMinimumFractionalString(result.decimals),
+      }
+    );
   }
   return result.baseUnits;
 }

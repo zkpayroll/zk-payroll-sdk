@@ -12,6 +12,7 @@ export * from "./paymentAssetDeprecation";
 export * from "./formatters";
 export * from "./types";
 export * from "./decimals";
+export * from "./decimalPrecisionErrors";
 export * from "./payoutPrecisionVerification";
 // `RoundingMode` is re-exported from `amountParsing` above; `amountRounding`
 // re-exports the same value rather than declaring its own, so it is left out
