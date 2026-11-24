@@ -33,6 +33,8 @@ export enum DelegatedApproverAssignmentErrorCode {
   ORIGINAL_ROLE_CANNOT_DELEGATE = "ORIGINAL_ROLE_CANNOT_DELEGATE",
   /** The delegation expires after the delegating role's own expiry. */
   DELEGATION_EXCEEDS_PARENT_ROLE_EXPIRY = "DELEGATION_EXCEEDS_PARENT_ROLE_EXPIRY",
+  /** The delegating role had already expired when the assignment was requested. */
+  PARENT_ROLE_EXPIRED = "PARENT_ROLE_EXPIRED",
 }
 
 /**
@@ -150,7 +152,10 @@ function generateAssignmentId(): string {
  * - Workflow ID is non-empty
  * - Date range is valid (effectiveFrom < effectiveUntil)
  * - Dates are within allowed bounds (not too far past/future)
+ * - The delegation has not already ended (effectiveUntil is in the future)
  * - Duration does not exceed maximum
+ * - The parent role, if provided, has not already expired
+ * - The delegation does not outlive the parent role, if provided
  * - Original approver role is authorized to delegate (if provided)
  *
  * @param request - The assignment request to validate.
@@ -254,6 +259,15 @@ export function assertValidDelegatedApproverAssignment(
     );
   }
 
+  // A delegation whose window has already closed grants no authority
+  if (request.effectiveUntil <= now) {
+    throw new DelegatedApproverAssignmentError(
+      "effectiveUntil must be in the future.",
+      DelegatedApproverAssignmentErrorCode.INVALID_DATE_RANGE,
+      { field: "effectiveUntil", effectiveUntil: request.effectiveUntil }
+    );
+  }
+
   // EffectiveUntil not too far in the future
   if (request.effectiveUntil - now > MAX_EFFECTIVE_UNTIL_FUTURE_MS) {
     throw new DelegatedApproverAssignmentError(
@@ -283,6 +297,14 @@ export function assertValidDelegatedApproverAssignment(
         "parentRoleExpiresAt must be a valid timestamp when provided.",
         DelegatedApproverAssignmentErrorCode.MISSING_FIELD,
         { field: "parentRoleExpiresAt" }
+      );
+    }
+    // An expired parent role cannot delegate, regardless of the requested window
+    if (request.parentRoleExpiresAt <= now) {
+      throw new DelegatedApproverAssignmentError(
+        "parentRoleExpiresAt is in the past; the delegating role has already expired.",
+        DelegatedApproverAssignmentErrorCode.PARENT_ROLE_EXPIRED,
+        { field: "parentRoleExpiresAt", parentRoleExpiresAt: request.parentRoleExpiresAt }
       );
     }
     if (request.effectiveUntil > request.parentRoleExpiresAt) {
