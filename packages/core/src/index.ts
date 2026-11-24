@@ -327,6 +327,15 @@ export {
   getAllowedPayrollRunStatusTransitions,
 } from "./payroll/runStatus";
 export type { PayrollRunStatusTransitionErrorCode } from "./payroll/runStatus";
+// Deterministic payroll metadata serialization (#982)
+export {
+  PayrollMetadataSerializationError,
+  serializePayrollMetadata,
+} from "./payroll/metadataSerialization";
+export type {
+  PayrollMetadataPath,
+  PayrollMetadataSerializationErrorCode,
+} from "./payroll/metadataSerialization";
 
 // ── Payroll Approval Invalidation (#920, #921, #922, #923) ──────────────────
 export * from "./payroll/approvalInvalidation";
