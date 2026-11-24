@@ -8,6 +8,7 @@ export * from "./withholdingConfig";
 export * from "./timestamps";
 export * from "./validation";
 export * from "./errors";
+export * from "./finalizedRunErrors";
 export * from "./safeBatchSubmitter";
 export * from "./runStatus";
 export * from "./periodPagination";
