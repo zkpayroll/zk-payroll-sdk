@@ -54,3 +54,4 @@ export * from "./settlementStartLedger";
 export * from "./runLookup";
 export * from "../policies";
 export * from "./approvalInvalidationReasons";
+export * from "./settlementTokenInterfaceGuard";

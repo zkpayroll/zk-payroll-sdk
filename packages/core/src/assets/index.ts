@@ -6,6 +6,7 @@ export * from "./AssetRegistry";
 export * from "./assetDeprecation";
 export * from "./assetIdentity";
 export * from "./paymentAssetCompatibility";
+export * from "./tokenInterface";
 export * from "./paymentAssetAuthorization";
 export * from "./paymentAssetDeprecation";
 export * from "./formatters";
