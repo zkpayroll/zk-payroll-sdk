@@ -1,4 +1,5 @@
 import { getAssetDeprecation } from "./assetDeprecation";
+import { validateAssetDecimals } from "./decimals";
 import {
   AssetAvailability,
   AssetDeprecation,
@@ -112,6 +113,8 @@ export class AssetRegistryClass {
    *
    * @param input - Required fields and any optional overrides.
    * @returns The fully normalised `AssetMetadata` that was stored.
+   * @throws {AssetDecimalPrecisionError} when `decimals` is not an integer in
+   *   the supported `0`–`18` range. Nothing is stored in that case.
    *
    * @example
    * ```ts
@@ -124,6 +127,13 @@ export class AssetRegistryClass {
    * ```
    */
   register(input: AssetMetadataInput): AssetMetadata {
+    // Reject unsupported precision up front so it cannot surface later as a
+    // confusing failure deep inside formatting or payout conversion.
+    const decimalsResult = validateAssetDecimals(input.decimals);
+    if (!decimalsResult.valid) {
+      throw decimalsResult.error;
+    }
+
     // Remove stale symbol index if we're replacing an existing entry.
     const existing = this._byId.get(input.id);
     if (existing) {
@@ -242,8 +252,8 @@ export class AssetRegistryClass {
    *
    * This is a safety check intended to be called before constructing a
    * payroll transaction.  It verifies that the asset is registered and that
-   * its metadata is internally consistent (non-empty symbol/label and a
-   * non-negative integer `decimals` value) so that downstream formatting and
+   * its metadata is internally consistent (non-empty symbol/label and an
+   * integer `decimals` value between 0 and 18) so that downstream formatting and
    * amount conversion cannot silently produce incorrect results.
    *
    * Unlike `has`, this method never throws and always returns a structured
@@ -284,17 +294,24 @@ export class AssetRegistryClass {
       metadata.symbol.trim() !== "" &&
       typeof metadata.label === "string" &&
       metadata.label.trim() !== "";
-    const hasUsableDecimals =
-      typeof metadata.decimals === "number" &&
-      Number.isInteger(metadata.decimals) &&
-      metadata.decimals >= 0;
-
-    if (!hasUsableText || !hasUsableDecimals) {
+    if (!hasUsableText) {
       return {
         assetId: metadata.id,
         available: false,
         code: "invalid_metadata",
         reason: `Registered metadata for asset "${metadata.id}" is not usable for payroll.`,
+        metadata,
+      };
+    }
+
+    const decimalsResult = validateAssetDecimals(metadata.decimals);
+    if (!decimalsResult.valid) {
+      return {
+        assetId: metadata.id,
+        available: false,
+        code: "invalid_metadata",
+        reason: `Registered metadata for asset "${metadata.id}" is not usable for payroll: ${decimalsResult.error.message}`,
+        decimalsErrorCode: decimalsResult.error.code,
         metadata,
       };
     }

@@ -428,6 +428,46 @@ The non-throwing `verifyPayoutPrecision(amount, decimals)` from `assets/decimals
 returns `{ valid: false, code, message, action }` for excess-precision and
 below-minimum amounts, and throws only for invalid decimals or malformed input.
 
+### Typed, non-throwing validation
+
+For untrusted input (JSON config, RPC responses, form fields) use the
+result-returning validators. Both return a discriminated union on `valid`, and
+every failure carries the same typed `AssetDecimalPrecisionError` described
+above, so codes and messages are identical to the throwing helpers.
+
+```ts
+import { validateAssetDecimals, validateAssetAmountPrecision } from "@zk-payroll/core";
+
+const decimals = validateAssetDecimals(config.decimals);
+if (!decimals.valid) {
+  // decimals.error.code === "ASSET_DECIMALS_OUT_OF_RANGE" | "ASSET_DECIMALS_NOT_INTEGER"
+  return fail(decimals.error.action);
+}
+decimals.decimals; // narrowed to SupportedAssetDecimals (0 | 1 | ... | 18)
+
+const amount = validateAssetAmountPrecision(input, usdcMetadata); // or a decimals number
+if (amount.valid) {
+  submit(amount.baseUnits); // exact bigint, e.g. "4250.125" @ 6 decimals => 4250125000n
+} else {
+  showHint(amount.error.action); // never contains the amount
+}
+```
+
+`validateAssetAmountPrecision` checks, in order: the asset decimals, the amount
+type and format, the fractional-digit count, and the one-base-unit minimum.
+
+`SupportedAssetDecimals` is the literal union `0 | 1 | … | 18`. `isValidDecimals`
+and `assertValidDecimals` narrow to it, and `getDecimalsValidationError(value)`
+returns the error (or `undefined`) for callers that build their own results.
+
+### Registry enforcement
+
+`AssetRegistry.register` now rejects metadata whose `decimals` is not an integer
+in `0`–`18`, throwing `AssetDecimalPrecisionError` and storing nothing (an
+existing entry with the same id is left untouched). `checkAvailability` applies
+the same range and, for bad precision, returns `code: "invalid_metadata"` plus a
+`decimalsErrorCode` with the specific `AssetDecimalPrecisionErrorCode`.
+
 > **Migration note:** these helpers previously threw built-in `TypeError` /
 > `RangeError` values whose messages echoed the raw input. Replace
 > `instanceof RangeError` / `instanceof TypeError` checks with
