@@ -345,6 +345,9 @@ export * from "./batches/retryState";
 export * from "./batches/retryValidation";
 export * from "./payroll/periodValidation";
 export * from "./payroll/periodErrors";
+export * from "./payroll/finalizedRunErrors";
+export * from "./ledger/sequence";
+export * from "./proofs/publicInputLength";
 export * from "./payroll/periodStateManager";
 
 // ── Treasury Reservation Validation (#879) ──────────────────────────────────

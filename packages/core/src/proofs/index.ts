@@ -4,6 +4,7 @@ export * from "./freshness";
 export * from "./reference";
 export * from "./finalizedRunGuard";
 export * from "./circuitInputSize";
+export * from "./publicInputLength";
 export * from "./duplicateCommitmentFixtures";
 export * from "./inputValidation";
 export * from "./proofInputValidator";
