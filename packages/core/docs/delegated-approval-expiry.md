@@ -17,8 +17,15 @@ role expires at a given moment, any delegation it created must expire no later.
 | `effectiveUntil > parentRoleExpiresAt` | Rejected with `DELEGATION_EXCEEDS_PARENT_ROLE_EXPIRY`. |
 | `parentRoleExpiresAt` omitted | Existing behavior is unchanged. |
 | `parentRoleExpiresAt` is not a finite number | Rejected with `MISSING_FIELD` (`field: "parentRoleExpiresAt"`). |
+| `parentRoleExpiresAt <= now` | Rejected with `PARENT_ROLE_EXPIRED`. The delegating role has already expired. |
+| `effectiveUntil <= now` | Rejected with `INVALID_DATE_RANGE` (`field: "effectiveUntil"`). The delegation window has already closed. |
 
-The rejection context contains only the two timestamps involved:
+Expiry boundaries are exclusive: at `now === effectiveUntil` the delegation is
+already expired, matching `isDelegatedApproverActive`. The same checks run for
+`assignDelegatedApprover` in `DelegatedApproverClient`, before any transaction
+is built, so an expired request never reaches the network.
+
+The rejection context contains only the timestamps involved:
 
 ```ts
 {
