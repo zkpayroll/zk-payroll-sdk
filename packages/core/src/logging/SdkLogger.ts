@@ -185,8 +185,29 @@ export function resetSdkLogger(): SdkLogger {
 }
 
 /**
+ * Payroll fields the logger redacts on top of the engine defaults. The engine's
+ * default set is shared with other callers and pinned by tests, so these names
+ * are applied here. `asset` is not included: callers that need it hidden should
+ * pass it to `redactObject` with `additionalFields`.
+ */
+const SDK_LOG_PAYROLL_SENSITIVE_FIELDS: readonly string[] = [
+  "salary",
+  "salaryAmount",
+  "employee",
+  "employer",
+  "commitmentHash",
+  "nullifier",
+];
+
+/**
  * Returns a shallow copy of `context` with sensitive field values replaced by "[redacted]".
+ *
+ * Redacts the engine defaults (recipient, amount, keys, tokens, …) and the payroll
+ * fields above. Only top-level keys are inspected. See docs/privacy-safe-logging.md.
  */
 export function redactSensitive(context: Record<string, unknown>): Record<string, unknown> {
-  return redactObject(context).redacted as Record<string, unknown>;
+  const { redacted } = redactObject(context, {
+    additionalFields: [...SDK_LOG_PAYROLL_SENSITIVE_FIELDS],
+  });
+  return redacted;
 }
