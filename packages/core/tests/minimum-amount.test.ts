@@ -11,6 +11,10 @@ import {
   MIN_SUPPORTED_DECIMALS,
   MAX_SUPPORTED_DECIMALS,
 } from "../src/assets/decimals";
+import {
+  AssetDecimalPrecisionError,
+  AssetDecimalPrecisionErrorCode,
+} from "../src/assets/decimalPrecisionErrors";
 
 import {
   validatePayrollEntryMinimumAmount,
@@ -57,10 +61,17 @@ describe("Asset Decimals Utilities", () => {
       expect(() => assertValidDecimals(MAX_SUPPORTED_DECIMALS)).not.toThrow();
     });
 
-    it("assertValidDecimals throws on out-of-range or non-integer", () => {
-      expect(() => assertValidDecimals(19)).toThrow(RangeError);
-      expect(() => assertValidDecimals(-1)).toThrow(RangeError);
-      expect(() => assertValidDecimals(2.5)).toThrow(TypeError);
+    it("assertValidDecimals throws safe typed errors on out-of-range or non-integer", () => {
+      expect(() => assertValidDecimals(19)).toThrow(
+        expect.objectContaining({ code: AssetDecimalPrecisionErrorCode.DECIMALS_OUT_OF_RANGE })
+      );
+      expect(() => assertValidDecimals(-1)).toThrow(
+        expect.objectContaining({ code: AssetDecimalPrecisionErrorCode.DECIMALS_OUT_OF_RANGE })
+      );
+      expect(() => assertValidDecimals(2.5)).toThrow(
+        expect.objectContaining({ code: AssetDecimalPrecisionErrorCode.DECIMALS_NOT_INTEGER })
+      );
+      expect(() => assertValidDecimals(19)).toThrow(AssetDecimalPrecisionError);
     });
   });
 

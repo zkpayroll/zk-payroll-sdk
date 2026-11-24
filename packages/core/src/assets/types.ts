@@ -14,6 +14,8 @@
  *   protocol-specific context without touching the core types.
  */
 
+import type { AssetDecimalPrecisionErrorCodeType } from "./decimalPrecisionErrors";
+
 /**
  * The canonical identifier for an asset.
  *
@@ -193,6 +195,13 @@ export interface AssetAvailability {
    * users or integrators. Omitted when the asset is available.
    */
   reason?: string;
+
+  /**
+   * Stable decimal-precision failure code, present only when `code` is
+   * `"invalid_metadata"` because the registered `decimals` value is not an
+   * integer in the supported `0`–`18` range.
+   */
+  decimalsErrorCode?: AssetDecimalPrecisionErrorCodeType;
 
   /**
    * The resolved metadata when the asset is available.

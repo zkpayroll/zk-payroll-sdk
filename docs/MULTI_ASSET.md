@@ -371,6 +371,110 @@ try {
 }
 ```
 
+## Decimal precision errors
+
+The low-level decimal helpers in `assets/decimals` (`assertValidDecimals`,
+`getDecimalScaleFactor`, `getMinimumFractionalString`, `resolveAssetDecimals`)
+and the registry's `register` throw a
+typed, privacy-safe `AssetDecimalPrecisionError`. It extends `ValidationError`
+(and therefore `ZkPayrollError`), and carries:
+
+| Property  | Description |
+|-----------|-------------|
+| `code`    | Stable `AssetDecimalPrecisionErrorCode` value (see below). |
+| `field`   | `"decimals"` or `"amount"`. |
+| `action`  | Actionable guidance, also appended to `message`. |
+| `details` | Frozen, privacy-safe metadata: `decimals`, `receivedDecimals`, `minDecimals`, `maxDecimals`, `fractionalDigits`, `minimumAmount`, `receivedType`. |
+
+| Code | When |
+|------|------|
+| `ASSET_DECIMALS_NOT_INTEGER` | Decimals is not an integer number (e.g. `2.5`, `"7"`, `null`). |
+| `ASSET_DECIMALS_OUT_OF_RANGE` | Decimals is an integer outside `0`–`18`. |
+| `ASSET_AMOUNT_NOT_STRING` | The amount was not passed as a string. |
+| `ASSET_AMOUNT_MALFORMED` | The amount is not plain non-negative digits with an optional decimal point. |
+| `ASSET_AMOUNT_EXCESS_FRACTIONAL_DIGITS` | The amount has more fractional digits than the asset supports. |
+| `ASSET_AMOUNT_BELOW_MINIMUM_UNIT` | The amount resolves to less than one base unit. |
+
+**Privacy:** messages, actions, and details never include the amount, its
+base-unit value, or employee/recipient identifiers. Non-integer decimals are
+described only by type, because a mis-passed salary must not leak into logs.
+Out-of-range integer decimals are echoed because they are asset metadata.
+
+```ts
+import {
+  resolveAssetDecimals,
+  AssetDecimalPrecisionError,
+  AssetDecimalPrecisionErrorCode,
+} from "@zk-payroll/core";
+
+try {
+  resolveAssetDecimals(assetMetadata);
+} catch (err) {
+  if (
+    err instanceof AssetDecimalPrecisionError &&
+    err.code === AssetDecimalPrecisionErrorCode.DECIMALS_OUT_OF_RANGE
+  ) {
+    // "Asset decimals (19) are outside the supported range 0-18. Check the asset's metadata; ..."
+    console.warn(err.action, err.details); // { receivedDecimals: 19, minDecimals: 0, maxDecimals: 18 }
+  }
+}
+```
+
+Excess-precision failures carry `code === "ASSET_AMOUNT_EXCESS_FRACTIONAL_DIGITS"`
+and an action such as
+`"Round or adjust the amount to at most 7 decimal places before submitting the payout."`
+
+> **Note:** the package root exports the payroll-level `verifyPayoutPrecision` /
+> `assertPayoutPrecision` (see [Payout precision verification](#payout-precision-verification),
+> which use `PayoutPrecisionError`). The single-string variants in
+> `assets/decimals` are internal helpers; for a single amount use
+> `validateAssetAmountPrecision` below.
+
+### Typed, non-throwing validation
+
+For untrusted input (JSON config, RPC responses, form fields) use the
+result-returning validators. Both return a discriminated union on `valid`, and
+every failure carries the same typed `AssetDecimalPrecisionError` described
+above, so codes and messages are identical to the throwing helpers.
+
+```ts
+import { validateAssetDecimals, validateAssetAmountPrecision } from "@zk-payroll/core";
+
+const decimals = validateAssetDecimals(config.decimals);
+if (!decimals.valid) {
+  // decimals.error.code === "ASSET_DECIMALS_OUT_OF_RANGE" | "ASSET_DECIMALS_NOT_INTEGER"
+  return fail(decimals.error.action);
+}
+decimals.decimals; // narrowed to SupportedAssetDecimals (0 | 1 | ... | 18)
+
+const amount = validateAssetAmountPrecision(input, usdcMetadata); // or a decimals number
+if (amount.valid) {
+  submit(amount.baseUnits); // exact bigint, e.g. "4250.125" @ 6 decimals => 4250125000n
+} else {
+  showHint(amount.error.action); // never contains the amount
+}
+```
+
+`validateAssetAmountPrecision` checks, in order: the asset decimals, the amount
+type and format, the fractional-digit count, and the one-base-unit minimum.
+
+`SupportedAssetDecimals` is the literal union `0 | 1 | … | 18`. `isValidDecimals`
+and `assertValidDecimals` narrow to it, and `getDecimalsValidationError(value)`
+returns the error (or `undefined`) for callers that build their own results.
+
+### Registry enforcement
+
+`AssetRegistry.register` now rejects metadata whose `decimals` is not an integer
+in `0`–`18`, throwing `AssetDecimalPrecisionError` and storing nothing (an
+existing entry with the same id is left untouched). `checkAvailability` applies
+the same range and, for bad precision, returns `code: "invalid_metadata"` plus a
+`decimalsErrorCode` with the specific `AssetDecimalPrecisionErrorCode`.
+
+> **Migration note:** these helpers previously threw built-in `TypeError` /
+> `RangeError` values whose messages echoed the raw input. Replace
+> `instanceof RangeError` / `instanceof TypeError` checks with
+> `instanceof AssetDecimalPrecisionError` and branch on `err.code`.
+
 ## Test isolation with a custom registry instance
 
 The shared `AssetRegistry` singleton is mutated globally. When you need a fully
