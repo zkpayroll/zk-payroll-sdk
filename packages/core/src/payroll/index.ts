@@ -48,6 +48,8 @@ export * from "./auditTrail";
 export * from "./latestApprovedRevisionReader";
 export * from "./approvalInvalidation";
 export * from "./approvalInvalidationState";
+export * from "./payoutPrecisionVerification";
+
 export * from "./settlementStartLedger";
 export * from "./runLookup";
 export * from "../policies";

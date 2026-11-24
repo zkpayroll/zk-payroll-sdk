@@ -14,6 +14,10 @@ import {
   assertCompanyCanReserveFunds,
   guardFundReservation,
   CompanyNotActivatedError,
+  assertCompanyCanSubmitPayroll,
+  guardPayrollSubmission,
+  validateCompanyActivationForSubmission,
+  PayrollSubmissionCompanyNotActivatedError,
 } from "../../src/payroll/companyActivationGuard";
 
 const TEST_COMPANY = "GABCDEFGHIJKLMNOPQRSTUVWXYZ234567ABCDEFGH234567ABCDEF";
@@ -243,3 +247,73 @@ describe("guardFundReservation", () => {
     expect(state.canReserveFunds).toBe(true);
   });
 });
+
+describe("Payroll Submission Activation Guard (#995)", () => {
+  it("allows payroll submission for active companies", () => {
+    const state = evaluateCompanyActivation({
+      company: TEST_COMPANY,
+      rawStatus: "active",
+    });
+    expect(state.canSubmitPayroll).toBe(true);
+    expect(() => assertCompanyCanSubmitPayroll(state)).not.toThrow();
+
+    const guardedState = guardPayrollSubmission({
+      company: TEST_COMPANY,
+      rawStatus: "active",
+    });
+    expect(guardedState.canSubmitPayroll).toBe(true);
+
+    const check = validateCompanyActivationForSubmission({
+      company: TEST_COMPANY,
+      rawStatus: "active",
+    });
+    expect(check.canSubmit).toBe(true);
+    expect(check.error).toBeUndefined();
+  });
+
+  it("blocks payroll submission for pending, suspended, or deactivated companies", () => {
+    const statuses = ["pending", "suspended", "deactivated", "unknown"];
+    for (const rawStatus of statuses) {
+      const state = evaluateCompanyActivation({
+        company: TEST_COMPANY,
+        rawStatus,
+      });
+      expect(state.canSubmitPayroll).toBe(false);
+
+      expect(() => assertCompanyCanSubmitPayroll(state)).toThrow(
+        PayrollSubmissionCompanyNotActivatedError
+      );
+      expect(() =>
+        guardPayrollSubmission({ company: TEST_COMPANY, rawStatus })
+      ).toThrow(PayrollSubmissionCompanyNotActivatedError);
+
+      const check = validateCompanyActivationForSubmission({
+        company: TEST_COMPANY,
+        rawStatus,
+      });
+      expect(check.canSubmit).toBe(false);
+      expect(check.error).toContain("Complete company activation before submitting payroll");
+    }
+  });
+
+  it("ensures submission error messages are privacy-safe", () => {
+    const state = evaluateCompanyActivation({
+      company: TEST_COMPANY,
+      rawStatus: "suspended",
+    });
+    try {
+      assertCompanyCanSubmitPayroll(state);
+      fail("expected error");
+    } catch (err) {
+      expect(err).toBeInstanceOf(PayrollSubmissionCompanyNotActivatedError);
+      const error = err as PayrollSubmissionCompanyNotActivatedError;
+      expect(error.code).toBe("COMPANY_SUSPENDED");
+      expect(error.message).toContain("Cannot submit payroll");
+      // Protects privacy: no full company address or payroll terms
+      expect(error.message).not.toContain(TEST_COMPANY);
+      expect(error.message.toLowerCase()).not.toContain("salary");
+      expect(error.message.toLowerCase()).not.toContain("employee");
+    }
+  });
+});
+

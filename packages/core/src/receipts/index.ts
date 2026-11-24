@@ -10,3 +10,4 @@ export * from "./referenceLookup";
 export * from "./policyRevisionAttachment";
 export * from "./treasuryReleaseResult";
 export * from "./executionReceiptConsistency";
+export * from "./hashNormalization";

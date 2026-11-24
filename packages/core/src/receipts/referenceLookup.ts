@@ -20,11 +20,24 @@
  * for telemetry, so nothing here can leak a payroll value into a log line.
  */
 import type { PayrollReceipt, PayrollTransactionReference } from "./types";
+import {
+  normalizeTransactionHash,
+  safeNormalizeTransactionHash,
+  isValidTransactionHash,
+  formatTransactionHash,
+} from "./hashNormalization";
+
+export {
+  normalizeTransactionHash,
+  safeNormalizeTransactionHash,
+  isValidTransactionHash,
+  formatTransactionHash,
+};
 
 /**
- * A 64-character hexadecimal Stellar transaction hash.
+ * A 64-character hexadecimal Stellar transaction hash (with optional 0x/0X prefix).
  */
-const TX_HASH_RE = /^[a-fA-F0-9]{64}$/;
+const TX_HASH_RE = /^(?:0[xX])?[a-fA-F0-9]{64}$/;
 
 /**
  * Networks a reference can name, normalised to lowercase.
@@ -150,12 +163,13 @@ export function resolveReceiptTransactionReference(
   }
 
   if (typeof reference === "string") {
-    const txHash = reference.trim();
-    if (txHash === "") {
+    const rawTxHash = reference.trim();
+    if (rawTxHash === "") {
       issues.push(issue(ReceiptReferenceCode.MISSING, "Transaction reference is empty.", true));
       return { txHash: "", isPresent: false, isValidHash: false, issues };
     }
-    const isValidHash = TX_HASH_RE.test(txHash);
+    const normalized = safeNormalizeTransactionHash(rawTxHash);
+    const isValidHash = normalized !== null;
     if (!isValidHash) {
       issues.push(
         issue(
@@ -165,18 +179,20 @@ export function resolveReceiptTransactionReference(
         )
       );
     }
-    return { txHash, isPresent: true, isValidHash, issues };
+    return { txHash: normalized ?? rawTxHash, isPresent: true, isValidHash, issues };
   }
 
   // Structured form. A reference with no usable hash is reported rather than
   // silently treated as absent, so the distinction stays visible to callers.
-  const txHash = typeof reference.txHash === "string" ? reference.txHash.trim() : "";
-  if (txHash === "") {
+  const rawTxHash = typeof reference.txHash === "string" ? reference.txHash.trim() : "";
+  if (rawTxHash === "") {
     issues.push(issue(ReceiptReferenceCode.MISSING, "Transaction reference has no txHash.", true));
     return { txHash: "", isPresent: false, isValidHash: false, issues };
   }
 
-  const isValidHash = TX_HASH_RE.test(txHash);
+  const normalized = safeNormalizeTransactionHash(rawTxHash);
+  const isValidHash = normalized !== null;
+  const txHash = normalized ?? rawTxHash;
   if (!isValidHash) {
     issues.push(
       issue(
@@ -306,11 +322,11 @@ export function findReceiptByTransactionHash(
   receipts: readonly PayrollReceipt[],
   txHash: string
 ): ReceiptReferenceLookupResult {
-  const normalized = txHash.trim().toLowerCase();
+  const normalized = safeNormalizeTransactionHash(txHash);
 
-  if (!TX_HASH_RE.test(normalized)) {
+  if (!normalized) {
     return {
-      queriedHash: normalized,
+      queriedHash: txHash.trim().toLowerCase(),
       matchCount: 0,
       isFound: false,
       message: "Queried transaction hash is not a 64-character hex string.",
