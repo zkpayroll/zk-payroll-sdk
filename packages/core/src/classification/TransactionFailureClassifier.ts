@@ -2,12 +2,89 @@ import {
   ContractExecutionError,
   NetworkError,
   ContractErrorCode,
+  TokenPausedError,
   classifyContractErrorCode,
   classifyTimeoutFailure,
   TimeoutFailureState,
 } from "../errors";
 import type { ContractErrorCodeType } from "../errors";
 import type { FailureCategory, TransactionFailureClassification } from "./types";
+
+/**
+ * Stable error codes that indicate the token contract is paused.
+ * Matched case-insensitively against `ContractExecutionError.code`.
+ */
+const TOKEN_PAUSED_CODES: ReadonlySet<string> = new Set([
+  "TOKEN_PAUSED",
+  "PAUSED",
+  "CONTRACT_PAUSED",
+  "TOKEN_CONTRACT_PAUSED",
+  "PAUSED_TOKEN",
+]);
+
+/**
+ * Message patterns that indicate the token contract is paused. Kept
+ * deliberately narrow to avoid false positives on unrelated errors.
+ */
+const TOKEN_PAUSED_MESSAGE_PATTERNS: readonly RegExp[] = [
+  /\btoken\b[^.]*\bpaused\b/i,
+  /\bpaused\b[^.]*\btoken\b/i,
+  /\bcontract\b[^.]*\bpaused\b/i,
+  /\bpaused\b[^.]*\bcontract\b/i,
+  /\bpaused\b/i,
+];
+
+/**
+ * Returns `true` when the given error code or message indicates the token
+ * contract is paused. Never inspects payroll payloads — only the code and
+ * the error message are examined.
+ */
+export function isTokenPausedFailure(error: unknown): boolean {
+  if (error instanceof TokenPausedError) {
+    return true;
+  }
+
+  if (error instanceof ContractExecutionError) {
+    if (TOKEN_PAUSED_CODES.has(error.code.toUpperCase())) {
+      return true;
+    }
+    return matchesPausedMessage(error.message);
+  }
+
+  if (error instanceof Error) {
+    return matchesPausedMessage(error.message);
+  }
+
+  return false;
+}
+
+function matchesPausedMessage(message: string): boolean {
+  if (!message) {
+    return false;
+  }
+  return TOKEN_PAUSED_MESSAGE_PATTERNS.some((pattern) => pattern.test(message));
+}
+
+/**
+ * Builds the classification for a paused token. The message is static and
+ * contains no payroll, employee, or amount data.
+ */
+function classifyTokenPaused(code: string): TransactionFailureClassification {
+  return {
+    category: "terminal",
+    code: code || "TOKEN_PAUSED",
+    message:
+      "The token contract is paused, so the payout could not be " +
+      "executed. No funds were moved.",
+    canRetry: false,
+    tokenPaused: true,
+    recoveryHint:
+      "Do not retry automatically — retrying while the token is " +
+      "paused will keep failing. Contact the token issuer/administrator " +
+      "to confirm when the contract will be unpaused, then re-queue " +
+      "the payout with a fresh transaction.",
+  };
+}
 
 /**
  * A single failed payout attempt recorded during a retry sequence.
@@ -238,6 +315,16 @@ export function classifyGetResponse(
  * @returns A structured classification with category and recovery hint.
  */
 export function classifyTransactionFailure(error: unknown): TransactionFailureClassification {
+  if (isTokenPausedFailure(error)) {
+    const code =
+      error instanceof ContractExecutionError
+        ? error.code
+        : error instanceof TokenPausedError
+          ? error.code
+          : "TOKEN_PAUSED";
+    return classifyTokenPaused(code);
+  }
+
   if (error instanceof ContractExecutionError) {
     return classifyContractExecutionError(error);
   }
@@ -265,6 +352,10 @@ export function classifyTransactionFailure(error: unknown): TransactionFailureCl
 function classifyContractExecutionError(
   err: ContractExecutionError
 ): TransactionFailureClassification {
+  if (isTokenPausedFailure(err)) {
+    return classifyTokenPaused(err.code);
+  }
+
   const state = classifyContractErrorCode(err.code as ContractErrorCodeType);
 
   return {
@@ -313,6 +404,10 @@ function classifyNetworkError(err: NetworkError): TransactionFailureClassificati
 }
 
 function classifyGenericError(err: Error): TransactionFailureClassification {
+  if (isTokenPausedFailure(err)) {
+    return classifyTokenPaused("TOKEN_PAUSED");
+  }
+
   const state = classifyTimeoutFailure(err);
 
   return {
@@ -338,6 +433,10 @@ function normalizeState(state: string): FailureCategory {
 }
 
 function recoveryHintForCode(code: string, category: FailureCategory): string {
+  if (TOKEN_PAUSED_CODES.has(code.toUpperCase())) {
+    return classifyTokenPaused(code).recoveryHint;
+  }
+
   switch (code) {
     case ContractErrorCode.TRANSACTION_TIMEOUT:
       return (

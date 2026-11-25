@@ -367,3 +367,59 @@ export function mapPausedContractError(
   const msg = error instanceof Error ? error.message : String(error);
   return new ContractExecutionError(msg, ContractErrorCode.UNKNOWN_RPC_ERROR, context, error);
 }
+
+// ── Token Paused Error (Payout Retries) ─────────────────────────────────────
+
+/** Stable error code for token-paused failures during payout retries. */
+export const TOKEN_PAUSED_ERROR_CODE = "TOKEN_PAUSED" as const;
+
+export type TokenPausedErrorCodeType = typeof TOKEN_PAUSED_ERROR_CODE;
+
+/**
+ * Redacted, user-facing message for token-paused failures.
+ * Never includes salary, employee, or proof data.
+ */
+export const TOKEN_PAUSED_ERROR_MESSAGE =
+  "The payment token is currently paused, so payouts cannot be completed. Payout retries will resume once the token is unpaused. Please try again later or contact your payroll administrator.";
+
+/**
+ * Returns true when an error indicates the payment token is paused.
+ *
+ * Checks for common patterns in contract revert / RPC messages:
+ * - "token is paused" / "token paused"
+ * - "TOKEN_PAUSED" / "TokenPaused"
+ */
+export function isTokenPausedError(error: unknown): boolean {
+  const msg = error instanceof Error ? error.message : String(error);
+  return /token.*paus|TOKEN_PAUSED|TokenPaused/i.test(msg);
+}
+
+/**
+ * Typed error for token-paused failures encountered during payout retries.
+ *
+ * The message is always redacted: it never includes salary amounts, employee
+ * identifiers, or proof data, even if the underlying error message did.
+ */
+export class TokenPausedError extends ContractExecutionError {
+  /** Stable error code identifying token-paused failures. */
+  readonly code: TokenPausedErrorCodeType = TOKEN_PAUSED_ERROR_CODE;
+
+  constructor(context: Record<string, unknown> = {}, cause?: unknown) {
+    super(TOKEN_PAUSED_ERROR_MESSAGE, ContractErrorCode.CONTRACT_PAUSED, context, cause);
+    this.name = "TokenPausedError";
+  }
+}
+
+/**
+ * Maps a raw token-paused error to a typed {@link TokenPausedError}.
+ *
+ * @param error - The raw error from contract/RPC
+ * @param context - Optional context metadata (must not contain payroll data)
+ * @returns A typed TokenPausedError with a redacted message
+ */
+export function mapTokenPausedError(
+  error: unknown,
+  context: Record<string, unknown> = {}
+): TokenPausedError {
+  return new TokenPausedError(context, error);
+}

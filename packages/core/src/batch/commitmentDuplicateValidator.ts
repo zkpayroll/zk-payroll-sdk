@@ -13,7 +13,7 @@
  *   included in validation results or error messages.
  */
 
-import { ProofCommitmentDuplicateError } from "../proofs/errors";
+import { DuplicateSalaryCommitmentError } from "./errors";
 
 /**
  * A single batch entry carrying an optional commitment hash.
@@ -201,8 +201,10 @@ export function validateCommitmentDuplicates(
 /**
  * Throwing variant of {@link validateCommitmentDuplicates}.
  *
- * @throws {ProofCommitmentDuplicateError} when one or more duplicate or
- *   invalid commitments are detected. The error message is privacy-safe.
+ * @throws {DuplicateSalaryCommitmentError} when one or more duplicate or
+ *   invalid commitments are detected. The error message is privacy-safe and
+ *   never includes salary amounts, employee identifiers, or recipient
+ *   addresses.
  */
 export function assertNoDuplicateCommitments(
   entries: readonly BatchCommitmentCheckEntry[],
@@ -210,7 +212,7 @@ export function assertNoDuplicateCommitments(
 ): CommitmentDuplicateValidationResult {
   const result = validateCommitmentDuplicates(entries, options);
   if (result.hasDuplicates) {
-    throw new ProofCommitmentDuplicateError(
+    throw new DuplicateSalaryCommitmentError(
       `Batch commitment validation failed with ${result.violations.length} violation(s)`,
       result.violations
     );
