@@ -25,7 +25,7 @@ import {
 } from "./assets/supportedAssets";
 import { rpc, Keypair, xdr, scValToNative } from "@stellar/stellar-sdk";
 import { BaseContractWrapper } from "./adapters/BaseContractWrapper";
-import { ContractExecutionError } from "./core/errors";
+import { ContractExecutionError, ZkPayrollError } from "./core/errors";
 import {
   MockProofVerifierAdapter,
   normalizeProofVerificationError,
@@ -38,6 +38,13 @@ import {
   type AuditGrantRecord,
 } from "./audit/grantScope";
 import { redactAuditorId } from "./audit/accessExpiry";
+import { applyRetentionPolicyUpdate } from "./retention/stateManager";
+import { redactPolicyActorId, RetentionPolicyError } from "./retention/errors";
+import type {
+  RetentionPolicy,
+  RetentionPolicyTransitionResult,
+  RetentionPolicyValidationOptions,
+} from "./retention/types";
 
 /**
  * Typed client helper for the payroll asset registry.
@@ -308,6 +315,245 @@ export class ProofVerificationClient {
    */
   async verifyProof(input: ProofVerificationInput): Promise<ProofVerificationResult> {
     return verifyProofWithAdapter(this.adapter, input);
+  }
+}
+
+// ── Retention extension authorization (facade, #833) ─────────────────────────
+// Extending a retention window keeps payroll records available for longer, so
+// it is a compliance decision rather than a routine edit. These helpers require
+// an explicit authorization context (actor, role, and authorization reference)
+// before the retention state manager will accept the extension.
+
+/** Roles permitted to authorize a retention extension. */
+export const RETENTION_EXTENSION_ROLES = [
+  "compliance_officer",
+  "retention_admin",
+  "legal_counsel",
+  "system_admin",
+] as const;
+
+export type RetentionExtensionRole = (typeof RETENTION_EXTENSION_ROLES)[number];
+
+/** Stable error codes for retention extension authorization failures. */
+export const RetentionExtensionAuthorizationErrorCode = {
+  AUTHORIZATION_REQUIRED: "RETENTION_EXTENSION_AUTHORIZATION_REQUIRED",
+  INVALID_AUTHORIZATION: "RETENTION_EXTENSION_INVALID_AUTHORIZATION",
+  AUTHORIZATION_EXPIRED: "RETENTION_EXTENSION_AUTHORIZATION_EXPIRED",
+  ROLE_NOT_PERMITTED: "RETENTION_EXTENSION_ROLE_NOT_PERMITTED",
+  INVALID_CURRENT_POLICY: "RETENTION_EXTENSION_INVALID_CURRENT_POLICY",
+  NOT_AN_EXTENSION: "RETENTION_EXTENSION_NOT_AN_EXTENSION",
+  EXTENSION_FAILED: "RETENTION_EXTENSION_FAILED",
+} as const;
+
+export type RetentionExtensionAuthorizationErrorCode =
+  (typeof RetentionExtensionAuthorizationErrorCode)[keyof typeof RetentionExtensionAuthorizationErrorCode];
+
+/** Safe error raised when a retention extension is not authorized. */
+export class RetentionExtensionAuthorizationError extends ZkPayrollError {
+  constructor(code: RetentionExtensionAuthorizationErrorCode, message: string, context: Record<string, unknown> = {}) {
+    super(message, code, context);
+    this.name = "RetentionExtensionAuthorizationError";
+  }
+}
+
+/**
+ * Authorization context required to extend a retention policy.
+ *
+ * `authorizationId` is the compliance ticket, approval, or delegation record
+ * that justifies the extension. It keeps the decision auditable without
+ * exposing salary or employee data.
+ */
+export interface RetentionExtensionAuthorization {
+  /** Operator or compliance officer authorizing the extension. */
+  readonly actorId: string;
+  /** Role of the authorizing actor. */
+  readonly role: RetentionExtensionRole | string;
+  /** Reference to the approval, ticket, or delegation record. */
+  readonly authorizationId: string;
+  /** When the authorization was granted (epoch ms, ISO string, or `Date`). */
+  readonly authorizedAt: number | string | Date;
+  /** Optional expiry; the authorization is still valid at the exact instant. */
+  readonly expiresAt?: number | string | Date;
+}
+
+/** Request to extend the retention window of an existing policy. */
+export interface RetentionExtensionRequest {
+  /** New retention duration in days. Must be strictly greater than the current value. */
+  retentionDays: number;
+  /** Mandatory operational justification for the extension. */
+  updateReason: string;
+  /** Expected policy version; defaults to the current policy version. */
+  expectedVersion?: number;
+  /** Update timestamp in epoch ms (defaults to the reference time). */
+  timestampMs?: number;
+  /** When the extension takes effect (defaults to `timestampMs`). */
+  effectiveAtMs?: number;
+  /** Optional sanitized metadata. */
+  metadata?: Record<string, unknown>;
+}
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function resolveAuthorizationTime(value: unknown): number | null {
+  if (value instanceof Date) return Number.isFinite(value.getTime()) ? value.getTime() : null;
+  if (typeof value === "number") return Number.isFinite(value) ? value : null;
+  if (typeof value === "string" && value.trim().length > 0) {
+    const ms = Date.parse(value);
+    return Number.isFinite(ms) ? ms : null;
+  }
+  return null;
+}
+
+function requireExtensionAuthorization(
+  authorization: RetentionExtensionAuthorization | null | undefined,
+  referenceTimeMs: number,
+  options: RetentionPolicyValidationOptions
+): RetentionExtensionAuthorization {
+  if (!authorization || typeof authorization !== "object" || Array.isArray(authorization)) {
+    throw new RetentionExtensionAuthorizationError(
+      RetentionExtensionAuthorizationErrorCode.AUTHORIZATION_REQUIRED,
+      "Extending a retention policy requires an authorization context. Provide the authorizing actor, role, approval reference, and grant time."
+    );
+  }
+
+  if (!isNonEmptyString(authorization.actorId) || !isNonEmptyString(authorization.authorizationId)) {
+    throw new RetentionExtensionAuthorizationError(
+      RetentionExtensionAuthorizationErrorCode.INVALID_AUTHORIZATION,
+      "Retention extension authorization is incomplete. Provide a non-empty actorId and authorizationId.",
+      { actor: redactPolicyActorId(authorization.actorId) }
+    );
+  }
+
+  if (
+    typeof authorization.role !== "string" ||
+    !(RETENTION_EXTENSION_ROLES as readonly string[]).includes(authorization.role)
+  ) {
+    throw new RetentionExtensionAuthorizationError(
+      RetentionExtensionAuthorizationErrorCode.ROLE_NOT_PERMITTED,
+      `Role is not permitted to authorize retention extensions. Allowed roles: ${RETENTION_EXTENSION_ROLES.join(", ")}.`,
+      { actor: redactPolicyActorId(authorization.actorId) }
+    );
+  }
+
+  const authorizedAtMs = resolveAuthorizationTime(authorization.authorizedAt);
+  if (authorizedAtMs === null || authorizedAtMs <= 0) {
+    throw new RetentionExtensionAuthorizationError(
+      RetentionExtensionAuthorizationErrorCode.INVALID_AUTHORIZATION,
+      "Retention extension authorization requires a valid grant time (authorizedAt).",
+      { actor: redactPolicyActorId(authorization.actorId) }
+    );
+  }
+
+  const now = options.now ?? referenceTimeMs;
+  if (authorizedAtMs > now + (options.maxClockSkewMs ?? 5000)) {
+    throw new RetentionExtensionAuthorizationError(
+      RetentionExtensionAuthorizationErrorCode.INVALID_AUTHORIZATION,
+      "Retention extension authorization is dated in the future. Verify the approval reference and retry.",
+      { actor: redactPolicyActorId(authorization.actorId) }
+    );
+  }
+
+  if (authorization.expiresAt !== undefined) {
+    const expiresAtMs = resolveAuthorizationTime(authorization.expiresAt);
+    if (expiresAtMs === null) {
+      throw new RetentionExtensionAuthorizationError(
+        RetentionExtensionAuthorizationErrorCode.INVALID_AUTHORIZATION,
+        "Retention extension authorization has an invalid expiry timestamp.",
+        { actor: redactPolicyActorId(authorization.actorId) }
+      );
+    }
+    // Boundary: the authorization remains valid at its exact expiry instant.
+    if (now > expiresAtMs) {
+      throw new RetentionExtensionAuthorizationError(
+        RetentionExtensionAuthorizationErrorCode.AUTHORIZATION_EXPIRED,
+        "Retention extension authorization has expired. Obtain a fresh approval before extending retention.",
+        { actor: redactPolicyActorId(authorization.actorId) }
+      );
+    }
+  }
+
+  return authorization;
+}
+
+/**
+ * Extends an existing retention policy after checking authorization context.
+ *
+ * Only extensions are accepted: the requested `retentionDays` must be strictly
+ * greater than the current policy's value. Reductions and no-op updates are
+ * rejected, because they must go through the full retention policy update flow.
+ *
+ * @param current       - The active retention policy to extend.
+ * @param request       - Extension request (new duration, justification, version).
+ * @param authorization - Required authorization context.
+ * @param options       - Validation options passed to the state manager.
+ * @returns The applied transition and the new immutable policy revision.
+ * @throws {RetentionExtensionAuthorizationError} when authorization is missing,
+ *   expired, or insufficient, or when the request is not an extension.
+ * @throws {RetentionPolicyError} when the underlying state transition is invalid.
+ */
+export function extendRetentionPolicyForClient(
+  current: RetentionPolicy,
+  request: RetentionExtensionRequest,
+  authorization: RetentionExtensionAuthorization,
+  options: RetentionPolicyValidationOptions = {}
+): RetentionPolicyTransitionResult {
+  if (
+    !current ||
+    typeof current !== "object" ||
+    !isNonEmptyString(current.policyId) ||
+    !Number.isSafeInteger(current.retentionDays) ||
+    current.retentionDays <= 0
+  ) {
+    throw new RetentionExtensionAuthorizationError(
+      RetentionExtensionAuthorizationErrorCode.INVALID_CURRENT_POLICY,
+      "A valid current retention policy is required before extending retention."
+    );
+  }
+
+  if (!request || typeof request !== "object" || Array.isArray(request)) {
+    throw new RetentionExtensionAuthorizationError(
+      RetentionExtensionAuthorizationErrorCode.NOT_AN_EXTENSION,
+      "A retention extension request with the new retentionDays is required."
+    );
+  }
+
+  const referenceTimeMs = options.now ?? Date.now();
+  const auth = requireExtensionAuthorization(authorization, referenceTimeMs, options);
+
+  if (!Number.isSafeInteger(request.retentionDays) || request.retentionDays <= current.retentionDays) {
+    throw new RetentionExtensionAuthorizationError(
+      RetentionExtensionAuthorizationErrorCode.NOT_AN_EXTENSION,
+      `Retention extension must increase retentionDays beyond the current ${current.retentionDays} days. Use the retention policy update flow for reductions or unchanged values.`,
+      { policyId: current.policyId, actor: redactPolicyActorId(auth.actorId) }
+    );
+  }
+
+  try {
+    return applyRetentionPolicyUpdate(
+      current,
+      {
+        policyId: current.policyId,
+        expectedVersion: request.expectedVersion ?? current.version,
+        retentionDays: request.retentionDays,
+        updatedBy: auth.actorId,
+        updateReason: request.updateReason,
+        ...(request.timestampMs !== undefined ? { timestampMs: request.timestampMs } : {}),
+        ...(request.effectiveAtMs !== undefined ? { effectiveAtMs: request.effectiveAtMs } : {}),
+        ...(request.metadata !== undefined ? { metadata: request.metadata } : {}),
+      },
+      options
+    );
+  } catch (error) {
+    if (error instanceof RetentionPolicyError) {
+      throw error;
+    }
+    throw new RetentionExtensionAuthorizationError(
+      RetentionExtensionAuthorizationErrorCode.EXTENSION_FAILED,
+      "Retention extension could not be applied. Verify the policy version and authorization, then retry.",
+      { policyId: current.policyId, actor: redactPolicyActorId(auth.actorId) }
+    );
   }
 }
 

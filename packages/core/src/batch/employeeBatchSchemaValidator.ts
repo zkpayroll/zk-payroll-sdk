@@ -4,6 +4,10 @@ import {
   findRemovedEmployeesInPayoutBatch,
   type RemovedEmployeeGuardOptions,
 } from "../employees/removedEmployeeGuard";
+import {
+  findDuplicateRecipientPositions,
+  normalizeRecipientPosition,
+} from "./duplicateRecipientPositions";
 
 export interface EmployeeRecord {
   employeeId: string;
@@ -117,7 +121,12 @@ export class EmployeeBatchSchemaValidator {
     }
 
     const seenEmployeeIds = new Map<string, number>();
-    const seenRecipients = new Map<string, number>();
+    const duplicatePositions = new Map<number, number>();
+    for (const duplicate of findDuplicateRecipientPositions(this.employees)) {
+      for (const position of duplicate.duplicatePositions) {
+        duplicatePositions.set(position, duplicate.firstPosition);
+      }
+    }
 
     for (let i = 0; i < this.employees.length; i++) {
       const emp = this.employees[i];
@@ -143,7 +152,7 @@ export class EmployeeBatchSchemaValidator {
         }
       }
 
-      if (!emp.recipient || emp.recipient.trim() === "") {
+      if (normalizeRecipientPosition(emp.recipient) === null) {
         errors.push({
           code: "INVALID_RECIPIENT",
           message: "Recipient address is required",
@@ -151,7 +160,7 @@ export class EmployeeBatchSchemaValidator {
           index: i,
         });
       } else {
-        const firstIdx = seenRecipients.get(emp.recipient);
+        const firstIdx = duplicatePositions.get(i);
         if (firstIdx !== undefined) {
           errors.push({
             code: "DUPLICATE_RECIPIENT",
@@ -159,8 +168,6 @@ export class EmployeeBatchSchemaValidator {
             field: "recipient",
             index: i,
           });
-        } else {
-          seenRecipients.set(emp.recipient, i);
         }
       }
 

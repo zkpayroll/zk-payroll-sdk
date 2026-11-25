@@ -60,3 +60,17 @@ export type {
 } from "../client";
 
 export * from "../treasury/replenishmentReadiness";
+
+export {
+  AuditGrantPeriodBoundaryError,
+  AuditGrantPeriodBoundaryErrorCode,
+  validateAuditGrantPeriodBoundaries,
+  assertValidAuditGrantPeriodBoundaries,
+} from "./auditGrantPeriodBoundaries";
+export type {
+  AuditGrantPeriodBoundary,
+  AuditGrantPeriodBoundaryErrorCode as AuditGrantPeriodBoundaryErrorCodeType,
+  AuditGrantPeriodBoundaryIssue,
+  AuditGrantPeriodBoundaryOptions,
+  AuditGrantPeriodBoundaryValidationResult,
+} from "./auditGrantPeriodBoundaries";

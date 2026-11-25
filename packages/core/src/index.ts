@@ -158,6 +158,18 @@ export * from "./proofs/verifierAdapter";
 // ── Payroll Receipts & Replay Protection ─────────────────────────────────────
 export * from "./receipts";
 export { ProofVerificationClient, verifyProofWithAdapter } from "./client";
+export {
+  extendRetentionPolicyForClient,
+  RetentionExtensionAuthorizationError,
+  RetentionExtensionAuthorizationErrorCode,
+  RETENTION_EXTENSION_ROLES,
+} from "./client";
+export type {
+  RetentionExtensionAuthorization,
+  RetentionExtensionAuthorizationErrorCode as RetentionExtensionAuthorizationErrorCodeType,
+  RetentionExtensionRequest,
+  RetentionExtensionRole,
+} from "./client";
 
 // ── Proof Artifact Lifecycle ────────────────────────────────────────────────
 export * from "./artifacts";

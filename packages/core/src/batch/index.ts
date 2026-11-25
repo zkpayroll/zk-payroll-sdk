@@ -1,4 +1,5 @@
 export * from "./BatchPayloadBuilder";
+export * from "./duplicateRecipientPositions";
 export * from "./employeeBatchSchemaValidator";
 export * from "./paginate";
 export * from "./deduplication";

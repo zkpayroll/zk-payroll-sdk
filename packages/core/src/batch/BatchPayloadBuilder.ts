@@ -7,6 +7,10 @@ import {
   findRemovedEmployeesInPayoutBatch,
   type RemovedEmployeeGuardOptions,
 } from "../employees/removedEmployeeGuard";
+import {
+  findDuplicateRecipientPositions,
+  normalizeRecipientPosition,
+} from "./duplicateRecipientPositions";
 
 export interface BatchPaymentEntry {
   recipient: string;
@@ -118,7 +122,8 @@ export class BatchPayloadBuilder {
    * - Each recipient must be a non-empty string
    * - Each amount must be positive (> 0)
    * - Each asset must be a non-empty string
-   * - No duplicate recipients within the same batch
+   * - No duplicate recipients within the same batch (surrounding whitespace is
+   *   ignored, so `" GABC... "` and `"GABC..."` are the same position)
    * - No entries belonging to removed employees
    */
   validate(): BatchValidationError[] {
@@ -133,12 +138,19 @@ export class BatchPayloadBuilder {
       return errors;
     }
 
-    const seenRecipients = new Map<string, number>();
+    // Duplicate detection compares canonical (trimmed) recipients so that
+    // `" GABC... "` and `"GABC..."` cannot occupy two payout positions (#831).
+    const duplicatePositions = new Map<number, number>();
+    for (const duplicate of findDuplicateRecipientPositions(this.entries)) {
+      for (const position of duplicate.duplicatePositions) {
+        duplicatePositions.set(position, duplicate.firstPosition);
+      }
+    }
 
     for (let i = 0; i < this.entries.length; i++) {
       const entry = this.entries[i];
 
-      if (!entry.recipient || entry.recipient.trim() === "") {
+      if (normalizeRecipientPosition(entry.recipient) === null) {
         errors.push({
           code: "INVALID_RECIPIENT",
           message: "Recipient address is required",
@@ -146,7 +158,7 @@ export class BatchPayloadBuilder {
           index: i,
         });
       } else {
-        const firstIdx = seenRecipients.get(entry.recipient);
+        const firstIdx = duplicatePositions.get(i);
         if (firstIdx !== undefined) {
           errors.push({
             code: "DUPLICATE_RECIPIENT",
@@ -154,8 +166,6 @@ export class BatchPayloadBuilder {
             field: "recipient",
             index: i,
           });
-        } else {
-          seenRecipients.set(entry.recipient, i);
         }
       }
 
