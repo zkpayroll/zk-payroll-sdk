@@ -46,6 +46,75 @@ import type {
   RetentionPolicyValidationOptions,
 } from "./retention/types";
 
+// ── Network passphrase validation (approval signing, #845) ───────────────────
+// Approvals are signed against a specific Stellar network. Signing with the
+// wrong network passphrase produces a signature that is valid on the wrong
+// chain, so the passphrase must be validated *before* any signature payload is
+// produced. Errors carry only the expected/actual network names — never signer
+// addresses, salary amounts, or other payroll data.
+
+/** Stable error code for network passphrase mismatches. */
+export const NETWORK_PASSPHRASE_MISMATCH = "NETWORK_PASSPHRASE_MISMATCH" as const;
+
+/**
+ * Raised when the network passphrase used for approval signing does not match
+ * the expected network, or when a passphrase is missing/empty.
+ *
+ * Only the expected and actual network names are exposed so that failures stay
+ * actionable without leaking private payroll data.
+ */
+export class NetworkPassphraseMismatchError extends ZkPayrollError {
+  /** Human-readable name of the network the caller expected. */
+  readonly expectedNetwork: string;
+  /** Human-readable name of the network the caller supplied (or `"<missing>"`). */
+  readonly actualNetwork: string;
+
+  constructor(expectedNetwork: string, actualNetwork: string, message?: string) {
+    super(
+      message ??
+        `Network passphrase mismatch: expected "${expectedNetwork}" but received "${actualNetwork}". Approvals must be signed on the expected network.`,
+      NETWORK_PASSPHRASE_MISMATCH,
+      { expectedNetwork, actualNetwork }
+    );
+    this.name = "NetworkPassphraseMismatchError";
+    this.expectedNetwork = expectedNetwork;
+    this.actualNetwork = actualNetwork;
+  }
+}
+
+function describePassphrase(value: unknown): string {
+  return typeof value === "string" && value.trim().length > 0 ? value : "<missing>";
+}
+
+/**
+ * Asserts that the supplied network passphrase matches the expected one.
+ *
+ * Call this at the start of any approval-signing flow, before building or
+ * signing a payload. Empty, whitespace-only, or `undefined` passphrases are
+ * rejected as a boundary case.
+ *
+ * @param expected - The network passphrase the operation must run on.
+ * @param actual   - The network passphrase the signer is configured with.
+ * @throws {NetworkPassphraseMismatchError} when either passphrase is missing or
+ *   when the two passphrases differ.
+ */
+export function assertNetworkPassphrase(expected: string, actual: string): void {
+  const expectedName = describePassphrase(expected);
+  const actualName = describePassphrase(actual);
+
+  if (expectedName === "<missing>" || actualName === "<missing>") {
+    throw new NetworkPassphraseMismatchError(
+      expectedName,
+      actualName,
+      `Network passphrase is required before signing approvals: expected "${expectedName}" but received "${actualName}".`
+    );
+  }
+
+  if (expected !== actual) {
+    throw new NetworkPassphraseMismatchError(expectedName, actualName);
+  }
+}
+
 /**
  * Typed client helper for the payroll asset registry.
  * Wraps the underlying Soroban contract and returns typed, normalized results.
@@ -278,6 +347,29 @@ export async function verifyProofWithAdapter(
   } catch (error) {
     throw normalizeProofVerificationError(error, { ...input.context });
   }
+}
+
+/** Context required to sign an approval on a specific network. */
+export interface ApprovalSigningContext {
+  /** Network passphrase the approval must be signed on. */
+  readonly expectedNetworkPassphrase: string;
+  /** Network passphrase the signer is currently configured with. */
+  readonly networkPassphrase: string;
+}
+
+/**
+ * Validates the network passphrase before an approval is signed.
+ *
+ * This is the guard that approval-signing flows must call before producing any
+ * signature payload. It delegates to {@link assertNetworkPassphrase} and
+ * re-throws a {@link NetworkPassphraseMismatchError} that contains only the
+ * expected/actual network names.
+ *
+ * @param context - Expected and actual network passphrases.
+ * @throws {NetworkPassphraseMismatchError} on mismatch or missing passphrase.
+ */
+export function assertApprovalSigningNetwork(context: ApprovalSigningContext): void {
+  assertNetworkPassphrase(context?.expectedNetworkPassphrase, context?.networkPassphrase);
 }
 
 /**
@@ -576,3 +668,15 @@ export type {
   CompanyActivationCheckOptions,
   CompanyActivationErrorCode,
 } from "./payroll/companyActivationGuard";
+
+// ── Network passphrase validation (approval signing, #845) ───────────────────
+// Re-exported so approval-signing flows can validate the network passphrase
+// before producing a signature payload.
+
+export {
+  assertNetworkPassphrase,
+  assertApprovalSigningNetwork,
+  NetworkPassphraseMismatchError,
+  NETWORK_PASSPHRASE_MISMATCH,
+} from "./client";
+export type { ApprovalSigningContext } from "./client";

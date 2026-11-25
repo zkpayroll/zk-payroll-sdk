@@ -36,3 +36,41 @@ export class PayrollReceiptVerificationError extends ZkPayrollError {
     this.result = result;
   }
 }
+
+/**
+ * Stable error code emitted by {@link ReceiptReplayError}.
+ */
+export const RECEIPT_REPLAY_ERROR_CODE = "RECEIPT_REPLAY" as const;
+
+/**
+ * Thrown when a payroll receipt is detected as replayed.
+ *
+ * A replay occurs when a receipt that has already been observed (e.g. already
+ * settled or previously processed) is presented again. This error intentionally
+ * carries only the receipt identifier and a redacted, human-readable reason.
+ * It must never include salary amounts, employee identifiers, recipient
+ * addresses, proofs, or any other sensitive payroll payloads.
+ */
+export class ReceiptReplayError extends ZkPayrollError {
+  /** Identifier of the replayed receipt. */
+  public readonly receiptId: string;
+  /** Redacted, non-sensitive explanation of why the receipt was flagged. */
+  public readonly reason: string;
+
+  constructor(receiptId: string, reason = "Receipt has already been processed", context: ErrorContext = {}, cause?: unknown) {
+    const safeReceiptId = typeof receiptId === "string" ? receiptId : "";
+    const safeReason = typeof reason === "string" && reason.length > 0 ? reason : "Receipt has already been processed";
+    const message = `Receipt replay detected for receipt '${safeReceiptId}': ${safeReason}`;
+
+    const safeContext: ErrorContext = {
+      ...context,
+      receiptId: safeReceiptId,
+      reason: safeReason,
+    };
+
+    super(message, RECEIPT_REPLAY_ERROR_CODE, safeContext, cause);
+    this.name = "ReceiptReplayError";
+    this.receiptId = safeReceiptId;
+    this.reason = safeReason;
+  }
+}

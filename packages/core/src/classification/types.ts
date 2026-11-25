@@ -35,6 +35,13 @@ export interface TransactionFailureClassification {
    */
   rpcStatus?: string;
   /**
+   * Set to `true` when the failure was caused by a token being paused
+   * (e.g. the payroll token contract is paused during a payout retry).
+   * Callers can branch on this flag instead of parsing `message`.
+   * Never contains secret or private-input data.
+   */
+  tokenPaused?: boolean;
+  /**
    * Extra debugging context (error codes, HTTP statuses, etc.).
    * Never contains secret or private-input data.
    */

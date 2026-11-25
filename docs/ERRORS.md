@@ -16,6 +16,10 @@ All SDK errors inherit from the base `ZKPayrollError` class.
   - `ProofGenerationError` - Failures related to circuit artifact downloading, caching, or witness calculation.
   - `SerializationError` - Failures during importing or exporting of payroll drafts.
   - `ValidationError` - Client-side validation errors.
+    - `NetworkPassphraseMismatchError` - The configured network passphrase does not match the expected network before signing approvals.
+    - `DuplicateSalaryCommitmentError` - A salary commitment is submitted more than once (duplicate commitment hash within a batch or across batches).
+  - `TokenPausedError` - The token contract is paused, so payouts cannot be executed until it resumes.
+  - `ReceiptReplayError` - A payment receipt has already been consumed and cannot be replayed.
 - `PayoutScheduleCollisionError` - Payout schedule collisions, minimum interval violations, or duplicate schedule identifiers.
   - `PayrollStateConsistencyError` - Payroll state transitions that violate the expected lifecycle or contain inconsistent data.
   - `PayrollCalendarOverlapError` - Payroll calendar cycles that overlap, contain collisions, or define inverted date ranges.
@@ -54,6 +58,10 @@ if (isRetryableErrorCode(error.code)) {
 | Code | Category | Meaning | Retryable | Suggested User Message |
 |---|---|---|---|---|
 | `VALIDATION_ERROR` | validation | Input validation failed. | No | The provided parameters failed validation. Please review your inputs and try again. |
+| `NETWORK_PASSPHRASE_MISMATCH` | validation | Configured network passphrase does not match the expected network before signing approvals. | No | The wallet is configured for a different network than this payroll expects. Switch networks and try again. |
+| `DUPLICATE_SALARY_COMMITMENT` | validation | A salary commitment hash is submitted more than once. | No | A salary commitment was submitted more than once. Regenerate a fresh commitment or remove the duplicate entry before retrying. |
+| `TOKEN_PAUSED` | contract | The token contract is paused and cannot process payouts. | Yes | The token is currently paused. Payouts will resume once the token is unpaused; retry later. |
+| `RECEIPT_REPLAY` | validation | A payment receipt has already been consumed and cannot be replayed. | No | This payment receipt has already been used. Generate a new receipt before retrying. |
 | `PAYOUT_SCHEDULE_COLLISION` | validation | Payout schedule collision or interval violation detected. | No | One or more scheduled payouts collide. Review conflicting execution times and intervals. |
 | `PAYMENT_INSTRUCTION_DUPLICATE` | validation | Payment instruction duplicates an existing instruction in the same payroll batch. | No | A payment instruction duplicates an existing instruction. Review the duplicated instruction and try again. |
 | `WALLET_NOT_INSTALLED` | wallet | Wallet extension is not installed. | No | The wallet extension is not installed. Please install it and try again. |
@@ -98,6 +106,12 @@ if (isRetryableErrorCode(error.code)) {
 
 - **Retryable errors** are typically transient (network timeouts, fee estimation, wallet user declines). The SGK's `withRetry` utility retries these automatically with exponential backoff.
 - **Non-retryable errors** indicate invalid inputs, configuration problems, or contract logic failures. These require user or developer intervention before retrying.
+- `TOKEN_PAUSED` is classified as retryable: payout retries should back off and resume once the token is unpaused rather than failing the whole batch permanently.
+- `NETWORK_PASSPHRASE_MISMATCH`, `DUPLICATE_SALARY_COMMITMENT`, and `RECEIPT_REPLAY` are non-retryable; retrying without changing inputs will fail identically.
+
+### Privacy Guarantees
+
+Errors raised by the SDK never include salary amounts, employee identifiers, commitment preimages, proofs, or receipt contents. `context` is limited to non-sensitive metadata such as the offending field name, a boolean flag, or a truncated hash. When reporting these errors, log only `code` and `message`; do not serialize `cause` or `context` into user-facing surfaces.
 
 ## User-Friendly UI Mapping
 
@@ -169,3 +183,34 @@ try {
 ### 3. Handling Zero-Knowledge Proof Failures (`ProofGenerationError`)
 
 Proof generation is computationally heavy and relies on downloaded circuit artifacts.
+
+### 4. Handling Network, Token, Receipt, and Commitment Errors
+
+```typescript
+import {
+  NetworkPassphraseMismatchError,
+  TokenPausedError,
+  ReceiptReplayError,
+  DuplicateSalaryCommitmentError,
+} from "@zk-payroll/sdk";
+
+try {
+  await sdk.approvePayout(params);
+} catch (error) {
+  if (error instanceof NetworkPassphraseMismatchError) {
+    // Recovery: Ask the operator to switch the wallet to the expected network.
+    showToast("Wallet network does not match the payroll network.");
+  } else if (error instanceof TokenPausedError) {
+    // Recovery: Retryable — schedule a retry with backoff.
+    scheduleRetry();
+  } else if (error instanceof ReceiptReplayError) {
+    // Recovery: Request a fresh receipt; do not reuse the consumed one.
+    showToast("This receipt has already been used.");
+  } else if (error instanceof DuplicateSalaryCommitmentError) {
+    // Recovery: Remove the duplicate entry or regenerate the commitment.
+    showToast("A salary commitment was submitted twice.");
+  } else {
+    throw error;
+  }
+}
+```

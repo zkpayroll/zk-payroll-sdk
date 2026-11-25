@@ -184,6 +184,22 @@ export const ERROR_CODE_REGISTRY: Record<string, ErrorCodeEntry> = {
     suggestedMessage:
       "Remove the duplicate batch entry or regenerate a fresh commitment for the underlying salary record before submitting the batch.",
   },
+  DUPLICATE_SALARY_COMMITMENT: {
+    category: ErrorCategory.PROOF,
+    meaning:
+      "A salary commitment was submitted that duplicates one already present in the payroll run — the same commitment cannot be reused across entries.",
+    retryable: false,
+    suggestedMessage:
+      "A duplicate salary commitment was detected. Generate a fresh commitment for the salary record or remove the duplicate entry before submitting.",
+  },
+  RECEIPT_REPLAY: {
+    category: ErrorCategory.PROOF,
+    meaning:
+      "A payout receipt was presented more than once — the receipt has already been consumed and cannot be replayed.",
+    retryable: false,
+    suggestedMessage:
+      "This payout receipt has already been used and cannot be replayed. Obtain a fresh receipt for the payout before retrying.",
+  },
 
   // ── Contract Execution ──────────────────────────────────────────────────
   SIMULATION_FAILED: {
@@ -246,6 +262,14 @@ export const ERROR_CODE_REGISTRY: Record<string, ErrorCodeEntry> = {
     retryable: true,
     suggestedMessage:
       "A network error occurred. Please check your internet connection and try again.",
+  },
+  NETWORK_PASSPHRASE_MISMATCH: {
+    category: ErrorCategory.NETWORK,
+    meaning:
+      "The network passphrase supplied for signing does not match the passphrase the SDK is configured for — approvals were not signed.",
+    retryable: false,
+    suggestedMessage:
+      "The configured network passphrase does not match the expected network. Verify the SDK network configuration before signing approvals.",
   },
 
   // ── Serialization ───────────────────────────────────────────────────────
@@ -441,6 +465,14 @@ export const ERROR_CODE_REGISTRY: Record<string, ErrorCodeEntry> = {
     retryable: false,
     suggestedMessage:
       "One or more payout amounts have invalid precision for the target asset. Verify each amount uses the asset's supported decimal places and try again.",
+  },
+  TOKEN_PAUSED: {
+    category: ErrorCategory.PAYOUT,
+    meaning:
+      "The payout token is paused on-chain — transfers are temporarily disabled, so the payout retry cannot succeed until the token is resumed.",
+    retryable: true,
+    suggestedMessage:
+      "The payout token is currently paused. Retry once the token is resumed, or contact your payroll administrator.",
   },
 
   // &#9989; Payroll Payload Schema Detection &#9989;
