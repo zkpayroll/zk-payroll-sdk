@@ -91,20 +91,25 @@ export function formatAmount(
       useGrouping: true,
     }).format(rawAmount);
   } else {
+    // Keep the value in bigint/string space end-to-end (#834). Converting to
+    // `number` first loses precision for large balances and high-decimal token
+    // amounts, which can silently change the displayed payroll figure.
     const scale = getScale(decimals);
-    const whole = rawAmount / scale;
-    const frac = rawAmount % scale;
+    const negative = rawAmount < 0n;
+    const absolute = negative ? -rawAmount : rawAmount;
+    const whole = absolute / scale;
+    const frac = absolute % scale;
 
     // Build a decimal string with the exact number of decimal places.
     const fracStr = frac.toString().padStart(decimals, "0");
-    const decimalString = `${whole}.${fracStr}`;
-    const numeric = parseFloat(decimalString);
-
-    formatted = new Intl.NumberFormat(locale, {
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals,
+    // `Intl.NumberFormat` formats bigint exactly (no float conversion), so
+    // grouping is applied to the true integer part.
+    const groupedWhole = new Intl.NumberFormat(locale, {
+      maximumFractionDigits: 0,
       useGrouping: true,
-    }).format(numeric);
+    }).format(whole);
+
+    formatted = `${negative ? "-" : ""}${groupedWhole}.${fracStr}`;
   }
 
   return includeSymbol ? `${formatted} ${symbol}` : formatted;
@@ -146,7 +151,9 @@ export function parseAmount(
     .replace(/,/g, "")
     .trim();
 
-  if (cleaned === "" || isNaN(Number(cleaned))) {
+  // Validate the shape in string space. `Number()` would coerce a large amount
+  // through a float and can accept values that `BigInt()` later rejects.
+  if (cleaned === "" || !/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(cleaned)) {
     if (strict === false) {
       throw new Error(
         `parseAmount: cannot parse "${input}" as a numeric amount for asset ${symbol}.`
