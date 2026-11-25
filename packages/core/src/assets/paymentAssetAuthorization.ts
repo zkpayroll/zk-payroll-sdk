@@ -28,6 +28,75 @@ import {
 /** Stable error code used when an unauthorized asset blocks a payment. */
 export const PAYMENT_ASSET_UNAUTHORIZED_ERROR_CODE = "PAYMENT_ASSET_UNAUTHORIZED";
 
+/** Longest asset identifier echoed back in results or errors. */
+const MAX_ECHOED_ASSET_ID_LENGTH = 64;
+
+/**
+ * Privacy-safe, bounded representation of an identifier that failed a check.
+ *
+ * Strings are trimmed and truncated; any other value is reduced to its type
+ * name so arbitrary payloads never reach logs or error details.
+ */
+function describeAssetIdentifier(asset: unknown): string {
+  if (typeof asset !== "string") {
+    return asset === null ? "null" : `<${typeof asset}>`;
+  }
+  const trimmed = asset.trim();
+  return trimmed.length > MAX_ECHOED_ASSET_ID_LENGTH
+    ? `${trimmed.slice(0, MAX_ECHOED_ASSET_ID_LENGTH)}…`
+    : trimmed;
+}
+
+/** Non-authorized outcome codes carried by {@link PaymentAssetUnauthorizedError}. */
+export type PaymentAssetUnauthorizedCode = Exclude<PaymentAssetAuthorizationCode, "ok">;
+
+/** Structured, privacy-safe details attached to a {@link PaymentAssetUnauthorizedError}. */
+export interface PaymentAssetUnauthorizedDetails {
+  /** Why the asset was rejected. */
+  authorizationCode: PaymentAssetUnauthorizedCode;
+  /** Sanitized asset identifier. Bounded in length; non-strings are reduced to their type. */
+  assetId: string;
+}
+
+/**
+ * Thrown by {@link assertPaymentAssetAuthorized} when a payout asset is not
+ * authorized for payroll use.
+ *
+ * Extends {@link ValidationError}, so existing `instanceof` and `.code` checks
+ * keep working. Integrators can branch on `details.authorizationCode` instead
+ * of parsing the message.
+ *
+ * @example
+ * ```ts
+ * try {
+ *   assertPaymentAssetAuthorized(asset, { allowedAssetIds });
+ * } catch (err) {
+ *   if (isPaymentAssetUnauthorizedError(err) && err.details.authorizationCode === "not_allowlisted") {
+ *     showAllowlistHint(err.details.assetId);
+ *   }
+ * }
+ * ```
+ */
+export class PaymentAssetUnauthorizedError extends ValidationError {
+  /** Privacy-safe structured details. */
+  public readonly details: Readonly<PaymentAssetUnauthorizedDetails>;
+
+  constructor(message: string, details: PaymentAssetUnauthorizedDetails) {
+    super(message, "asset", PAYMENT_ASSET_UNAUTHORIZED_ERROR_CODE, {
+      authorizationCode: details.authorizationCode,
+    });
+    this.name = "PaymentAssetUnauthorizedError";
+    this.details = Object.freeze({ ...details });
+  }
+}
+
+/** Type guard for {@link PaymentAssetUnauthorizedError}. */
+export function isPaymentAssetUnauthorizedError(
+  err: unknown
+): err is PaymentAssetUnauthorizedError {
+  return err instanceof PaymentAssetUnauthorizedError;
+}
+
 /**
  * Machine-readable outcome of a payment asset authorization check.
  *
@@ -95,7 +164,7 @@ export function checkPaymentAssetAuthorization(
 
   if (!isPaymentAssetCompatible(asset)) {
     return {
-      assetId: typeof asset === "string" ? asset : String(asset),
+      assetId: describeAssetIdentifier(asset),
       authorized: false,
       code: "not_payment_compatible",
       message: PAYMENT_ASSET_COMPATIBILITY_MESSAGE,
@@ -132,10 +201,11 @@ export function checkPaymentAssetAuthorization(
 }
 
 /**
- * Throw a {@link ValidationError} when the payment asset is not authorized.
- * Returns the resolved result when the asset is authorized.
+ * Throw a {@link PaymentAssetUnauthorizedError} when the payment asset is not
+ * authorized. Returns the resolved result when the asset is authorized.
  *
- * @throws ValidationError with `PAYMENT_ASSET_UNAUTHORIZED_ERROR_CODE`.
+ * @throws PaymentAssetUnauthorizedError (a `ValidationError`) with
+ *   `PAYMENT_ASSET_UNAUTHORIZED_ERROR_CODE` and safe `details`.
  */
 export function assertPaymentAssetAuthorized(
   asset: unknown,
@@ -143,11 +213,12 @@ export function assertPaymentAssetAuthorized(
 ): PaymentAssetAuthorizationResult {
   const result = checkPaymentAssetAuthorization(asset, options);
   if (!result.authorized) {
-    throw new ValidationError(
+    throw new PaymentAssetUnauthorizedError(
       result.message ?? "Payment asset is not authorized.",
-      "asset",
-      PAYMENT_ASSET_UNAUTHORIZED_ERROR_CODE,
-      { authorizationCode: result.code }
+      {
+        authorizationCode: result.code as PaymentAssetUnauthorizedCode,
+        assetId: result.assetId,
+      }
     );
   }
   return result;
