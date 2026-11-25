@@ -43,8 +43,41 @@ describe("ResumableBatchManager (#608)", () => {
 
   it("prevents updating terminal state batches", () => {
     manager.initializeBatch("batch-003", sampleItems);
+    manager.updateProgress("batch-003", 1, "item-1");
+    manager.updateProgress("batch-003", 2, "item-2");
+    manager.updateProgress("batch-003", 3, "item-3");
     manager.completeBatch("batch-003");
 
     expect(() => manager.updateProgress("batch-003", 2, "item-2")).toThrow("terminal status");
+  });
+
+  it("blocks completion while recipients are unresolved", () => {
+    manager.initializeBatch("batch-unresolved", sampleItems);
+    expect(() => manager.completeBatch("batch-unresolved")).toThrow(
+      "process all recipients before finalizing"
+    );
+
+    manager.updateProgress("batch-unresolved", 3, "item-1");
+    manager.updateProgress("batch-unresolved", 3, "item-2");
+    manager.updateProgress("batch-unresolved", 3, undefined, {
+      id: "item-3",
+      message: "recipient lookup failed",
+    });
+    expect(() => manager.completeBatch("batch-unresolved")).toThrow(
+      "resolve all failed recipients before finalizing"
+    );
+
+    const retried = manager.updateProgress("batch-unresolved", 3, "item-3");
+    expect(retried.failedItems).toHaveLength(0);
+    expect(manager.completeBatch("batch-unresolved").status).toBe("COMPLETED");
+  });
+
+  it("allows completion when the final recipient is processed", () => {
+    manager.initializeBatch("batch-complete", sampleItems);
+    manager.updateProgress("batch-complete", 1, "item-1");
+    manager.updateProgress("batch-complete", 2, "item-2");
+    const complete = manager.updateProgress("batch-complete", 3, "item-3");
+    expect(manager.completeBatch("batch-complete").status).toBe("COMPLETED");
+    expect(complete.processedIds).toHaveLength(3);
   });
 });

@@ -19,6 +19,7 @@ export interface BatchCheckpoint {
 
 export class ResumableBatchManager {
   private checkpoints = new Map<string, BatchCheckpoint>();
+  private itemIds = new Map<string, string[]>();
 
   public initializeBatch(batchId: string, items: BatchItem[]): BatchCheckpoint {
     if (!batchId || !batchId.trim()) {
@@ -42,6 +43,10 @@ export class ResumableBatchManager {
     };
 
     this.checkpoints.set(batchId, checkpoint);
+    this.itemIds.set(
+      batchId,
+      items.map((item) => item.id)
+    );
     return checkpoint;
   }
 
@@ -69,6 +74,9 @@ export class ResumableBatchManager {
 
     if (processedId && !checkpoint.processedIds.includes(processedId)) {
       checkpoint.processedIds.push(processedId);
+    }
+    if (processedId) {
+      checkpoint.failedItems = checkpoint.failedItems.filter((item) => item.id !== processedId);
     }
 
     if (error) {
@@ -110,6 +118,20 @@ export class ResumableBatchManager {
 
   public completeBatch(batchId: string): BatchCheckpoint {
     const checkpoint = this.getCheckpoint(batchId);
+    if (checkpoint.failedItems.length > 0) {
+      throw new Error(
+        `Cannot complete batch "${batchId}": resolve all failed recipients before finalizing.`
+      );
+    }
+    const requiredIds = this.itemIds.get(batchId) ?? [];
+    if (
+      checkpoint.currentIndex < checkpoint.totalItems ||
+      requiredIds.some((id) => !checkpoint.processedIds.includes(id))
+    ) {
+      throw new Error(
+        `Cannot complete batch "${batchId}": process all recipients before finalizing.`
+      );
+    }
     checkpoint.status = "COMPLETED";
     checkpoint.updatedAt = new Date().toISOString();
     this.checkpoints.set(batchId, checkpoint);

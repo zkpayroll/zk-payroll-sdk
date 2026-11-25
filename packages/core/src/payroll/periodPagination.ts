@@ -84,3 +84,25 @@ export async function collectPayrollPeriods<T extends PayrollPeriodPaginationRec
   for await (const period of iteratePayrollPeriods(fetchPage, options)) periods.push(period);
   return periods;
 }
+
+/**
+ * Read payroll periods from every retained history source after a retention
+ * migration. Sources must be ordered newest schema first; when a period is
+ * present in more than one source, the newest source's record is returned.
+ * Pagination and cancellation limits are applied independently to each source.
+ */
+export async function collectPayrollPeriodsAcrossRetentionMigrations<
+  T extends PayrollPeriodPaginationRecord,
+>(
+  sources: readonly PayrollPeriodPageFetcher<T>[],
+  options: Omit<PayrollPeriodPaginationOptions, "cursor"> = {}
+): Promise<T[]> {
+  const periodsById = new Map<string, T>();
+  for (const fetchPage of sources) {
+    const periods = await collectPayrollPeriods(fetchPage, options);
+    for (const period of periods) {
+      if (!periodsById.has(period.periodId)) periodsById.set(period.periodId, period);
+    }
+  }
+  return [...periodsById.values()];
+}

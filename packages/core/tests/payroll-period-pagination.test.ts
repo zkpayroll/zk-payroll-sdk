@@ -1,6 +1,48 @@
-import { collectPayrollPeriods, iteratePayrollPeriods } from "../src/payroll/periodPagination";
+import {
+  collectPayrollPeriods,
+  collectPayrollPeriodsAcrossRetentionMigrations,
+  iteratePayrollPeriods,
+} from "../src/payroll/periodPagination";
 
 describe("payroll period pagination", () => {
+  it("reads all retention sources and prefers the newest migrated record", async () => {
+    const newest = async (): Promise<{
+      items: { periodId: string; schema: string }[];
+    }> => ({
+      items: [
+        { periodId: "2026-02", schema: "current" },
+        { periodId: "2026-01", schema: "current" },
+      ],
+    });
+    const older = async (): Promise<{
+      items: { periodId: string; schema: string }[];
+    }> => ({
+      items: [
+        { periodId: "2026-01", schema: "legacy" },
+        { periodId: "2025-12", schema: "legacy" },
+      ],
+    });
+
+    await expect(collectPayrollPeriodsAcrossRetentionMigrations([newest, older])).resolves.toEqual([
+      { periodId: "2026-02", schema: "current" },
+      { periodId: "2026-01", schema: "current" },
+      { periodId: "2025-12", schema: "legacy" },
+    ]);
+  });
+
+  it("fails safely when an older retention source cannot be paged completely", async () => {
+    const newest = async (): Promise<{ items: { periodId: string }[] }> => ({
+      items: [{ periodId: "2026-02" }],
+    });
+    const brokenOlder = async (): Promise<{ items: never[]; nextCursor: string }> => ({
+      items: [],
+      nextCursor: "same",
+    });
+    await expect(
+      collectPayrollPeriodsAcrossRetentionMigrations([newest, brokenOlder])
+    ).rejects.toThrow("repeated cursor");
+  });
+
   it("collects ordered records from cursor pages", async () => {
     const fetchPage = jest.fn(async ({ cursor }: { cursor?: string }) =>
       cursor
