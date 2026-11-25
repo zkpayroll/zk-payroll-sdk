@@ -38,6 +38,18 @@ import {
   type AuditGrantRecord,
 } from "./audit/grantScope";
 import { redactAuditorId } from "./audit/accessExpiry";
+import {
+  refreshAuditSessionPauseState,
+  refreshPauseState,
+  PauseStatusClientError,
+  PauseStatusClientErrorCode,
+  DEFAULT_PAUSE_STATE_TTL_MS,
+} from "./audit/pauseState";
+import type {
+  PauseStatusClientOptions,
+  PauseStateRefreshResult,
+  PauseStateSnapshot,
+} from "./audit/pauseState";
 import { applyRetentionPolicyUpdate } from "./retention/stateManager";
 import { redactPolicyActorId, RetentionPolicyError } from "./retention/errors";
 import type {
@@ -320,6 +332,34 @@ export async function getAuditGrantRevocationStatusForClient(
     latestRevokedAt,
   };
 }
+
+// ── Audit session pause-state refresh (#837) ─────────────────────────────────
+// Long-lived audit sessions cache the payroll pause state, but the contract can
+// be paused or unpaused at any time. Audit operations must therefore refresh the
+// pause state before each operation (or when the cached snapshot exceeds its
+// TTL) so an auditor never acts on stale pause information. Refreshed snapshots
+// carry only pause metadata — never salary or employee data.
+
+/**
+ * Refreshes the pause state for a long-lived audit session.
+ *
+ * Call this before each audit operation, or whenever the cached snapshot is
+ * older than {@link DEFAULT_PAUSE_STATE_TTL_MS}. The helper is a thin facade
+ * over the audit pause-state module so SDK consumers can import it from the
+ * client layer.
+ *
+ * @param options - Pause status client options (provider, TTL, reference time).
+ * @returns The refreshed, privacy-safe pause state snapshot.
+ * @throws {PauseStatusClientError} when the pause state cannot be loaded or is
+ *   invalid; messages never include private payroll data.
+ *
+ * @example
+ * import { refreshAuditSessionPauseState } from "@zk-payroll/core/client";
+ * const pause = await refreshAuditSessionPauseState({ provider: () => client.getPauseState() });
+ */
+export { refreshAuditSessionPauseState, refreshPauseState };
+export { PauseStatusClientError, PauseStatusClientErrorCode, DEFAULT_PAUSE_STATE_TTL_MS };
+export type { PauseStatusClientOptions, PauseStateRefreshResult, PauseStateSnapshot };
 
 /**
  * Verifies a proof through an injected {@link ProofVerifierAdapter} and

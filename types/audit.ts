@@ -191,3 +191,85 @@ export interface AuditAccessRequestValidationResult {
   /** Validation errors (empty when valid). */
   errors: AuditAccessRequestValidationError[];
 }
+
+// ── Pause-State Refresh ──────────────────────────────────────────────────────
+
+/**
+ * Normalized pause status of the payroll contract.
+ *
+ * Long-lived audit sessions re-check this value periodically so that an
+ * auditor never acts on a stale view of contract state. The value contains
+ * only contract-level flags — never employee, salary or transaction data.
+ */
+export type AuditPauseStatus = "paused" | "unpaused" | "unknown";
+
+/**
+ * Snapshot of the contract pause state as observed by an audit session.
+ *
+ * Used by long-lived audit sessions to refresh pause status without
+ * leaking private payroll data: the snapshot carries only the normalized
+ * pause status, when it was fetched, and staleness metadata.
+ */
+export interface AuditSessionPauseState {
+  /** Normalized pause status at the time of the refresh. */
+  status: AuditPauseStatus;
+  /** ISO-8601 timestamp of when this snapshot was fetched. */
+  fetchedAt: string;
+  /**
+   * Whether the snapshot is considered stale (older than the configured TTL).
+   * Consumers should refresh before relying on a stale snapshot.
+   */
+  stale: boolean;
+  /**
+   * Whether the snapshot was produced by a forced refresh that bypassed
+   * the TTL cache.
+   */
+  forced: boolean;
+}
+
+/**
+ * Options controlling a pause-state refresh.
+ *
+ * These options are safe to log: they contain no private payroll data.
+ */
+export interface PauseStateRefreshOptions {
+  /**
+   * Time-to-live in milliseconds for a cached pause-state snapshot.
+   * When the cached snapshot is older than this, it is reported as stale
+   * and a refresh is attempted. Defaults to the SDK's internal TTL.
+   */
+  ttlMs?: number;
+  /**
+   * When `true`, bypasses the TTL cache and always queries the contract.
+   * Defaults to `false`.
+   */
+  force?: boolean;
+}
+
+/** Error codes for pause-state refresh failures. */
+export type PauseStateRefreshErrorCode =
+  | "PAUSE_STATE_UNAVAILABLE"
+  | "PAUSE_STATE_TIMEOUT"
+  | "PAUSE_STATE_INVALID_RESPONSE"
+  | "PAUSE_STATE_SESSION_CLOSED";
+
+/**
+ * Privacy-safe error shape for pause-state refresh failures.
+ *
+ * Deliberately excludes raw contract responses, RPC payloads and any
+ * payroll data so that failures can be surfaced to operators and logs
+ * without exposing private salary or employee information.
+ */
+export interface PauseStateRefreshError {
+  /** Error code for programmatic handling. */
+  code: PauseStateRefreshErrorCode;
+  /** Human-readable, privacy-safe error description. */
+  message: string;
+  /** ISO-8601 timestamp of when the failure occurred. */
+  occurredAt: string;
+  /**
+   * Last known pause state, if any. May be stale; callers should treat
+   * it as advisory only.
+   */
+  lastKnownState?: AuditSessionPauseState;
+}
