@@ -176,6 +176,7 @@ export * from "./artifacts";
 
 // ── Typed Contract Clients ───────────────────────────────────────────────────
 export * from "./clients";
+export * from "./pause/status";
 
 // ── Environment Sanity Checker ──────────────────────────────────────────────
 export * from "./sanity";
