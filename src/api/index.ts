@@ -11,6 +11,7 @@ export { DEFAULT_CONFIG, ConfigPresets, ConfigBuilder } from "../config";
 export type { ClientConfig } from "../config";
 export type { PayrollRecord, Network } from "../types";
 export { pollTransaction } from "../../packages/core/src/polling";
+export * from "../../packages/core/src/api/auditGrantPeriodBoundaries";
 export type {
   PollTransactionOptions,
   TransactionStatusResult,
