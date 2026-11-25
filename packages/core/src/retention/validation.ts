@@ -784,6 +784,35 @@ export function validateRetentionPolicyState(
     );
   }
 
+  // Revision references (#983): every later revision must link to a real
+  // predecessor. Pointing back at the genesis sentinel would silently detach
+  // it from the chain, and a self-reference can never be a valid predecessor.
+  if (
+    typeof p.version === "number" &&
+    Number.isSafeInteger(p.version) &&
+    p.version > 1 &&
+    previousHash === RETENTION_GENESIS_PREVIOUS_HASH
+  ) {
+    issues.push(
+      issue(
+        RetentionPolicyErrorCode.INVALID_HASH,
+        "previousHash",
+        "Non-genesis retention policy revision must reference the previous revision hash.",
+        "Set previousHash to the hash of the revision immediately before this one."
+      )
+    );
+  }
+  if (hash && previousHash && hash.toLowerCase() === previousHash.toLowerCase()) {
+    issues.push(
+      issue(
+        RetentionPolicyErrorCode.INVALID_HASH,
+        "previousHash",
+        "Retention policy revision cannot reference its own hash as the previous revision.",
+        "Persist the hash of the preceding revision as previousHash."
+      )
+    );
+  }
+
   if (issues.length === 0) {
     const snapshot = policy as unknown as RetentionPolicy;
     const recomputed = computeRetentionPolicyHash({
