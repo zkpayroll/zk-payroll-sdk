@@ -565,6 +565,28 @@ AssetRegistry.getDeprecation("COLDTOKEN..."); // { deprecated: true, message, re
 `AssetRegistry.checkAvailability` still reports deprecated assets as
 @available: true`, with `deprecated: true` and `deprecation` details attached.
 
+## Payment asset authorization errors
+
+`assertPaymentAssetAuthorized()` throws a `PaymentAssetUnauthorizedError` for an asset that cannot be used for payroll. It extends `ValidationError`, so existing `code` checks (`PAYMENT_ASSET_UNAUTHORIZED`) still work. Branch on `details` instead of parsing the message:
+
+```ts
+import {
+  assertPaymentAssetAuthorized,
+  isPaymentAssetUnauthorizedError,
+} from "@zk-payroll/core";
+
+try {
+  assertPaymentAssetAuthorized(asset, { allowedAssetIds });
+} catch (err) {
+  if (isPaymentAssetUnauthorizedError(err)) {
+    // "not_payment_compatible" | "unregistered" | "not_allowlisted"
+    console.warn(err.details.authorizationCode, err.details.assetId);
+  }
+}
+```
+
+`details.assetId` is bounded to 64 characters. Non-string inputs are reported by type only (for example `"<number>"`), so raw payload values never reach logs.
+
 ## Type reference
 
 ### `AssetMetadata`

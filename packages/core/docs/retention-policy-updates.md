@@ -85,6 +85,16 @@ Helpers:
 | `RETENTION_POLICY_SENSITIVE_DATA_DETECTED` | Sensitive terms found in reason/actor/metadata |
 | `RETENTION_POLICY_INVALID_HASH` | Snapshot hash/previousHash invalid or tampered |
 
+## Revision References
+
+Every persisted revision is a link in a hash chain, and `validateRetentionPolicyState()` checks each link:
+
+- Revision `1` must use the genesis `previousHash` (`000…000`).
+- Any later revision (`version > 1`) must reference a real predecessor. A `previousHash` equal to the genesis sentinel is rejected, because it would detach the revision from the chain.
+- A revision cannot list its own `hash` as `previousHash`.
+
+Violations are reported as `INVALID_HASH` issues on the `previousHash` field. Issue messages never include the hash values themselves.
+
 ## Privacy Guarantees
 
 - Error messages and issue details never include salary amounts, employee identifiers, secrets, or raw sensitive metadata values.

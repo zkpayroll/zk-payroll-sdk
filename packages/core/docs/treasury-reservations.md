@@ -20,6 +20,15 @@ Treasury balance reservation guarantees that funds allocated for upcoming or exe
 
 ---
 
+## Partial Release Handling
+
+`summarizeTreasuryReleaseResults()` reports `complete`, `partial`, `failed`, or `not_attempted`. Use the typed helpers to act on the outcome:
+
+- `isPartialTreasuryRelease(result)` returns `true` when some, but not all, releases succeeded. Retry only the entries in `result.failures`.
+- `assertTreasuryReleaseComplete(result)` passes for `complete` and `not_attempted`, and throws `TreasuryReleaseIncompleteError` (`code: "TREASURY_RELEASE_INCOMPLETE"`) for `partial` and `failed`.
+
+The error exposes only `status`, the attempt and failure counts, and de-duplicated stable `failureCodes`. Release IDs, raw exception text, and amounts are never included.
+
 ## Concurrency & Idempotency Guarantees
 
 - **Tamper-Evident SHA-256 Hashing**:

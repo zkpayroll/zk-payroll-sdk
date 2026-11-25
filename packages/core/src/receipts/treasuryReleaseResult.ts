@@ -112,3 +112,85 @@ export function summarizeTreasuryReleaseResults(
     failures,
   };
 }
+
+/** Stable error code for a treasury release that did not fully complete. */
+export const TREASURY_RELEASE_INCOMPLETE = "TREASURY_RELEASE_INCOMPLETE" as const;
+
+/**
+ * Thrown by {@link assertTreasuryReleaseComplete} when some or all treasury
+ * releases failed. Carries only aggregate counts and stable failure codes, so
+ * it is safe to log or surface to operators. Release IDs are not included;
+ * use `result.failures` (already redacted) to retry specific releases.
+ */
+export class TreasuryReleaseIncompleteError extends Error {
+  readonly code = TREASURY_RELEASE_INCOMPLETE;
+  /** Incomplete status: `"partial"` (some succeeded) or `"failed"` (none succeeded). */
+  readonly status: "partial" | "failed";
+  readonly attemptedCount: number;
+  readonly succeededCount: number;
+  readonly failedCount: number;
+  /** Distinct stable failure codes, in first-seen order. */
+  readonly failureCodes: readonly string[];
+
+  constructor(result: TreasuryReleaseResult) {
+    super(
+      result.status === "partial"
+        ? `Treasury release partially completed: ${result.succeededCount} of ${result.attemptedCount} releases succeeded. Retry the ${result.failedCount} failed release(s) before finalizing the payroll.`
+        : `Treasury release failed: none of ${result.attemptedCount} releases succeeded. Retry the releases before finalizing the payroll.`
+    );
+    this.name = "TreasuryReleaseIncompleteError";
+    this.status = result.status === "partial" ? "partial" : "failed";
+    this.attemptedCount = result.attemptedCount;
+    this.succeededCount = result.succeededCount;
+    this.failedCount = result.failedCount;
+    this.failureCodes = Object.freeze([...new Set(result.failures.map((f) => f.code))]);
+  }
+}
+
+/** Type guard for {@link TreasuryReleaseIncompleteError}. */
+export function isTreasuryReleaseIncompleteError(
+  err: unknown
+): err is TreasuryReleaseIncompleteError {
+  return err instanceof TreasuryReleaseIncompleteError;
+}
+
+const TREASURY_RELEASE_STATUSES: readonly string[] = [
+  "complete",
+  "partial",
+  "failed",
+  "not_attempted",
+];
+
+/**
+ * Returns `true` when some, but not all, releases succeeded. Callers can use
+ * this to retry only the failed releases instead of restarting the whole batch.
+ */
+export function isPartialTreasuryRelease(result: TreasuryReleaseResult): boolean {
+  return result.status === "partial";
+}
+
+/**
+ * Assert that a treasury release summary did not partially or fully fail.
+ *
+ * - `"complete"` and `"not_attempted"` pass. `not_attempted` means no releases
+ *   were required, so there is nothing to finalize against.
+ * - `"partial"` and `"failed"` throw {@link TreasuryReleaseIncompleteError}.
+ *
+ * @throws TreasuryReleaseResultError when `result` is not a summary.
+ * @throws TreasuryReleaseIncompleteError when some or all releases failed.
+ */
+export function assertTreasuryReleaseComplete(
+  result: TreasuryReleaseResult
+): TreasuryReleaseResult {
+  if (
+    !result ||
+    typeof result !== "object" ||
+    !TREASURY_RELEASE_STATUSES.includes(result.status)
+  ) {
+    throw new TreasuryReleaseResultError();
+  }
+  if (result.status === "partial" || result.status === "failed") {
+    throw new TreasuryReleaseIncompleteError(result);
+  }
+  return result;
+}
