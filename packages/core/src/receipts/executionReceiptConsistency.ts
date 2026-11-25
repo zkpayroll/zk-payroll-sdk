@@ -6,6 +6,7 @@ export type ExecutionReceiptConsistencyErrorCode =
   | "PAYROLL_ID_MISMATCH"
   | "EXECUTION_STATUS_MISMATCH"
   | "EXECUTION_COUNT_MISMATCH"
+  | "EXECUTION_INCOMPLETE"
   | "TRANSACTION_REFERENCE_MISMATCH";
 
 export interface ExecutionReceiptConsistencyIssue {
@@ -32,33 +33,108 @@ export function checkPayrollExecutionReceiptConsistency(
     return {
       ok: false,
       consistent: false,
-      issues: [{ code: "EXECUTION_COUNT_MISMATCH", field: "summary", message: "Execution summary is required." }],
+      issues: [
+        {
+          code: "EXECUTION_COUNT_MISMATCH",
+          field: "summary",
+          message: "Execution summary is required.",
+        },
+      ],
+    };
+  }
+  if (!Array.isArray(summary.results)) {
+    return {
+      ok: false,
+      consistent: false,
+      issues: [
+        {
+          code: "EXECUTION_COUNT_MISMATCH",
+          field: "results",
+          message: "Execution results are required to confirm batch completion.",
+        },
+      ],
     };
   }
   if (!receipt) {
     return {
       ok: false,
       consistent: false,
-      issues: [{ code: "RECEIPT_REQUIRED", field: "receipt", message: "Payroll execution receipt is required." }],
+      issues: [
+        {
+          code: "RECEIPT_REQUIRED",
+          field: "receipt",
+          message: "Payroll execution receipt is required.",
+        },
+      ],
     };
   }
 
   const issues: ExecutionReceiptConsistencyIssue[] = [];
+  if (
+    !Number.isSafeInteger(summary.totalCount) ||
+    summary.totalCount < 0 ||
+    summary.results.length !== summary.totalCount
+  ) {
+    issues.push({
+      code: "EXECUTION_COUNT_MISMATCH",
+      field: "totalCount",
+      message: "Execution results do not include every expected recipient.",
+    });
+  }
+  const hasPendingRecipient = summary.results.some((result) => result.status === "pending");
+  if (hasPendingRecipient || summary.pendingCount > 0) {
+    issues.push({
+      code: "EXECUTION_INCOMPLETE",
+      field: "pendingCount",
+      message: "Batch completion cannot be reported until every recipient has a terminal result.",
+    });
+  }
+  if (
+    summary.status === "success" &&
+    (summary.successCount !== summary.totalCount || summary.failureCount !== 0)
+  ) {
+    issues.push({
+      code: "EXECUTION_INCOMPLETE",
+      field: "status",
+      message: "A successful batch must contain a successful result for every recipient.",
+    });
+  }
   if (options.expectedPayrollId && receipt.payrollId !== options.expectedPayrollId) {
-    issues.push({ code: "PAYROLL_ID_MISMATCH", field: "payrollId", message: "Receipt payroll identifier is inconsistent." });
+    issues.push({
+      code: "PAYROLL_ID_MISMATCH",
+      field: "payrollId",
+      message: "Receipt payroll identifier is inconsistent.",
+    });
   }
   if (summary.totalCount !== (receipt.recipientCount ?? summary.totalCount)) {
-    issues.push({ code: "EXECUTION_COUNT_MISMATCH", field: "recipientCount", message: "Receipt recipient count is inconsistent with the execution summary." });
+    issues.push({
+      code: "EXECUTION_COUNT_MISMATCH",
+      field: "recipientCount",
+      message: "Receipt recipient count is inconsistent with the execution summary.",
+    });
   }
 
-  const settled = receipt.settlementStatus === "settled" || receipt.settlementStatus === "confirmed";
+  const settled =
+    receipt.settlementStatus === "settled" || receipt.settlementStatus === "confirmed";
   const summarySettled = summary.status === "success";
-  if (summary.status === "failure" || summary.status === "partial" || summary.status === "pending") {
+  if (
+    summary.status === "failure" ||
+    summary.status === "partial" ||
+    summary.status === "pending"
+  ) {
     if (settled) {
-      issues.push({ code: "EXECUTION_STATUS_MISMATCH", field: "settlementStatus", message: "Settled receipt conflicts with a non-successful execution summary." });
+      issues.push({
+        code: "EXECUTION_STATUS_MISMATCH",
+        field: "settlementStatus",
+        message: "Settled receipt conflicts with a non-successful execution summary.",
+      });
     }
   } else if (settled !== summarySettled) {
-    issues.push({ code: "EXECUTION_STATUS_MISMATCH", field: "settlementStatus", message: "Receipt settlement status conflicts with execution status." });
+    issues.push({
+      code: "EXECUTION_STATUS_MISMATCH",
+      field: "settlementStatus",
+      message: "Receipt settlement status conflicts with execution status.",
+    });
   }
 
   if (options.requireTransactionReferenceConsistency !== false) {
@@ -71,7 +147,11 @@ export function checkPayrollExecutionReceiptConsistency(
           ? receipt.transactionReference
           : receipt.transactionReference.txHash;
       if (!txHashes.includes(receiptTx.trim())) {
-        issues.push({ code: "TRANSACTION_REFERENCE_MISMATCH", field: "transactionReference", message: "Receipt transaction reference does not match an execution result." });
+        issues.push({
+          code: "TRANSACTION_REFERENCE_MISMATCH",
+          field: "transactionReference",
+          message: "Receipt transaction reference does not match an execution result.",
+        });
       }
     }
   }
@@ -81,5 +161,4 @@ export function checkPayrollExecutionReceiptConsistency(
     : { ok: false, consistent: false, issues };
 }
 
-export const validatePayrollExecutionReceiptConsistency =
-  checkPayrollExecutionReceiptConsistency;
+export const validatePayrollExecutionReceiptConsistency = checkPayrollExecutionReceiptConsistency;

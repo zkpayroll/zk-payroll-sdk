@@ -341,3 +341,25 @@ export function assertAuditorGrantActive(
 
   return normalized.descriptor;
 }
+
+/**
+ * Assert that an auditor grant was active at a specific ledger timestamp.
+ * Use the ledger's close time for authorization decisions tied to a ledger
+ * read, so wall-clock time cannot extend access beyond the ledger boundary.
+ * Expiry is exclusive: a grant expiring exactly at the ledger timestamp is
+ * already expired.
+ */
+export function assertAuditorGrantActiveAtLedger(
+  input: AuditorGrantExpiryValidationInput,
+  ledgerTimestampMs: number
+): AuditorAccessExpiryFormatted {
+  if (!Number.isFinite(ledgerTimestampMs) || ledgerTimestampMs <= 0) {
+    throw new AuditorGrantExpiryError(
+      "Auditor grant expiry validation failed: a valid ledger timestamp is required.",
+      AuditorGrantExpiryErrorCode.REFERENCE_TIME_INVALID,
+      [issue(AuditorGrantExpiryErrorCode.REFERENCE_TIME_INVALID, "ledgerTimestampMs")],
+      { field: "ledgerTimestampMs" }
+    );
+  }
+  return assertAuditorGrantActive({ ...input, referenceTime: ledgerTimestampMs });
+}

@@ -1,5 +1,6 @@
 import {
   assertAuditorGrantActive,
+  assertAuditorGrantActiveAtLedger,
   validateAuditorGrantExpiry,
 } from "../../src/audit/grantExpiryValidation";
 import type { AuditorGrantExpiryValidationResult } from "../../src/audit/grantExpiryValidation";
@@ -216,6 +217,31 @@ describe("Auditor grant expiry boundaries (#906)", () => {
         referenceTime: BASE_TIME,
       });
       expect(descriptor.status).toBe("expiring_soon");
+    });
+  });
+
+  describe("ledger authorization boundary", () => {
+    it("uses the ledger timestamp instead of a later wall-clock reference", () => {
+      const descriptor = assertAuditorGrantActiveAtLedger(
+        { auditorId: AUDITOR_ID, expiresAt: BASE_TIME + 1 },
+        BASE_TIME
+      );
+      expect(descriptor.status).toBe("expiring_soon");
+      expect(() =>
+        assertAuditorGrantActiveAtLedger(
+          { auditorId: AUDITOR_ID, expiresAt: BASE_TIME + 1 },
+          BASE_TIME + 1
+        )
+      ).toThrow(AuditorGrantExpiredError);
+    });
+
+    it("rejects an invalid ledger timestamp", () => {
+      expect(() =>
+        assertAuditorGrantActiveAtLedger(
+          { auditorId: AUDITOR_ID, expiresAt: BASE_TIME + ONE_DAY_MS },
+          Number.NaN
+        )
+      ).toThrow(/valid ledger timestamp/);
     });
   });
 
