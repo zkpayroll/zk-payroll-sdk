@@ -27,16 +27,43 @@ export class ReserveReductionAuthorizationError extends Error {
   }
 }
 
-/** Verifies the caller-supplied role context is bound to the actual signer. */
+/** Upper bound on role list size; keeps malformed contexts from doing unbounded work. */
+export const MAX_RESERVE_AUTHORIZATION_ROLES = 32;
+
+/**
+ * A role list must be an array of non-blank strings within
+ * {@link MAX_RESERVE_AUTHORIZATION_ROLES}. `roles` must be non-empty;
+ * `requiredRoles` may be empty (meaning "use the default policy").
+ */
+function isRoleList(value: unknown, allowEmpty: boolean): value is readonly string[] {
+  return (
+    Array.isArray(value) &&
+    (allowEmpty || value.length > 0) &&
+    value.length <= MAX_RESERVE_AUTHORIZATION_ROLES &&
+    value.every((role) => typeof role === "string" && role.trim().length > 0)
+  );
+}
+
+/**
+ * Verifies the caller-supplied role context is bound to the actual signer.
+ *
+ * Fails closed with `TREASURY_RESERVE_AUTH_CONTEXT_INVALID` when the context
+ * is not an object, the operator address is blank, `roles` is empty or holds
+ * a non-string/blank entry, `requiredRoles` holds a non-string/blank entry,
+ * or either list exceeds {@link MAX_RESERVE_AUTHORIZATION_ROLES}. Error
+ * messages never echo addresses or role values.
+ */
 export async function assertReserveReductionAuthorized(
   signer: Keypair | ISigner,
   context: ReserveReductionAuthorizationContext
 ): Promise<void> {
   if (
     !context ||
+    typeof context !== "object" ||
     typeof context.operatorAddress !== "string" ||
     context.operatorAddress.trim().length === 0 ||
-    !Array.isArray(context.roles)
+    !isRoleList(context.roles, false) ||
+    (context.requiredRoles !== undefined && !isRoleList(context.requiredRoles, true))
   ) {
     throw new ReserveReductionAuthorizationError(
       ReserveReductionAuthorizationErrorCode.INVALID_CONTEXT
@@ -58,9 +85,7 @@ export async function assertReserveReductionAuthorized(
     );
   }
 
-  const roles = context.roles
-    .filter((role): role is string => typeof role === "string")
-    .map((role) => role.trim().toUpperCase());
+  const roles = context.roles.map((role) => role.trim().toUpperCase());
   const integrationRoles = context.requiredRoles?.length
     ? context.requiredRoles.map((role) => role.trim().toUpperCase())
     : [...RESERVE_REDUCTION_ROLES];

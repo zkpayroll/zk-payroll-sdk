@@ -6,10 +6,11 @@ import { EventDecodingError } from "./types";
 export const PAYROLL_LIFECYCLE_EVENT_SCHEMA_VERSION = 1 as const;
 
 /** Schema version reported by a decoded payroll lifecycle event. */
-export type PayrollLifecycleEventSchemaVersion =
-  typeof PAYROLL_LIFECYCLE_EVENT_SCHEMA_VERSION;
+export type PayrollLifecycleEventSchemaVersion = typeof PAYROLL_LIFECYCLE_EVENT_SCHEMA_VERSION;
 
 /**
+ * Compatibility matrix: see `packages/core/docs/event-decoder-versioning.md`.
+ *
  * Resolve the schema version of a payroll lifecycle event. Legacy events omit
  * `schema_version` and are interpreted as v1; unknown explicit versions fail
  * closed so callers never decode a changed payload with the wrong schema.

@@ -16,6 +16,12 @@ export const ProofVerificationErrorCode = {
    * circuit artifacts, not the witness.
    */
   VERIFICATION_KEY_MISMATCH: "PROOF_VERIFICATION_KEY_MISMATCH",
+  /**
+   * The proof is well-formed but uses a protocol/curve pair the SDK cannot
+   * verify (anything other than groth16 over bn128). Regenerate the proof
+   * with the supported circuit toolchain instead of retrying.
+   */
+  UNSUPPORTED_PROOF_FORMAT: "PROOF_UNSUPPORTED_FORMAT",
 } as const;
 
 export type ProofVerificationErrorCodeType =
@@ -37,6 +43,66 @@ export class ProofVerificationError extends ZkPayrollError {
   ) {
     super(message, code, context, cause);
     this.name = "ProofVerificationError";
+  }
+}
+
+/** Protocol/curve pairs the SDK verifier pipeline accepts. */
+export const SUPPORTED_PROOF_FORMATS: ReadonlyArray<{
+  readonly protocol: string;
+  readonly curve: string;
+}> = Object.freeze([Object.freeze({ protocol: "groth16", curve: "bn128" })]);
+
+/** Only short identifier-like labels are echoed back; anything else is redacted. */
+function safeFormatLabel(value: unknown): string {
+  return typeof value === "string" && /^[A-Za-z0-9_-]{1,32}$/.test(value)
+    ? value
+    : "[unrecognized]";
+}
+
+/**
+ * Thrown when a structurally valid proof declares a protocol/curve pair the
+ * SDK does not support. `context` carries only the (sanitized) declared
+ * `protocol` and `curve` plus the supported list — never proof points,
+ * public signals, or payroll values.
+ */
+export class UnsupportedProofFormatError extends ProofVerificationError {
+  public readonly protocol: string;
+  public readonly curve: string;
+
+  constructor(protocol: unknown, curve: unknown) {
+    const safeProtocol = safeFormatLabel(protocol);
+    const safeCurve = safeFormatLabel(curve);
+    super(
+      `Unsupported proof format "${safeProtocol}/${safeCurve}". Supported formats: ${SUPPORTED_PROOF_FORMATS.map((f) => `${f.protocol}/${f.curve}`).join(", ")}. Regenerate the proof with a supported circuit toolchain.`,
+      ProofVerificationErrorCode.UNSUPPORTED_PROOF_FORMAT,
+      {
+        protocol: safeProtocol,
+        curve: safeCurve,
+        supportedFormats: SUPPORTED_PROOF_FORMATS.map((f) => `${f.protocol}/${f.curve}`),
+      }
+    );
+    this.name = "UnsupportedProofFormatError";
+    this.protocol = safeProtocol;
+    this.curve = safeCurve;
+  }
+}
+
+/** Returns true when the proof declares a supported protocol/curve pair. */
+export function isSupportedProofFormat(proof: { protocol?: unknown; curve?: unknown }): boolean {
+  return SUPPORTED_PROOF_FORMATS.some(
+    (f) => f.protocol === proof?.protocol && f.curve === proof?.curve
+  );
+}
+
+/**
+ * Fails closed when a proof declares an unsupported (or missing)
+ * protocol/curve pair.
+ *
+ * @throws {UnsupportedProofFormatError}
+ */
+export function assertSupportedProofFormat(proof: { protocol?: unknown; curve?: unknown }): void {
+  if (!isSupportedProofFormat(proof)) {
+    throw new UnsupportedProofFormatError(proof?.protocol, proof?.curve);
   }
 }
 
@@ -325,28 +391,27 @@ export type ProofInputValidationErrorCode =
  * Human-readable, user-facing safe messages keyed by error code.
  * Guaranteed never to interpolate sensitive employee IDs, secrets, or amounts.
  */
-export const PROOF_INPUT_VALIDATION_ERROR_MESSAGES: Record<ProofInputValidationErrorCode, string> = {
-  [ProofInputValidationErrorCode.INVALID_WITNESS]:
-    "Proof witness must be a non-null object.",
-  [ProofInputValidationErrorCode.INVALID_RECIPIENT]:
-    "Recipient address is invalid or empty. Provide a valid Stellar public key.",
-  [ProofInputValidationErrorCode.INVALID_AMOUNT]:
-    "Amount must be a non-negative integer representation (string, bigint, or safe number).",
-  [ProofInputValidationErrorCode.INVALID_ASSET]:
-    "Asset identifier is invalid or empty.",
-  [ProofInputValidationErrorCode.FORBIDDEN_FIELD]:
-    "Sensitive credentials, keys, or forbidden parameters must not appear in proof inputs.",
-  [ProofInputValidationErrorCode.MISSING_REQUIRED_FIELD]:
-    "A required witness field is missing for proof input.",
-  [ProofInputValidationErrorCode.OVERSIZED_INPUT]:
-    "Circuit witness exceeds maximum allowable input bounds.",
-  [ProofInputValidationErrorCode.INVALID_PUBLIC_SIGNALS]:
-    "Public signals payload is invalid or malformed.",
-  [ProofInputValidationErrorCode.INVALID_CIRCUIT_ID]:
-    "Circuit identifier is missing or unsupported.",
-  [ProofInputValidationErrorCode.UNSUPPORTED_FIELD_TYPE]:
-    "One or more witness fields contain an unsupported data type.",
-};
+export const PROOF_INPUT_VALIDATION_ERROR_MESSAGES: Record<ProofInputValidationErrorCode, string> =
+  {
+    [ProofInputValidationErrorCode.INVALID_WITNESS]: "Proof witness must be a non-null object.",
+    [ProofInputValidationErrorCode.INVALID_RECIPIENT]:
+      "Recipient address is invalid or empty. Provide a valid Stellar public key.",
+    [ProofInputValidationErrorCode.INVALID_AMOUNT]:
+      "Amount must be a non-negative integer representation (string, bigint, or safe number).",
+    [ProofInputValidationErrorCode.INVALID_ASSET]: "Asset identifier is invalid or empty.",
+    [ProofInputValidationErrorCode.FORBIDDEN_FIELD]:
+      "Sensitive credentials, keys, or forbidden parameters must not appear in proof inputs.",
+    [ProofInputValidationErrorCode.MISSING_REQUIRED_FIELD]:
+      "A required witness field is missing for proof input.",
+    [ProofInputValidationErrorCode.OVERSIZED_INPUT]:
+      "Circuit witness exceeds maximum allowable input bounds.",
+    [ProofInputValidationErrorCode.INVALID_PUBLIC_SIGNALS]:
+      "Public signals payload is invalid or malformed.",
+    [ProofInputValidationErrorCode.INVALID_CIRCUIT_ID]:
+      "Circuit identifier is missing or unsupported.",
+    [ProofInputValidationErrorCode.UNSUPPORTED_FIELD_TYPE]:
+      "One or more witness fields contain an unsupported data type.",
+  };
 
 /**
  * A single structured violation descriptor for proof input validation.
@@ -438,4 +503,3 @@ export function formatProofInputValidationError(error: unknown): string {
   }
   return baseMessage;
 }
-

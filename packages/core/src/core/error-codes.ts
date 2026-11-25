@@ -176,6 +176,14 @@ export const ERROR_CODE_REGISTRY: Record<string, ErrorCodeEntry> = {
     suggestedMessage:
       "The verification key does not match this proof. Check the circuit version and verification key configuration, then verify again.",
   },
+  PROOF_UNSUPPORTED_FORMAT: {
+    category: ErrorCategory.PROOF,
+    meaning:
+      "The proof is well-formed but declares a protocol/curve pair the SDK cannot verify (only groth16/bn128 is supported).",
+    retryable: false,
+    suggestedMessage:
+      "This proof format is not supported. Regenerate the proof with the supported groth16/bn128 circuit toolchain.",
+  },
   DUPLICATE_COMMITMENT: {
     category: ErrorCategory.PROOF,
     meaning:
@@ -510,48 +518,42 @@ export const ERROR_CODE_REGISTRY: Record<string, ErrorCodeEntry> = {
   // ── Approval Invalidation ────────────────────────────────────────────────
   APPROVAL_INVALIDATED_MODIFICATION: {
     category: ErrorCategory.DRAFT,
-    meaning:
-      "The payroll draft was modified after approval, invalidating prior sign-offs.",
+    meaning: "The payroll draft was modified after approval, invalidating prior sign-offs.",
     retryable: false,
     suggestedMessage:
       "The payroll draft was modified after approval. Prior approvals are invalidated; re-approval is required before execution.",
   },
   APPROVAL_INVALIDATED_QUORUM: {
     category: ErrorCategory.DRAFT,
-    meaning:
-      "The required approval count or quorum was invalidated or unmet.",
+    meaning: "The required approval count or quorum was invalidated or unmet.",
     retryable: false,
     suggestedMessage:
       "The payroll approval quorum is invalidated. Collect the required approver sign-offs before proceeding.",
   },
   APPROVAL_INVALIDATED_EXPIRED: {
     category: ErrorCategory.DRAFT,
-    meaning:
-      "The payroll approval window has elapsed.",
+    meaning: "The payroll approval window has elapsed.",
     retryable: false,
     suggestedMessage:
       "The payroll approval window has elapsed. A fresh approval sign-off is required.",
   },
   APPROVAL_INVALIDATED_SUPERSEDED: {
     category: ErrorCategory.DRAFT,
-    meaning:
-      "The payroll approval was superseded by a later revision.",
+    meaning: "The payroll approval was superseded by a later revision.",
     retryable: false,
     suggestedMessage:
       "The payroll approval was superseded by a later revision. Re-verify the active approval revision.",
   },
   APPROVAL_INVALIDATED_MALFORMED: {
     category: ErrorCategory.DRAFT,
-    meaning:
-      "The payroll approval record is malformed or invalid.",
+    meaning: "The payroll approval record is malformed or invalid.",
     retryable: false,
     suggestedMessage:
       "The payroll approval record is malformed. Verify the approval record schema and retry.",
   },
   APPROVAL_INVALIDATION_UNKNOWN: {
     category: ErrorCategory.DRAFT,
-    meaning:
-      "An unclassified approval invalidation error occurred.",
+    meaning: "An unclassified approval invalidation error occurred.",
     retryable: false,
     suggestedMessage:
       "A payroll approval invalidation error occurred. Review the approval status and retry.",

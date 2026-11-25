@@ -37,3 +37,17 @@ The error exposes only `status`, the attempt and failure counts, and de-duplicat
   Ensures immutable, cryptographically verifiable transition histories.
 - **Idempotency**: Repeated `commitReservation()` or `releaseReservation()` calls return the terminal state without throwing or mutating balances twice.
 - **Privacy Model**: Reservation identifiers and safe error codes never expose employee addresses, salaries, or proprietary organizational reserves.
+
+## Reserve Reduction Authorization Inputs (#1001)
+
+`assertReserveReductionAuthorized()` validates its context before checking
+roles, and fails closed with `TREASURY_RESERVE_AUTH_CONTEXT_INVALID` when:
+
+- the context is not an object, or `operatorAddress` is blank;
+- `roles` is empty, or holds a non-string or blank entry;
+- `requiredRoles` is present but not an array of non-blank strings;
+- either list exceeds `MAX_RESERVE_AUTHORIZATION_ROLES` (32).
+
+Non-string roles were previously dropped without notice, and a non-string
+`requiredRoles` entry crashed with a raw `TypeError`. Error messages never echo
+addresses or role values.
