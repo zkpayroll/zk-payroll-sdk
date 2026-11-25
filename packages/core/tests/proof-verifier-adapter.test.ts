@@ -1,6 +1,13 @@
 import type { ProofPayload } from "../src/crypto/IProofGenerator";
 import { ZkPayrollError } from "../src/core/errors";
-import { ProofVerificationError, ProofVerificationErrorCode } from "../src/proofs/errors";
+import {
+  ProofVerificationError,
+  ProofVerificationErrorCode,
+  SUPPORTED_PROOF_FORMATS,
+  UnsupportedProofFormatError,
+  assertSupportedProofFormat,
+  isSupportedProofFormat,
+} from "../src/proofs/errors";
 import {
   ProofVerificationStatus,
   type ProofVerificationInput,
@@ -388,5 +395,60 @@ describe("verification key mismatch — reported distinctly from invalid", () =>
       verificationKeyId: "payroll-v1",
     });
     expect(result.status).toBe("key_mismatch");
+  });
+});
+
+describe("unsupported proof format — typed SDK error (#852)", () => {
+  const withFormat = (protocol: unknown, curve: unknown): ProofPayload =>
+    ({ ...VALID_PROOF, proof: { ...VALID_PROOF.proof, protocol, curve } }) as ProofPayload;
+
+  it("verifies the supported groth16/bn128 format", async () => {
+    await expect(
+      verifyProofWithAdapter(new MockProofVerifierAdapter(), { proof: VALID_PROOF })
+    ).resolves.toMatchObject({ status: "valid" });
+    expect(isSupportedProofFormat(VALID_PROOF.proof)).toBe(true);
+  });
+
+  it("throws UnsupportedProofFormatError before calling the adapter", async () => {
+    const adapter = new MockProofVerifierAdapter();
+    const spy = jest.spyOn(adapter, "verify");
+    const error = await verifyProofWithAdapter(adapter, {
+      proof: withFormat("plonk", "bn128"),
+    }).catch((e: unknown) => e);
+
+    expect(spy).not.toHaveBeenCalled();
+    expect(error).toBeInstanceOf(UnsupportedProofFormatError);
+    expect(error).toBeInstanceOf(ProofVerificationError);
+    expect(error).toBeInstanceOf(ZkPayrollError);
+    expect(error).toMatchObject({
+      code: ProofVerificationErrorCode.UNSUPPORTED_PROOF_FORMAT,
+      protocol: "plonk",
+      curve: "bn128",
+    });
+  });
+
+  it.each([
+    ["missing protocol", undefined, "bn128"],
+    ["wrong curve", "groth16", "bls12381"],
+    ["case mismatch", "GROTH16", "bn128"],
+  ])("rejects the %s boundary", (_label, protocol, curve) => {
+    expect(() => assertSupportedProofFormat({ protocol, curve })).toThrow(
+      UnsupportedProofFormatError
+    );
+  });
+
+  it("redacts non-identifier format labels so payload data cannot leak", () => {
+    const leaked = "GABCDEFSECRETRECIPIENT amount=5000000 and more text";
+    const error = new UnsupportedProofFormatError(leaked, { pi_a: ["1"] });
+    expect(error.message).not.toContain("5000000");
+    expect(error.context).toMatchObject({ protocol: "[unrecognized]", curve: "[unrecognized]" });
+  });
+
+  it("still reports structurally broken proofs as a malformed verdict", async () => {
+    const result = await verifyProofWithAdapter(new MockProofVerifierAdapter(), {
+      proof: { publicSignals: [] } as unknown as ProofPayload,
+    });
+    expect(result.status).toBe(ProofVerificationStatus.MALFORMED);
+    expect(SUPPORTED_PROOF_FORMATS).toEqual([{ protocol: "groth16", curve: "bn128" }]);
   });
 });

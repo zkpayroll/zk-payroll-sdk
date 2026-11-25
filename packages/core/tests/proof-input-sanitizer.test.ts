@@ -511,3 +511,59 @@ describe("sanitizeProofInput — type narrowing", () => {
     }
   });
 });
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// assertValidPayrollWitness — payload input limits (#990)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe("assertValidPayrollWitness — witness payload limits", () => {
+  const base = { recipient: VALID_RECIPIENT, amount: VALID_AMOUNT_STRING, asset: VALID_ASSET };
+  const withExtraFields = (count: number): Record<string, unknown> => {
+    const witness: Record<string, unknown> = { ...base };
+    for (let i = 0; Object.keys(witness).length < 3 + count; i++) witness[`f${i}`] = "1";
+    return witness;
+  };
+  const tooLarge = (fn: () => unknown): ProofGenerationError => {
+    try {
+      fn();
+    } catch (e) {
+      return e as ProofGenerationError;
+    }
+    throw new Error("expected PROOF_INPUT_TOO_LARGE");
+  };
+
+  it("accepts a witness exactly at the field limit", () => {
+    expect(() => assertValidPayrollWitness(withExtraFields(256 - 3))).not.toThrow();
+  });
+
+  it("rejects one field past the limit with PROOF_INPUT_TOO_LARGE", () => {
+    const error = tooLarge(() => assertValidPayrollWitness(withExtraFields(256 - 2)));
+    expect(error).toBeInstanceOf(ProofGenerationError);
+    expect(error.code).toBe("PROOF_INPUT_TOO_LARGE");
+    expect(error.context).toMatchObject({ limit: "maxFields", max: 256, actual: 257 });
+  });
+
+  it("rejects an oversized string without echoing the salary value", () => {
+    const hugeAmount = VALID_AMOUNT_STRING.repeat(40);
+    const error = tooLarge(() => assertValidPayrollWitness({ ...base, amount: hugeAmount }));
+    expect(error.context).toMatchObject({ limit: "maxStringLength", field: "amount" });
+    expect(error.message).not.toContain(VALID_AMOUNT_STRING);
+    expect(error.message).not.toContain(VALID_RECIPIENT);
+  });
+
+  it("rejects deeply nested and oversized array payloads", () => {
+    expect(
+      tooLarge(() => assertValidPayrollWitness({ ...base, path: [[[[["1"]]]]] })).context
+    ).toMatchObject({ limit: "maxDepth", field: "path" });
+    expect(
+      tooLarge(() => assertValidPayrollWitness({ ...base, path: Array(5000).fill("1") })).context
+    ).toMatchObject({ limit: "maxElements", field: "path" });
+  });
+
+  it("honours caller-supplied limit overrides", () => {
+    expect(() => assertValidPayrollWitness(withExtraFields(10), { maxFields: 13 })).not.toThrow();
+    expect(tooLarge(() => assertValidPayrollWitness(base, { maxFields: 2 })).code).toBe(
+      "PROOF_INPUT_TOO_LARGE"
+    );
+  });
+});

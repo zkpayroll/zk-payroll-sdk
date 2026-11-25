@@ -149,3 +149,36 @@ if (validationResult.isValid) {
 // Step 3: Commit witness to circuit
 stateManager.commit(session.sessionId);
 ```
+
+---
+
+## Payroll Witness Payload Limits (#990)
+
+`assertValidPayrollWitness()` (the boundary `payroll.ts` calls before any proof
+generator) now runs `assertCircuitInputSize()` first, so custom
+`IProofGenerator` implementations never receive an oversized witness. Defaults
+come from `DEFAULT_CIRCUIT_INPUT_LIMITS`:
+
+| Limit | Default |
+|---|---|
+| `maxFields` | 256 top-level fields |
+| `maxElements` | 4096 leaf values |
+| `maxDepth` | 4 levels of nesting |
+| `maxStringLength` | 128 characters |
+| `maxTotalBytes` | 64 KiB serialized |
+
+Pass a second `limits` argument to override any of them. A violation throws
+`ProofGenerationError` with code `PROOF_INPUT_TOO_LARGE`; its context holds only
+`limit`, `max`, `actual` and the field name — never witness values.
+
+## Unsupported Proof Formats (#852)
+
+`verifyProofWithAdapter()` / `ProofVerificationClient.verifyProof()` accept only
+`SUPPORTED_PROOF_FORMATS` (`groth16` over `bn128`). A structurally valid proof
+in any other protocol/curve (including a missing one) throws
+`UnsupportedProofFormatError` (`code: "PROOF_UNSUPPORTED_FORMAT"`, a
+`ProofVerificationError`) before the adapter runs. It is not retryable:
+regenerate the proof with the supported toolchain. Its `protocol`/`curve`
+fields echo only short identifier-like labels; anything else becomes
+`[unrecognized]`. Structurally broken proofs still return a `malformed` verdict.
+Use `isSupportedProofFormat()` / `assertSupportedProofFormat()` to check early.

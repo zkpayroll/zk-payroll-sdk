@@ -28,9 +28,11 @@ import { BaseContractWrapper } from "./adapters/BaseContractWrapper";
 import { ContractExecutionError, ZkPayrollError } from "./core/errors";
 import {
   MockProofVerifierAdapter,
+  isStructurallyValidProof,
   normalizeProofVerificationError,
   type ProofVerifierAdapter,
 } from "./proofs/verifierAdapter";
+import { assertSupportedProofFormat } from "./proofs/errors";
 import type { ProofVerificationInput, ProofVerificationResult } from "./proofs/types";
 import {
   readEffectiveAuditGrantScope,
@@ -146,7 +148,10 @@ export type AuditGrantStatusClientErrorCode =
 
 /** Safe error raised by the audit grant status client facade. */
 export class AuditGrantStatusClientError extends Error {
-  constructor(readonly code: AuditGrantStatusClientErrorCode, message: string) {
+  constructor(
+    readonly code: AuditGrantStatusClientErrorCode,
+    message: string
+  ) {
     super(message);
     this.name = "AuditGrantStatusClientError";
   }
@@ -273,6 +278,11 @@ export async function verifyProofWithAdapter(
   adapter: ProofVerifierAdapter,
   input: ProofVerificationInput
 ): Promise<ProofVerificationResult> {
+  // Malformed payloads stay a `malformed` verdict; a well-formed proof in a
+  // format the SDK cannot verify is a typed, non-retryable error (#852).
+  if (isStructurallyValidProof(input?.proof)) {
+    assertSupportedProofFormat(input.proof.proof);
+  }
   try {
     return await adapter.verify(input);
   } catch (error) {
@@ -350,7 +360,11 @@ export type RetentionExtensionAuthorizationErrorCode =
 
 /** Safe error raised when a retention extension is not authorized. */
 export class RetentionExtensionAuthorizationError extends ZkPayrollError {
-  constructor(code: RetentionExtensionAuthorizationErrorCode, message: string, context: Record<string, unknown> = {}) {
+  constructor(
+    code: RetentionExtensionAuthorizationErrorCode,
+    message: string,
+    context: Record<string, unknown> = {}
+  ) {
     super(message, code, context);
     this.name = "RetentionExtensionAuthorizationError";
   }
@@ -418,7 +432,10 @@ function requireExtensionAuthorization(
     );
   }
 
-  if (!isNonEmptyString(authorization.actorId) || !isNonEmptyString(authorization.authorizationId)) {
+  if (
+    !isNonEmptyString(authorization.actorId) ||
+    !isNonEmptyString(authorization.authorizationId)
+  ) {
     throw new RetentionExtensionAuthorizationError(
       RetentionExtensionAuthorizationErrorCode.INVALID_AUTHORIZATION,
       "Retention extension authorization is incomplete. Provide a non-empty actorId and authorizationId.",
@@ -522,7 +539,10 @@ export function extendRetentionPolicyForClient(
   const referenceTimeMs = options.now ?? Date.now();
   const auth = requireExtensionAuthorization(authorization, referenceTimeMs, options);
 
-  if (!Number.isSafeInteger(request.retentionDays) || request.retentionDays <= current.retentionDays) {
+  if (
+    !Number.isSafeInteger(request.retentionDays) ||
+    request.retentionDays <= current.retentionDays
+  ) {
     throw new RetentionExtensionAuthorizationError(
       RetentionExtensionAuthorizationErrorCode.NOT_AN_EXTENSION,
       `Retention extension must increase retentionDays beyond the current ${current.retentionDays} days. Use the retention policy update flow for reductions or unchanged values.`,

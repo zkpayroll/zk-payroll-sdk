@@ -1,4 +1,5 @@
 import { ProofGenerationError } from "../core/errors";
+import { assertCircuitInputSize, type CircuitInputLimits } from "../proofs/circuitInputSize";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -268,12 +269,24 @@ const PAYROLL_REQUIRED_FIELDS = ["recipient", "amount", "asset"] as const;
  * The thrown error's message is guaranteed to never contain raw input values.
  *
  * @param witness - The raw witness object to sanitize and validate.
+ * @param limits - Overrides for `DEFAULT_CIRCUIT_INPUT_LIMITS` (field count,
+ *   element count, depth, string length, total bytes).
  * @returns A sanitized witness with recipient, amount, and asset guaranteed present.
- * @throws {ProofGenerationError} If the witness fails validation.
+ * @throws {ProofGenerationError} If the witness fails validation, or
+ *   `PROOF_INPUT_TOO_LARGE` if it exceeds the circuit input limits.
  */
 export function assertValidPayrollWitness(
-  witness: Record<string, unknown>
+  witness: Record<string, unknown>,
+  limits?: Partial<CircuitInputLimits>
 ): SanitizedWitness & { recipient: string; amount: string; asset: string } {
+  // Bound the payload before any per-field work (#990). Runs here, at the
+  // payroll boundary, so custom IProofGenerator implementations that skip
+  // their own size check never receive an oversized witness. Throws
+  // ProofGenerationError(PROOF_INPUT_TOO_LARGE) carrying only the limit name,
+  // field name and sizes — never witness values.
+  if (witness && typeof witness === "object" && !Array.isArray(witness)) {
+    assertCircuitInputSize(witness, limits);
+  }
   const result = sanitizeProofInput(witness);
 
   // Check for missing required fields (in addition to any sanitization errors)
