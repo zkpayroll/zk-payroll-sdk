@@ -74,3 +74,5 @@ export type {
   AuditGrantPeriodBoundaryOptions,
   AuditGrantPeriodBoundaryValidationResult,
 } from "./auditGrantPeriodBoundaries";
+
+export * from "./auditorArchivedPeriodReader";

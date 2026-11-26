@@ -558,6 +558,27 @@ export const ERROR_CODE_REGISTRY: Record<string, ErrorCodeEntry> = {
     suggestedMessage:
       "A payroll approval invalidation error occurred. Review the approval status and retry.",
   },
+  SALARY_COMMITMENT_VERSION_UNSUPPORTED: {
+    category: ErrorCategory.PROOF,
+    meaning: "The salary commitment scheme version is not supported by this SDK version.",
+    retryable: false,
+    suggestedMessage:
+      "Unsupported salary commitment scheme version. Supported scheme versions are 1 (Pedersen), 2 (Poseidon), and 3 (Multi-Asset Poseidon).",
+  },
+  EMPLOYER_ROLE_OWNERSHIP_INVALID: {
+    category: ErrorCategory.VALIDATION,
+    meaning: "Employer role ownership refresh failed or account does not possess the active role before submission.",
+    retryable: false,
+    suggestedMessage:
+      "Employer role ownership verification failed. Confirm that the account possesses an active role grant before submitting payroll.",
+  },
+  AUDITOR_ARCHIVED_PERIOD_UNAUTHORIZED: {
+    category: ErrorCategory.AUDIT,
+    meaning: "Auditor does not possess an active grant authorizing access to the requested archived payroll period.",
+    retryable: false,
+    suggestedMessage:
+      "Auditor is not authorized to read the requested archived payroll period. Check grant dates and lookback windows.",
+  },
 };
 
 /**

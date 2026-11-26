@@ -12,3 +12,4 @@ export * from "./proofInputState";
 export * from "./salaryCommitmentVersionState";
 export * from "./salaryCommitmentVersionErrors";
 export * from "./salaryCommitmentVersionValidation";
+export * from "./salaryCommitmentSchemeValidation";
