@@ -46,8 +46,6 @@ import { getSupportedAssets, checkAssetAvailability } from "../assets/supportedA
  */
 export class TreasuryReservationClient extends BaseContractWrapper {
   private readonly networkPassphrase: string;
-
-  private readonly networkPassphrase: string;
   private readonly supportedAssetsFetcher?: () => Promise<unknown>;
 
   constructor(
@@ -83,10 +81,8 @@ export class TreasuryReservationClient extends BaseContractWrapper {
     request: ReserveRequest,
     signer: Keypair | ISigner,
     network?: string
-   ): Promise<ReserveResponse> {
-   ): Promise<ReserveResponse> {
+ ): Promise<ReserveResponse> {
     await this.assertAssetKnown(request.asset);
-    const args: xdr.ScVal[] = [
     const args: xdr.ScVal[] = [
       new Address(request.employer).toScVal(),
       nativeToScVal(request.amount, { type: "i128" }),
