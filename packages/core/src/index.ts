@@ -401,9 +401,3 @@ export {
   validateCompanyActivationForSubmission,
   PayrollSubmissionCompanyNotActivatedError,
 } from "./payroll/companyActivationGuard";
-
-
-// ── Salary Commitment Schemes, Employer Role Refresh, & Auditor Period Reads (#850, #851, #853) ──
-export * from "./proofs/salaryCommitmentSchemeValidation";
-export * from "./verification/employerRoleOwnership";
-export * from "./api/auditorArchivedPeriodReader";
