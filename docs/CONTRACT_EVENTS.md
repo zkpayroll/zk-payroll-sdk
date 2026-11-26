@@ -85,8 +85,6 @@ the exact emission history.
 | [`registry_deactivated`](#registry_deactivated) | Employee | `deactivate_payroll` | `[name, employer, employee]` | _(none)_ | ABI `0.1.0` (assumed) |
 | [`committed`](#committed) | Payroll | `commit_salary` | `[name, employer, employee]` | `commitment_hash (bytes)`, `cycle_id (u64)` | ABI `0.1.0` (assumed) |
 | [`salary_revealed`](#salary_revealed) | Payroll | `reveal_salary` | `[name, employer, employee]` | `cycle_id (u64)`, `actual_amount (i128)` | ABI `0.1.0` (assumed) |
-| [`payroll_draft_expiry`](#payroll_draft_expiry) | Payroll | (draft lifecycle) | `[name, employer]` | `draft_id (string)`, `expiry_timestamp (u64)`, `expired_at (u64)`, `auto_cleaned (bool)` | ABI `0.1.0` (assumed) |
-| [`payroll_cancelled`](#payroll_cancelled) | Payroll | (run lifecycle) | `[name, employer]` | `run_id (string)`, `reason (symbol/string)`, `cancelled_by (address, optional)`, `cancelled_at (u64)` | ABI `0.1.0` (assumed) |
 | [`payment_executed`](#payment_executed) | Treasury | `execute_payment` | `[name, recipient]` | `amount (i128)`, `asset (address)`, `tx_hash (bytes)` | ABI `0.1.0` (assumed) |
 | [`payment_scheduled`](#payment_scheduled) | Treasury | `schedule_payment` | `[name, recipient]` | `amount (i128)`, `asset (address)`, `execute_at (u64)`, `payment_id (u64)` | ABI `0.1.0` (assumed) |
 | [`payment_cancelled`](#payment_cancelled) | Treasury | `cancel_payment` | `[name]`¹ | `payment_id (u64)` | ABI `0.1.0` (assumed) |
@@ -350,109 +348,6 @@ hash before accepting.
 **Consumers:** SDK parser → `SalaryRevealedEvent`; dashboard payroll
 finalisation flow; compliance reporting (this is the public record of
 what was actually paid).
-
----
-
-#### `payroll_draft_expiry`
-
-> Source: Payroll draft lifecycle (automatic or manual expiry)  
-> Severity: `warning` — `category = "payroll"`
-
-A payroll draft has expired. Drafts that are not submitted before their
-expiry timestamp are automatically cleaned up or marked as expired. This
-event signals that a draft can no longer be used for payroll submission.
-
-**Topics** (2 positions):
-
-|| Pos | ScVal Type | Field | Description |
-||---|---|---|---|
-|| 0 | `ScValSymbol` | event name | `"payroll_draft_expiry"` |
-|| 1 | `ScValAddress` | `employer` | Stellar public key of the employer who owns the expired draft |
-
-**Data** (`ScValMap`):
-
-|| Key | ScVal Type | Decoded JS Type | Description |
-||---|---|---|---|
-|| `draft_id` | `ScValString` | `string` | Identifier of the draft that expired |
-|| `expiry_timestamp` | `ScValU64` | `number` | Unix timestamp (seconds) when the draft was set to expire |
-|| `expired_at` | `ScValU64` | `number` | Unix timestamp (seconds) when the expiry event was recorded on-chain |
-|| `auto_cleaned` | `ScValBool` | `boolean` | Whether the draft was automatically cleaned up (defaults to `false` if missing) |
-
-**Example (decoded):**
-
-```json
-{
-  "type": "payroll_draft_expiry",
-  "employer": "GAEMPLOYER1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-  "draftId": "draft_abc123",
-  "expiryTimestamp": 1700000000,
-  "expiredAt": 1700003600,
-  "autoCleaned": true,
-  "ledger": 15200,
-  "timestamp": "2025-04-20T08:00:00Z"
-}
-```
-
-**Consumers:** SDK parser → `PayrollDraftExpiryEvent`; dashboard draft
-cleanup workflow; indexer lifecycle tracking; compliance audit trails.
-
-> ⚠ **Privacy note:** This event does not expose sensitive payroll values
-> (amounts, salaries, keys). It only contains draft identifiers and timestamps,
-> making it safe to log and display in audit contexts.
-
----
-
-#### `payroll_cancelled`
-
-> Source: Payroll run lifecycle (cancellation)  
-> Severity: `warning` — `category = "payroll"`
-
-A payroll run was cancelled. The SDK decodes it with
-`parsePayrollCancelledEvent()` into a `PayrollCancelledEvent`.
-
-**Topics** (2 positions):
-
-|| Pos | ScVal Type | Field | Description |
-||---|---|---|---|
-|| 0 | `ScValSymbol` | event name | `"payroll_cancelled"` |
-|| 1 | `ScValAddress` | `employer` | Stellar public key of the employer whose run was cancelled |
-
-**Data** (`ScValMap`):
-
-|| Key | ScVal Type | Decoded JS Type | Description |
-||---|---|---|---|
-|| `run_id` | `ScValString` | `string` | Identifier of the cancelled run (required) |
-|| `reason` | `ScValSymbol` or `ScValString` | `CancellationReasonCode` | One of the codes in `CANCELLATION_REASONS`. Unknown codes decode as `"other"` with `reasonRecognized: false` and the original code in `rawReason` |
-|| `cancelled_by` | `ScValAddress` | `string \| undefined` | Address that cancelled the run, when recorded |
-|| `cancelled_at` | `ScValU64` | `number` | Unix timestamp (seconds); must be non-zero |
-
-**Example (decoded):**
-
-```json
-{
-  "type": "payroll_cancelled",
-  "employer": "GAEMPLOYER1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-  "runId": "run_2026_10",
-  "reason": "compliance_hold",
-  "rawReason": "compliance_hold",
-  "reasonRecognized": true,
-  "cancelledBy": "GACANCELLER1234567890ABCDEFGHIJKLMNOPQRSTUVW",
-  "cancelledAt": 1700003600,
-  "ledger": 321,
-  "timestamp": "2026-10-21T00:00:00Z"
-}
-```
-
-**Consumers:** SDK parser → `PayrollCancelledEvent`; dashboard run history;
-indexer lifecycle tracking.
-
-Failures throw `EventDecodingError` naming only the missing field. Use
-`parsePayrollCancelledEvents()` to decode a mixed stream (non-matching events
-are skipped) and `isPayrollCancelledEvent()` to filter without throwing.
-
-> ⚠ **Privacy note:** The decoder reads only the run id, reason code, canceller
-> and timestamp. Amounts, recipients and any free-form notes the contract may
-> attach are ignored, so decoded events and errors are safe to log.
 
 ---
 
@@ -951,16 +846,7 @@ parser enforces. Indexers not using the SDK should match this exactly.
 |---|---|---|
 | **Contract ABI** | `0.1.0` | Pinned in [`tests/contract-fixtures.test.ts`](../packages/core/tests/contract-fixtures.test.ts); bump when topic layout or data map shape changes |
 | **Webhook envelope** | `1` | The `version` field in [`SignedWebhookEnvelope`](../packages/core/src/webhooks/types.ts#L184); bump when the envelope schema itself changes (not when individual event payloads add fields) |
-| **Payroll lifecycle event payload** | `1` | Optional `schema_version` in the data map; decoded lifecycle events expose `schemaVersion` |
 | **SDK `TypedContractEvent`** | n/a (TypeScript types) | Adding a new event type is a non-breaking change; renaming `type` literals is breaking |
-
-Payroll lifecycle decoders for `payroll_cancelled`, `payroll_draft_expiry`,
-`payroll_draft_updated`, `settlement_expired`, and
-`interrupted_settlement_recovery` accept a missing `schema_version` as legacy
-version 1. Explicit versions must be the integer `1` encoded as `ScValU32` or
-`ScValU64`; decoded events include `schemaVersion: 1`. Unsupported or malformed
-versions throw `EventDecodingError` with a field-only message. Future payload
-versions must add decoder support before they are accepted.
 
 ### Backwards-compatibility rules
 

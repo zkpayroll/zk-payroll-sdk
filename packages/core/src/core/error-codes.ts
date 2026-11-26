@@ -16,12 +16,13 @@ export const ErrorCategory = {
   METADATA: "metadata",
   SIMULATION: "simulation",
   IDEMPOTENCY: "idempotency",
-  AUDIT: "audit",
-  ELIGIBILITY: "eligibility",
-  PAYOUT: "payout",
+  COMPLIANCE: "compliance",
+  REVISION: "revision",
+  EMPLOYEE: "employee",
 } as const;
 
-export type ErrorCategoryType = (typeof ErrorCategory)[keyof typeof ErrorCategory];
+export type ErrorCategoryType =
+  (typeof ErrorCategory)[keyof typeof ErrorCategory];
 
 /**
  * Metadata registered for each stable SDK error code.
@@ -42,17 +43,11 @@ export const ERROR_CODE_REGISTRY: Record<string, ErrorCodeEntry> = {
   // ── Validation ──────────────────────────────────────────────────────────
   VALIDATION_ERROR: {
     category: ErrorCategory.VALIDATION,
-    meaning: "Input validation failed — one or more parameters did not pass client-side checks.",
+    meaning:
+      "Input validation failed — one or more parameters did not pass client-side checks.",
     retryable: false,
     suggestedMessage:
       "The provided parameters failed validation. Please review your inputs and try again.",
-  },
-  PAYROLL_CALENDAR_OVERLAP: {
-    category: ErrorCategory.VALIDATION,
-    meaning: "Payroll calendar cycles overlap, contain collisions, or define inverted date ranges.",
-    retryable: false,
-    suggestedMessage:
-      "Payroll calendar cycles overlap or contain conflicting date intervals. Please review your period dates and try again.",
   },
   CONFIG_VALIDATION_ERROR: {
     category: ErrorCategory.VALIDATION,
@@ -62,27 +57,22 @@ export const ERROR_CODE_REGISTRY: Record<string, ErrorCodeEntry> = {
     suggestedMessage:
       "SDK configuration validation failed. Please check your network, RPC URL, contract IDs, and feature flags.",
   },
-  PAYOUT_SCHEDULE_COLLISION: {
-    category: ErrorCategory.VALIDATION,
-    meaning:
-      "Payout schedule collision detected — overlapping payout executions, minimum interval violations, or duplicate schedule IDs.",
-    retryable: false,
-    suggestedMessage:
-      "One or more scheduled payouts collide. Review conflicting execution times and intervals.",
-  },
 
   // ── Wallet ──────────────────────────────────────────────────────────────
   WALLET_NOT_INSTALLED: {
     category: ErrorCategory.WALLET,
-    meaning: "The wallet extension (e.g. Freighter, Albedo) is not installed in the browser.",
+    meaning:
+      "The wallet extension (e.g. Freighter, Albedo) is not installed in the browser.",
     retryable: false,
-    suggestedMessage: "The wallet extension is not installed. Please install it and try again.",
+    suggestedMessage:
+      "The wallet extension is not installed. Please install it and try again.",
   },
   WALLET_NOT_CONNECTED: {
     category: ErrorCategory.WALLET,
     meaning: "The wallet extension is installed but not connected to the dApp.",
     retryable: true,
-    suggestedMessage: "The wallet is not connected. Please connect your wallet and try again.",
+    suggestedMessage:
+      "The wallet is not connected. Please connect your wallet and try again.",
   },
   WALLET_CONNECTION_REJECTED: {
     category: ErrorCategory.WALLET,
@@ -93,7 +83,8 @@ export const ERROR_CODE_REGISTRY: Record<string, ErrorCodeEntry> = {
   },
   WALLET_SIGNING_REJECTED: {
     category: ErrorCategory.WALLET,
-    meaning: "The user explicitly rejected the transaction signing request in their wallet.",
+    meaning:
+      "The user explicitly rejected the transaction signing request in their wallet.",
     retryable: true,
     suggestedMessage:
       "The transaction signing request was rejected. Please approve the signature in your wallet and try again.",
@@ -108,9 +99,11 @@ export const ERROR_CODE_REGISTRY: Record<string, ErrorCodeEntry> = {
   },
   WALLET_INVALID_XDR: {
     category: ErrorCategory.WALLET,
-    meaning: "The transaction envelope (XDR) provided to the wallet is malformed or invalid.",
+    meaning:
+      "The transaction envelope (XDR) provided to the wallet is malformed or invalid.",
     retryable: false,
-    suggestedMessage: "The transaction data is invalid. This may indicate a software bug.",
+    suggestedMessage:
+      "The transaction data is invalid. This may indicate a software bug.",
   },
   WALLET_UNKNOWN_ERROR: {
     category: ErrorCategory.WALLET,
@@ -130,7 +123,8 @@ export const ERROR_CODE_REGISTRY: Record<string, ErrorCodeEntry> = {
   },
   INVALID_RESPONSE: {
     category: ErrorCategory.RPC,
-    meaning: "The RPC node returned a malformed, unparseable, or structurally unexpected response.",
+    meaning:
+      "The RPC node returned a malformed, unparseable, or structurally unexpected response.",
     retryable: true,
     suggestedMessage:
       "Received an invalid or malformed response from the RPC node. Please try again.",
@@ -145,69 +139,6 @@ export const ERROR_CODE_REGISTRY: Record<string, ErrorCodeEntry> = {
     suggestedMessage:
       "Zero-knowledge proof generation failed. This may be due to invalid inputs or insufficient system resources.",
   },
-  PROOF_VERIFICATION_FAILED: {
-    category: ErrorCategory.PROOF,
-    meaning:
-      "A proof verifier adapter ran but could not complete verification — the proof is invalid or an unexpected error occurred.",
-    retryable: false,
-    suggestedMessage:
-      "Proof verification failed. The proof may not satisfy the verification key; check the proof and verification key id and try again.",
-  },
-  PROOF_VERIFIER_UNAVAILABLE: {
-    category: ErrorCategory.PROOF,
-    meaning:
-      "The proof verifier could not be reached (hosted outage, offline node, timeout) — the proof itself was not evaluated.",
-    retryable: true,
-    suggestedMessage:
-      "The proof verifier is currently unavailable. Please check the verifier endpoint and retry.",
-  },
-  PROOF_VERIFICATION_MALFORMED: {
-    category: ErrorCategory.PROOF,
-    meaning:
-      "The proof payload handed to the verifier is structurally invalid (missing or mis-shaped pi_a/pi_b/pi_c or publicSignals).",
-    retryable: false,
-    suggestedMessage: "The proof payload is malformed. Regenerate the proof and try again.",
-  },
-  PROOF_VERIFICATION_KEY_MISMATCH: {
-    category: ErrorCategory.PROOF,
-    meaning:
-      "The proof was checked against a different verification key than the one it was generated for (wrong circuit version or key configuration) — the proof itself is not necessarily invalid.",
-    retryable: false,
-    suggestedMessage:
-      "The verification key does not match this proof. Check the circuit version and verification key configuration, then verify again.",
-  },
-  PROOF_UNSUPPORTED_FORMAT: {
-    category: ErrorCategory.PROOF,
-    meaning:
-      "The proof is well-formed but declares a protocol/curve pair the SDK cannot verify (only groth16/bn128 is supported).",
-    retryable: false,
-    suggestedMessage:
-      "This proof format is not supported. Regenerate the proof with the supported groth16/bn128 circuit toolchain.",
-  },
-  DUPLICATE_COMMITMENT: {
-    category: ErrorCategory.PROOF,
-    meaning:
-      "Duplicate commitment hashes were detected in a payroll batch — the same salary commitment or proof artifact would be submitted more than once.",
-    retryable: false,
-    suggestedMessage:
-      "Remove the duplicate batch entry or regenerate a fresh commitment for the underlying salary record before submitting the batch.",
-  },
-  DUPLICATE_SALARY_COMMITMENT: {
-    category: ErrorCategory.PROOF,
-    meaning:
-      "A salary commitment was submitted that duplicates one already present in the payroll run — the same commitment cannot be reused across entries.",
-    retryable: false,
-    suggestedMessage:
-      "A duplicate salary commitment was detected. Generate a fresh commitment for the salary record or remove the duplicate entry before submitting.",
-  },
-  RECEIPT_REPLAY: {
-    category: ErrorCategory.PROOF,
-    meaning:
-      "A payout receipt was presented more than once — the receipt has already been consumed and cannot be replayed.",
-    retryable: false,
-    suggestedMessage:
-      "This payout receipt has already been used and cannot be replayed. Obtain a fresh receipt for the payout before retrying.",
-  },
 
   // ── Contract Execution ──────────────────────────────────────────────────
   SIMULATION_FAILED: {
@@ -220,21 +151,24 @@ export const ERROR_CODE_REGISTRY: Record<string, ErrorCodeEntry> = {
   },
   TRANSACTION_SUBMISSION_FAILED: {
     category: ErrorCategory.CONTRACT,
-    meaning: "The signed transaction was rejected by the Soroban RPC endpoint during submission.",
+    meaning:
+      "The signed transaction was rejected by the Soroban RPC endpoint during submission.",
     retryable: true,
     suggestedMessage:
       "The transaction was rejected by the network. Please check your connection and try again.",
   },
   TRANSACTION_TIMEOUT: {
     category: ErrorCategory.CONTRACT,
-    meaning: "The submitted transaction did not confirm within the expected ledger window.",
+    meaning:
+      "The submitted transaction did not confirm within the expected ledger window.",
     retryable: true,
     suggestedMessage:
       "The transaction did not confirm within the expected time. The network may be congested; please retry.",
   },
   INSUFFICIENT_FEE: {
     category: ErrorCategory.CONTRACT,
-    meaning: "The transaction fee was too low for the Soroban network to accept it.",
+    meaning:
+      "The transaction fee was too low for the Soroban network to accept it.",
     retryable: true,
     suggestedMessage:
       "The transaction fee was too low. Try increasing the fee and submitting again.",
@@ -247,17 +181,10 @@ export const ERROR_CODE_REGISTRY: Record<string, ErrorCodeEntry> = {
     suggestedMessage:
       "The smart contract rejected the transaction. This may indicate invalid parameters or insufficient permissions.",
   },
-  CONTRACT_PAUSED: {
-    category: ErrorCategory.CONTRACT,
-    meaning:
-      "The payroll contract is paused — payments and batch submissions are temporarily disabled on-chain.",
-    retryable: false,
-    suggestedMessage:
-      "The payroll contract is currently paused. No payments can be submitted until the contract is resumed. Please try again later or contact your payroll administrator.",
-  },
   UNKNOWN_RPC_ERROR: {
     category: ErrorCategory.CONTRACT,
-    meaning: "Unclassified contract execution error that does not fit known failure patterns.",
+    meaning:
+      "Unclassified contract execution error that does not fit known failure patterns.",
     retryable: true,
     suggestedMessage:
       "An unexpected error occurred while communicating with the blockchain network. Please try again.",
@@ -266,26 +193,21 @@ export const ERROR_CODE_REGISTRY: Record<string, ErrorCodeEntry> = {
   // ── Network ─────────────────────────────────────────────────────────────
   NETWORK_ERROR: {
     category: ErrorCategory.NETWORK,
-    meaning: "An underlying network or HTTP request failure (DNS, connection refused, TLS, etc.).",
+    meaning:
+      "An underlying network or HTTP request failure (DNS, connection refused, TLS, etc.).",
     retryable: true,
     suggestedMessage:
       "A network error occurred. Please check your internet connection and try again.",
-  },
-  NETWORK_PASSPHRASE_MISMATCH: {
-    category: ErrorCategory.NETWORK,
-    meaning:
-      "The network passphrase supplied for signing does not match the passphrase the SDK is configured for — approvals were not signed.",
-    retryable: false,
-    suggestedMessage:
-      "The configured network passphrase does not match the expected network. Verify the SDK network configuration before signing approvals.",
   },
 
   // ── Serialization ───────────────────────────────────────────────────────
   SERIALIZATION_FAILED: {
     category: ErrorCategory.SERIALIZATION,
-    meaning: "Binary encoding or decoding of a proof, commitment, or payroll draft failed.",
+    meaning:
+      "Binary encoding or decoding of a proof, commitment, or payroll draft failed.",
     retryable: false,
-    suggestedMessage: "Failed to serialize or deserialize data. The data may be corrupted.",
+    suggestedMessage:
+      "Failed to serialize or deserialize data. The data may be corrupted.",
   },
 
   // ── Artifact Errors ─────────────────────────────────────────────────────
@@ -306,14 +228,16 @@ export const ERROR_CODE_REGISTRY: Record<string, ErrorCodeEntry> = {
   },
   ARTIFACT_CORRUPT: {
     category: ErrorCategory.ARTIFACT,
-    meaning: "A downloaded or cached artifact has an invalid checksum or is corrupted.",
+    meaning:
+      "A downloaded or cached artifact has an invalid checksum or is corrupted.",
     retryable: true,
     suggestedMessage:
       "A proving artifact appears to be corrupt. The SDK will attempt to re-download it.",
   },
   ARTIFACT_FETCH_FAILED: {
     category: ErrorCategory.ARTIFACT,
-    meaning: "Fetching an artifact from a remote URL failed due to a network or server error.",
+    meaning:
+      "Fetching an artifact from a remote URL failed due to a network or server error.",
     retryable: true,
     suggestedMessage:
       "Failed to download a proving artifact. Please check your network connection and try again.",
@@ -330,14 +254,16 @@ export const ERROR_CODE_REGISTRY: Record<string, ErrorCodeEntry> = {
   // ── Batch Validation ────────────────────────────────────────────────────
   BATCH_VALIDATION_FAILED: {
     category: ErrorCategory.BATCH,
-    meaning: "Batch payload validation failed — one or more entries are invalid.",
+    meaning:
+      "Batch payload validation failed — one or more entries are invalid.",
     retryable: false,
     suggestedMessage:
       "The batch payload contains invalid entries. Please review the validation errors and try again.",
   },
   EMPLOYEE_BATCH_VALIDATION_FAILED: {
     category: ErrorCategory.BATCH,
-    meaning: "Employee batch validation failed — one or more employee records are invalid.",
+    meaning:
+      "Employee batch validation failed — one or more employee records are invalid.",
     retryable: false,
     suggestedMessage:
       "The employee batch contains invalid records. Please review the validation errors and try again.",
@@ -346,20 +272,14 @@ export const ERROR_CODE_REGISTRY: Record<string, ErrorCodeEntry> = {
   // ── Draft Validation ────────────────────────────────────────────────────
   DRAFT_VALIDATION_FAILED: {
     category: ErrorCategory.DRAFT,
-    meaning: "Draft validation failed — one or more draft fields are invalid or missing.",
+    meaning:
+      "Draft validation failed — one or more draft fields are invalid or missing.",
     retryable: false,
     suggestedMessage:
       "The payroll draft contains invalid data. Please review the errors and try again.",
   },
 
   // ── Proof Input Sanitization ────────────────────────────────────────────
-  PROOF_INPUT_TOO_LARGE: {
-    category: ErrorCategory.PROOF,
-    meaning:
-      "Proof witness exceeds the circuit input size limits (field count, element count, nesting depth, string length or total size) and was rejected before proof generation.",
-    retryable: false,
-    suggestedMessage: "The proof input is too large. Reduce the witness size and try again.",
-  },
   PROOF_INPUT_INVALID_RECIPIENT: {
     category: ErrorCategory.PROOF,
     meaning: "Proof witness recipient field is not a valid string.",
@@ -368,7 +288,8 @@ export const ERROR_CODE_REGISTRY: Record<string, ErrorCodeEntry> = {
   },
   PROOF_INPUT_INVALID_AMOUNT: {
     category: ErrorCategory.PROOF,
-    meaning: "Proof witness amount field cannot be parsed as a non-negative integer.",
+    meaning:
+      "Proof witness amount field cannot be parsed as a non-negative integer.",
     retryable: false,
     suggestedMessage: "Amount must be a non-negative integer.",
   },
@@ -380,19 +301,23 @@ export const ERROR_CODE_REGISTRY: Record<string, ErrorCodeEntry> = {
   },
   PROOF_INPUT_FORBIDDEN_FIELD: {
     category: ErrorCategory.PROOF,
-    meaning: "Proof witness contains a field that is forbidden (e.g. privateKey, secret).",
+    meaning:
+      "Proof witness contains a field that is forbidden (e.g. privateKey, secret).",
     retryable: false,
     suggestedMessage: "The proof input contains a forbidden sensitive field.",
   },
   PROOF_INPUT_MISSING_REQUIRED_FIELD: {
     category: ErrorCategory.PROOF,
-    meaning: "A required payroll witness field (recipient, amount, or asset) is missing.",
+    meaning:
+      "A required payroll witness field (recipient, amount, or asset) is missing.",
     retryable: false,
-    suggestedMessage: "A required field is missing from the payroll proof input.",
+    suggestedMessage:
+      "A required field is missing from the payroll proof input.",
   },
   PROOF_INPUT_INVALID: {
     category: ErrorCategory.PROOF,
-    meaning: "The proof witness object is null, undefined, or not a plain object.",
+    meaning:
+      "The proof witness object is null, undefined, or not a plain object.",
     retryable: false,
     suggestedMessage: "Proof witness must be a non-null object.",
   },
@@ -400,7 +325,8 @@ export const ERROR_CODE_REGISTRY: Record<string, ErrorCodeEntry> = {
   // ── Reconciliation ──────────────────────────────────────────────────────
   RECONCILIATION_DIFF_FAILED: {
     category: ErrorCategory.RECONCILIATION,
-    meaning: "Reconciliation diff generation failed due to invalid or inconsistent input data.",
+    meaning:
+      "Reconciliation diff generation failed due to invalid or inconsistent input data.",
     retryable: false,
     suggestedMessage:
       "Failed to generate reconciliation report. The input data may be inconsistent.",
@@ -414,170 +340,56 @@ export const ERROR_CODE_REGISTRY: Record<string, ErrorCodeEntry> = {
       "Unexpected on-chain activity was detected. Review the reconciliation report for details.",
   },
 
-  // ── Audit ────────────────────────────────────────────────────────────────
-  AUDIT_ACCESS_REQUEST_VALIDATION_FAILED: {
-    category: ErrorCategory.AUDIT,
+  // ── Compliance Holds ────────────────────────────────────────────────────
+  COMPLIANCE_HOLD_VALIDATION_FAILED: {
+    category: ErrorCategory.COMPLIANCE,
     meaning:
-      "Audit access request validation failed — the request is missing required fields, has invalid dates, or violates business rules.",
+      "A request to place a compliance hold failed local validation (invalid scope, missing target, or unrecognized reason code).",
     retryable: false,
     suggestedMessage:
-      "The audit access request failed validation. Please review the requester details, scope, expiration, reason, and target payroll period.",
+      "The compliance hold request is invalid. Please review the target, reason code, and required fields.",
+  },
+  COMPLIANCE_HOLD_RELEASE_UNAUTHORIZED: {
+    category: ErrorCategory.COMPLIANCE,
+    meaning:
+      "A request to release a compliance hold was missing the inputs needed to prove the releasing party is authorized.",
+    retryable: false,
+    suggestedMessage:
+      "This hold cannot be released without a valid authorization token identifying who is releasing it.",
   },
 
-  // ── Employee Eligibility ─────────────────────────────────────────────────
-  INELIGIBLE_EMPLOYEE_RECORD: {
-    category: ErrorCategory.ELIGIBILITY,
-    meaning:
-      "An employee record failed eligibility evaluation (identity, status, salary, asset, or compliance checks).",
+  // ── Payroll Revision Protection ─────────────────────────────────────────
+  REVISION_APPROVED_EDIT_BLOCKED: {
+    category: ErrorCategory.REVISION,
+    meaning: "An edit was attempted against a payroll revision that has already been approved.",
     retryable: false,
     suggestedMessage:
-      "One or more employees are ineligible for payroll resolution. Review the eligibility reasons and fix the affected records.",
+      "This revision is already approved and can no longer be edited. Create a new revision to make further changes.",
   },
-  BATCH_ELIGIBILITY_FAILED: {
-    category: ErrorCategory.ELIGIBILITY,
-    meaning: "A payroll batch contains one or more ineligible employee records.",
+  REVISION_ALREADY_APPROVED: {
+    category: ErrorCategory.REVISION,
+    meaning:
+      "Approval was requested for a revision that is already approved, without explicitly allowing re-approval.",
     retryable: false,
     suggestedMessage:
-      "The payroll batch contains ineligible employee records. Review the batch eligibility report and correct the affected records.",
+      "This revision is already approved. Pass { allowReapproval: true } to re-approve it intentionally.",
+  },
+  REVISION_VALIDATION_FAILED: {
+    category: ErrorCategory.REVISION,
+    meaning: "Required revision input (identifiers or approver) failed validation.",
+    retryable: false,
+    suggestedMessage:
+      "The revision request is invalid. Please review the required identifiers and approver.",
   },
 
-  // ── Failed Payout Retry Diagnostics ─────────────────────────────────────
-  PAYOUT_RETRY_NOT_ELIGIBLE: {
-    category: ErrorCategory.PAYOUT,
+  // ── Employee Eligibility ────────────────────────────────────────────────
+  EMPLOYEE_ELIGIBILITY_VALIDATION_FAILED: {
+    category: ErrorCategory.EMPLOYEE,
     meaning:
-      "A failed payout was submitted for retry but is not eligible — it is not in a failed state, has already been retried, or its failure is classified as non-retryable.",
+      "A request to evaluate employee payroll eligibility failed local validation (missing employee address, unrecognized lifecycle status, or compliance holds supplied without an employer id).",
     retryable: false,
     suggestedMessage:
-      "This payout cannot be retried. It is either not in a failed state, has already been retried, or its failure is non-retryable. Review the payout diagnostics for details.",
-  },
-  PAYOUT_RETRY_ATTEMPTS_EXHAUSTED: {
-    category: ErrorCategory.PAYOUT,
-    meaning:
-      "A failed payout retry was rejected because the maximum number of retry attempts has been reached.",
-    retryable: false,
-    suggestedMessage:
-      "The maximum number of retry attempts for this payout has been reached. Escalate or resolve the underlying failure manually.",
-  },
-  PAYOUT_RETRY_DIAGNOSTICS_UNAVAILABLE: {
-    category: ErrorCategory.PAYOUT,
-    meaning:
-      "Retry diagnostics could not be produced for a failed payout — the failure record is missing, incomplete, or references an unknown payout.",
-    retryable: true,
-    suggestedMessage:
-      "Retry diagnostics are currently unavailable for this payout. The failure record may be missing or incomplete; refresh and try again.",
-  },
-  PAYOUT_PRECISION_VERIFICATION_FAILED: {
-    category: ErrorCategory.PAYOUT,
-    meaning:
-      "Payout amount precision verification failed — one or more amounts exceed the asset's supported decimal precision, are non-integer base units, or would lose value when converted.",
-    retryable: false,
-    suggestedMessage:
-      "One or more payout amounts have invalid precision for the target asset. Verify each amount uses the asset's supported decimal places and try again.",
-  },
-  TOKEN_PAUSED: {
-    category: ErrorCategory.PAYOUT,
-    meaning:
-      "The payout token is paused on-chain — transfers are temporarily disabled, so the payout retry cannot succeed until the token is resumed.",
-    retryable: true,
-    suggestedMessage:
-      "The payout token is currently paused. Retry once the token is resumed, or contact your payroll administrator.",
-  },
-
-  // &#9989; Payroll Payload Schema Detection &#9989;
-  PAYROLL_SCHEMA_VERSION_UNSUPPORTED: {
-    category: ErrorCategory.VALIDATION,
-    meaning: "The payroll payload declares a schema version this SDK build does not support.",
-    retryable: false,
-    suggestedMessage:
-      "This payroll payload uses an unsupported schema version. Upgrade the SDK, or reserialize the payload to a supported version, then try again.",
-  },
-  PAYROLL_SCHEMA_PAYLOAD_INVALID: {
-    category: ErrorCategory.VALIDATION,
-    meaning:
-      "The payroll payload is not an object, or its schema version field is missing, malformed, or contradictory.",
-    retryable: false,
-    suggestedMessage:
-      'The payroll payload could not be inspected. Ensure it is an object carrying a valid `schemaVersion` string such as "1.0" and try again.',
-  },
-  PAYOUT_PRECISION_AMOUNT_INVALID: {
-    category: ErrorCategory.PAYOUT,
-    meaning:
-      "A payout amount is not a valid numeric value — it is negative, NaN, infinite, or otherwise unparseable.",
-    retryable: false,
-    suggestedMessage:
-      "A payout amount is invalid. Amounts must be finite, non-negative numbers expressed in the asset's base units.",
-  },
-  PAYOUT_PRECISION_ASSET_UNSUPPORTED: {
-    category: ErrorCategory.PAYOUT,
-    meaning:
-      "The payout asset has no registered decimal precision, so amount precision cannot be verified.",
-    retryable: false,
-    suggestedMessage:
-      "The payout asset is not supported for precision verification. Register the asset's decimal precision or use a supported asset.",
-  },
-  // ── Approval Invalidation ────────────────────────────────────────────────
-  APPROVAL_INVALIDATED_MODIFICATION: {
-    category: ErrorCategory.DRAFT,
-    meaning: "The payroll draft was modified after approval, invalidating prior sign-offs.",
-    retryable: false,
-    suggestedMessage:
-      "The payroll draft was modified after approval. Prior approvals are invalidated; re-approval is required before execution.",
-  },
-  APPROVAL_INVALIDATED_QUORUM: {
-    category: ErrorCategory.DRAFT,
-    meaning: "The required approval count or quorum was invalidated or unmet.",
-    retryable: false,
-    suggestedMessage:
-      "The payroll approval quorum is invalidated. Collect the required approver sign-offs before proceeding.",
-  },
-  APPROVAL_INVALIDATED_EXPIRED: {
-    category: ErrorCategory.DRAFT,
-    meaning: "The payroll approval window has elapsed.",
-    retryable: false,
-    suggestedMessage:
-      "The payroll approval window has elapsed. A fresh approval sign-off is required.",
-  },
-  APPROVAL_INVALIDATED_SUPERSEDED: {
-    category: ErrorCategory.DRAFT,
-    meaning: "The payroll approval was superseded by a later revision.",
-    retryable: false,
-    suggestedMessage:
-      "The payroll approval was superseded by a later revision. Re-verify the active approval revision.",
-  },
-  APPROVAL_INVALIDATED_MALFORMED: {
-    category: ErrorCategory.DRAFT,
-    meaning: "The payroll approval record is malformed or invalid.",
-    retryable: false,
-    suggestedMessage:
-      "The payroll approval record is malformed. Verify the approval record schema and retry.",
-  },
-  APPROVAL_INVALIDATION_UNKNOWN: {
-    category: ErrorCategory.DRAFT,
-    meaning: "An unclassified approval invalidation error occurred.",
-    retryable: false,
-    suggestedMessage:
-      "A payroll approval invalidation error occurred. Review the approval status and retry.",
-  },
-  SALARY_COMMITMENT_VERSION_UNSUPPORTED: {
-    category: ErrorCategory.PROOF,
-    meaning: "The salary commitment scheme version is not supported by this SDK version.",
-    retryable: false,
-    suggestedMessage:
-      "Unsupported salary commitment scheme version. Supported scheme versions are 1 (Pedersen), 2 (Poseidon), and 3 (Multi-Asset Poseidon).",
-  },
-  EMPLOYER_ROLE_OWNERSHIP_INVALID: {
-    category: ErrorCategory.VALIDATION,
-    meaning: "Employer role ownership refresh failed or account does not possess the active role before submission.",
-    retryable: false,
-    suggestedMessage:
-      "Employer role ownership verification failed. Confirm that the account possesses an active role grant before submitting payroll.",
-  },
-  AUDITOR_ARCHIVED_PERIOD_UNAUTHORIZED: {
-    category: ErrorCategory.AUDIT,
-    meaning: "Auditor does not possess an active grant authorizing access to the requested archived payroll period.",
-    retryable: false,
-    suggestedMessage:
-      "Auditor is not authorized to read the requested archived payroll period. Check grant dates and lookback windows.",
+      "The employee eligibility request is invalid. Please review the employee address, status, and compliance hold inputs.",
   },
 };
 

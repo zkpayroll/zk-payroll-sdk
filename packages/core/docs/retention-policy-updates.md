@@ -1,102 +1,109 @@
-# Retention Policy Updates
+# Retention policy updates
 
-Payroll retention policies govern how long payroll artifacts must be retained for compliance. Because premature reduction or unauthorized legal-hold release can destroy compliance evidence, retention updates are immutable, versioned, and hash-chained.
+Payroll retention policies govern how long encrypted payroll records, audit packages, and compliance artifacts must be retained to satisfy statutory obligations while protecting employee privacy. Because a premature reduction or unauthorized legal-hold release can destroy compliance evidence, the SDK manages retention policies through an immutable, versioned, hash-chained workflow.
 
 ## Overview
 
-The retention policy module (`packages/core/src/retention`) provides:
+The retention policy module (`@zk-payroll/core`) provides:
 
-- **State transitions**: `applyRetentionPolicyUpdate()` and `RetentionPolicyStateManager` enforce optimistic concurrency, lifecycle transitions, statutory floors, legal holds, and tamper-evident hash chains.
-- **Typed validation (#909)**: `validateRetentionPolicyUpdate()` and `validateRetentionPolicyState()` accumulate structural issues and return safe, machine-readable results. Throwing `assertValidRetentionPolicyUpdate()` / `assertValidRetentionPolicyState()` are available for fail-fast flows.
-- **Safe errors (#910)**: `RetentionPolicyError` carries stable `retentionCode`, structured `issues`, and sanitized context. `formatRetentionPolicyError()` and `redactPolicyActorId()` produce actionable diagnostics without exposing salaries, employee identifiers, secrets, or full operator IDs.
-- **Boundary coverage (#911)**: Focused tests cover statutory floor boundaries, min/max limits, clock-skew and timestamp regression, lifecycle transitions, legal-hold protection, and hash-integrity failures.
+1. **Hardened state transitions** via `applyRetentionPolicyUpdate()` and `RetentionPolicyStateManager`.
+2. **Non-throwing typed validation** via `validateRetentionPolicyUpdate()` and `validateRetentionPolicyState()` (plus throwing `assert*` counterparts).
+3. **Privacy-safe typed errors** via `RetentionPolicyError`, `RetentionPolicyErrorCode`, `formatRetentionPolicyError()`, and `redactPolicyActorId()`.
 
-## Lifecycle States
+## Quick start
 
-| Status | Meaning | Allowed next states |
-|---|---|---|
-| `draft` | Policy being prepared | `active`, `suspended` |
-| `active` | Enforced policy | `active`, `superseded`, `suspended` |
-| `suspended` | Temporarily paused for review | `active`, `superseded` |
-| `superseded` | Replaced by a newer revision | Terminal |
-
-## Update Invariants
-
-1. **Optimistic concurrency**: New policies require `expectedVersion: 0`; updates require `expectedVersion === current.version`.
-2. **Immutable revisions**: Each accepted update increments `version` by 1, links `previousHash` to the prior hash, and computes a SHA-256 `hash`.
-3. **Statutory floor**: `retentionDays` must be >= `DEFAULT_STATUTORY_RETENTION_FLOOR_DAYS` (2555 days) unless a stricter custom floor is configured.
-4. **Bounds**: `retentionDays >= minimumRetentionDays`; when present, `maximumRetentionDays >= retentionDays`.
-5. **Legal hold**: While `legalHoldActive` is true, retention cannot be reduced and legal hold cannot be released without `allowLegalHoldRelease: true`.
-6. **Timestamps**: `timestampMs` must be positive, not beyond allowed clock skew, and not before `current.updatedAtMs`. `effectiveAtMs` defaults to `timestampMs`.
-7. **No-op rejection**: Updates that change no effective policy fields are rejected as `RETENTION_POLICY_NO_OP_UPDATE`.
-8. **Privacy**: `updateReason`, `updatedBy`, and metadata are scanned for sensitive payroll/credential terms and rejected with `RETENTION_POLICY_SENSITIVE_DATA_DETECTED`.
-
-## Typed Validation API
-
-```ts
+```typescript
 import {
+  RetentionPolicyStateManager,
   validateRetentionPolicyUpdate,
-  assertValidRetentionPolicyUpdate,
   validateRetentionPolicyState,
-  assertValidRetentionPolicyState,
+  formatRetentionPolicyError,
 } from "@zk-payroll/core";
 
-const result = validateRetentionPolicyUpdate(currentPolicy, input, { now: Date.now() });
-if (!result.isValid) {
-  // result.issues contains stable code/field/message/suggestedFix entries
-}
+const manager = new RetentionPolicyStateManager();
 
-const transition = assertValidRetentionPolicyUpdate(currentPolicy, input);
-const snapshot = assertValidRetentionPolicyState(transition.updatedPolicy);
+const check = validateRetentionPolicyUpdate(null, {
+  policyId: "org-payroll-retention",
+  expectedVersion: 0,
+  retentionDays: 2555,
+  minimumRetentionDays: 2555,
+  legalHoldActive: false,
+  status: "active",
+  updatedBy: "compliance-officer-01",
+  updateReason: "Initialize 7-year statutory payroll retention policy",
+});
+
+if (!check.isValid) {
+  console.error(check.issues);
+} else {
+  const { updatedPolicy } = await manager.updatePolicy({
+    policyId: "org-payroll-retention",
+    expectedVersion: 0,
+    retentionDays: 2555,
+    minimumRetentionDays: 2555,
+    updatedBy: "compliance-officer-01",
+    updateReason: "Initialize 7-year statutory payroll retention policy",
+  });
+
+  const snapshotCheck = validateRetentionPolicyState(updatedPolicy);
+  console.log("Snapshot valid:", snapshotCheck.isValid);
+}
 ```
 
-## Safe Error Model
+## Lifecycle states
 
-`RetentionPolicyError` extends `ZkPayrollError` and includes:
+```text
+draft ──► active ──► superseded
+  │         │ ▲          ▲
+  ▼         ▼ │          │
+suspended ──┴────────────┘
+```
 
-- `retentionCode`: stable `RetentionPolicyErrorCode`
-- `issues`: frozen structured validation issues
-- sanitized `context`: no salary/employee/secret/metadata/reason leakage
+| Status | Meaning | Allowed transitions |
+| --- | --- | --- |
+| `draft` | Policy is being prepared | `active`, `suspended` |
+| `active` | Enforced retention window | `active`, `suspended`, `superseded` |
+| `suspended` | Temporarily paused for administrative review | `active`, `superseded` |
+| `superseded` | Replaced by a newer policy revision | Terminal (immutable) |
 
-Helpers:
+## Statutory floor and legal hold invariants
 
-- `isRetentionPolicyError(error)` - type guard for caught errors
-- `getRetentionPolicyErrorMessage(error)` - stable safe message
-- `formatRetentionPolicyError(error | issues)` - actionable formatted output
-- `redactPolicyActorId(actorId)` - redacts operator IDs for diagnostics
+- **Statutory minimum floor.** By default, `retentionDays` cannot be set below `DEFAULT_STATUTORY_RETENTION_FLOOR_DAYS` (`2555` days / 7 years) unless a custom `statutoryFloorDays` is supplied in `RetentionPolicyValidationOptions`.
+- **Configured minimum/maximum bounds.** `retentionDays` must be at least `minimumRetentionDays` and, when `maximumRetentionDays` is configured, at most `maximumRetentionDays`.
+- **Active legal hold protection.** While `legalHoldActive` is `true`:
+  - `retentionDays` cannot be reduced below the current policy's `retentionDays`.
+  - Releasing the legal hold (`legalHoldActive: false`) is rejected with `RETENTION_POLICY_LEGAL_HOLD_CONFLICT` unless `{ allowLegalHoldRelease: true }` is passed in the validation options.
+- **Optimistic concurrency.** Initial policy creation requires `expectedVersion: 0`. Every subsequent update must pass `expectedVersion === current.version`, incrementing `version` by `1` and chaining `previousHash` to `current.hash`.
 
-## Error Codes
+## Typed validation (#909)
 
-| Code | Meaning |
-|---|---|
-| `RETENTION_POLICY_ID_REQUIRED` | Missing/invalid/mismatched policy identifier |
-| `RETENTION_POLICY_ACTOR_REQUIRED` | Missing/invalid actor identity |
-| `RETENTION_POLICY_REASON_REQUIRED` | Missing/invalid update justification |
-| `RETENTION_POLICY_VERSION_MISMATCH` | Expected version conflict or invalid version |
-| `RETENTION_POLICY_VERSION_REGRESSION` | Timestamp regressed before current revision |
-| `RETENTION_POLICY_INVALID_RETENTION_DAYS` | Invalid retention day value or bounds |
-| `RETENTION_POLICY_STATUTORY_MINIMUM_VIOLATION` | Below statutory/configured floor |
-| `RETENTION_POLICY_LEGAL_HOLD_CONFLICT` | Illegal reduction/release under legal hold |
-| `RETENTION_POLICY_POLICY_NOT_FOUND` | Update requested for unknown policy |
-| `RETENTION_POLICY_NO_OP_UPDATE` | No effective change detected |
-| `RETENTION_POLICY_INVALID_TIMESTAMP` | Invalid/future/regressive timestamp |
-| `RETENTION_POLICY_INVALID_STATE_TRANSITION` | Disallowed lifecycle transition |
-| `RETENTION_POLICY_CONCURRENT_MODIFICATION` | Concurrent update detected |
-| `RETENTION_POLICY_SENSITIVE_DATA_DETECTED` | Sensitive terms found in reason/actor/metadata |
-| `RETENTION_POLICY_INVALID_HASH` | Snapshot hash/previousHash invalid or tampered |
+Operators, forms, and recovery tools often need to inspect all validation problems at once rather than catching the first thrown exception:
 
-## Revision References
+- `validateRetentionPolicyUpdate(current, input, options)` returns `{ isValid, issues, transition, policy }`. It accumulates identifier, actor, reason, metadata privacy, version, status transition, timestamp/clock-skew, statutory floor, and legal-hold issues before executing the transition.
+- `assertValidRetentionPolicyUpdate(current, input, options)` returns the `RetentionPolicyTransitionResult` or throws a `RetentionPolicyError` populated with `issues`.
+- `validateRetentionPolicyState(policy, options)` validates a persisted `RetentionPolicy` snapshot and recomputes its SHA-256 hash (`computeRetentionPolicyHash`) to detect tampering.
+- `assertValidRetentionPolicyState(policy, options)` returns the validated snapshot or throws a `RetentionPolicyError`.
 
-Every persisted revision is a link in a hash chain, and `validateRetentionPolicyState()` checks each link:
+## Safe errors and privacy guarantees (#910)
 
-- Revision `1` must use the genesis `previousHash` (`000…000`).
-- Any later revision (`version > 1`) must reference a real predecessor. A `previousHash` equal to the genesis sentinel is rejected, because it would detach the revision from the chain.
-- A revision cannot list its own `hash` as `previousHash`.
+All error messages and structured issues are designed to be logged or displayed without leaking sensitive payroll information:
 
-Violations are reported as `INVALID_HASH` issues on the `previousHash` field. Issue messages never include the hash values themselves.
+- **Sensitive terminology rejection.** `updateReason`, `updatedBy`, and `metadata` are scanned for prohibited payroll keywords (`salary`, `wage`, `balance`, `ssn`, `secret`, `private_key`, `password`) and rejected with `RETENTION_POLICY_SENSITIVE_DATA_DETECTED`.
+- **Actor redaction.** `redactPolicyActorId(actorId)` masks operator identifiers (for example `"compliance_admin_1"` → `"co***_1"`).
+- **Actionable formatting.** `formatRetentionPolicyError(error)` combines the canonical message with any field-level `issues` (`[field] message`).
 
-## Privacy Guarantees
-
-- Error messages and issue details never include salary amounts, employee identifiers, secrets, or raw sensitive metadata values.
-- Actor IDs should be reported via `redactPolicyActorId()` in logs/UI.
-- Hash-chain integrity can be verified with `RetentionPolicyStateManager.verifyHistoryIntegrity()`.
+| Error code | Description |
+| --- | --- |
+| `RETENTION_POLICY_ID_REQUIRED` | Missing, oversized, or mismatched `policyId` |
+| `RETENTION_POLICY_ACTOR_REQUIRED` | Missing or oversized `updatedBy` actor identity |
+| `RETENTION_POLICY_REASON_REQUIRED` | Missing or oversized `updateReason` justification |
+| `RETENTION_POLICY_VERSION_MISMATCH` | Optimistic concurrency conflict or invalid version |
+| `RETENTION_POLICY_VERSION_REGRESSION` | Update timestamp regressed before `current.updatedAtMs` |
+| `RETENTION_POLICY_INVALID_RETENTION_DAYS` | Non-integer, non-positive, or out-of-range retention days |
+| `RETENTION_POLICY_STATUTORY_MINIMUM_VIOLATION` | `retentionDays` is below the statutory compliance floor |
+| `RETENTION_POLICY_LEGAL_HOLD_CONFLICT` | Attempted reduction or unauthorized release during an active legal hold |
+| `RETENTION_POLICY_NO_OP_UPDATE` | Proposed update makes no configuration changes |
+| `RETENTION_POLICY_INVALID_TIMESTAMP` | Non-finite, non-positive, or future timestamp beyond clock skew |
+| `RETENTION_POLICY_INVALID_STATE_TRANSITION` | Unrecognized status or disallowed lifecycle transition |
+| `RETENTION_POLICY_SENSITIVE_DATA_DETECTED` | Prohibited sensitive terminology in reason, actor, or metadata |
+| `RETENTION_POLICY_INVALID_HASH` | Snapshot `hash` or `previousHash` failed SHA-256 verification |

@@ -14,14 +14,6 @@ export interface ErrorContext {
 
 import { ERROR_CODE_REGISTRY } from "./error-codes";
 
-// ── SDK Operation Result Error Codes (#483) ─────────────────────────────────
-
-/** Stable code for SDK operations rejected by local pre-flight validation. */
-export const SDK_OPERATION_VALIDATION_ERROR_CODE = "SDK_OPERATION_VALIDATION_FAILED" as const;
-
-/** Stable code for SDK operations that failed with an unrecognized thrown value. */
-export const SDK_OPERATION_UNKNOWN_ERROR_CODE = "SDK_OPERATION_UNKNOWN_ERROR" as const;
-
 // ── Base Error ──────────────────────────────────────────────────────────────
 
 /**
@@ -134,7 +126,6 @@ export const ContractErrorCode = {
   RPC_TIMEOUT: "RPC_TIMEOUT",
   INSUFFICIENT_FEE: "INSUFFICIENT_FEE",
   CONTRACT_REVERT: "CONTRACT_REVERT",
-  CONTRACT_PAUSED: "CONTRACT_PAUSED",
   INVALID_RESPONSE: "INVALID_RESPONSE",
   UNKNOWN_RPC_ERROR: "UNKNOWN_RPC_ERROR",
 } as const;
@@ -157,7 +148,6 @@ export function classifyContractErrorCode(code: ContractErrorCodeType): TimeoutF
       return TimeoutFailureState.EXPIRED;
     case ContractErrorCode.SIMULATION_FAILED:
     case ContractErrorCode.CONTRACT_REVERT:
-    case ContractErrorCode.CONTRACT_PAUSED:
       return TimeoutFailureState.TERMINAL;
     case ContractErrorCode.INSUFFICIENT_FEE:
     case ContractErrorCode.TRANSACTION_SUBMISSION_FAILED:
@@ -293,8 +283,6 @@ export const DEFAULT_ERROR_MESSAGES: Record<string, string> = {
     "The transaction fee was too low. Try increasing the fee and submitting again.",
   [ContractErrorCode.CONTRACT_REVERT]:
     "The smart contract rejected the transaction. This may indicate invalid parameters or insufficient permissions.",
-  [ContractErrorCode.CONTRACT_PAUSED]:
-    "The payroll contract is currently paused. No payments can be submitted until the contract is resumed. Please try again later or contact your payroll administrator.",
   [ContractErrorCode.UNKNOWN_RPC_ERROR]:
     "An unexpected error occurred while communicating with the blockchain network. Please try again.",
   NETWORK_ERROR: "A network error occurred. Please check your internet connection and try again.",
@@ -342,9 +330,18 @@ export const DEFAULT_ERROR_MESSAGES: Record<string, string> = {
   PROOF_INPUT_FORBIDDEN_FIELD: "The proof input contains a forbidden sensitive field.",
   PROOF_INPUT_MISSING_REQUIRED_FIELD: "A required field is missing from the payroll proof input.",
   PROOF_INPUT_INVALID: "Proof witness must be a non-null object.",
-  PROOF_INPUT_TOO_LARGE: "The proof input is too large. Reduce the witness size and try again.",
-  AUDIT_ACCESS_REQUEST_VALIDATION_FAILED:
-    "The audit access request failed validation. Please review the requester details, scope, expiration, reason, and target payroll period.",
+  COMPLIANCE_HOLD_VALIDATION_FAILED:
+    "The compliance hold request is invalid. Please review the target, reason code, and required fields.",
+  COMPLIANCE_HOLD_RELEASE_UNAUTHORIZED:
+    "This hold cannot be released without a valid authorization token identifying who is releasing it.",
+  REVISION_APPROVED_EDIT_BLOCKED:
+    "This revision is already approved and can no longer be edited. Create a new revision to make further changes.",
+  REVISION_ALREADY_APPROVED:
+    "This revision is already approved. Pass { allowReapproval: true } to re-approve it intentionally.",
+  REVISION_VALIDATION_FAILED:
+    "The revision request is invalid. Please review the required identifiers and approver.",
+  EMPLOYEE_ELIGIBILITY_VALIDATION_FAILED:
+    "The employee eligibility request is invalid. Please review the employee address, status, and compliance hold inputs.",
 };
 
 /** Custom message overrides keyed by error code. */
@@ -431,28 +428,6 @@ const SENSITIVE_PATTERNS: RegExp[] = [
   /signingKey\s*[:=]\s*\S+/gi,
 ];
 
-function sanitizeContextValue(
-  value: unknown,
-  sensitiveKeys: ReadonlySet<string>,
-  placeholder: string,
-): unknown {
-  if (Array.isArray(value)) {
-    return value.map((item) => sanitizeContextValue(item, sensitiveKeys, placeholder));
-  }
-
-  if (value && typeof value === "object") {
-    const sanitized: Record<string, unknown> = {};
-    for (const [key, nestedValue] of Object.entries(value)) {
-      sanitized[key] = sensitiveKeys.has(key)
-        ? placeholder
-        : sanitizeContextValue(nestedValue, sensitiveKeys, placeholder);
-    }
-    return sanitized;
-  }
-
-  return value;
-}
-
 /**
  * A formatted error ready for logging or display in dashboards.
  *
@@ -479,7 +454,6 @@ const CATEGORY_MAP: Record<string, string> = {
   RPC_TIMEOUT: "Network",
   INSUFFICIENT_FEE: "Fee",
   CONTRACT_REVERT: "Contract",
-  CONTRACT_PAUSED: "Contract",
   INVALID_RESPONSE: "Network",
   UNKNOWN_RPC_ERROR: "Unknown",
   NETWORK_ERROR: "Network",
@@ -507,10 +481,14 @@ const CATEGORY_MAP: Record<string, string> = {
   PROOF_INPUT_FORBIDDEN_FIELD: "Proof Generation",
   PROOF_INPUT_MISSING_REQUIRED_FIELD: "Proof Generation",
   PROOF_INPUT_INVALID: "Proof Generation",
-  PROOF_INPUT_TOO_LARGE: "Proof Generation",
   RECONCILIATION_DIFF_FAILED: "Reconciliation",
   RECONCILIATION_UNEXPECTED_ACTIVITY: "Reconciliation",
-  AUDIT_ACCESS_REQUEST_VALIDATION_FAILED: "Audit",
+  COMPLIANCE_HOLD_VALIDATION_FAILED: "Compliance",
+  COMPLIANCE_HOLD_RELEASE_UNAUTHORIZED: "Compliance",
+  REVISION_APPROVED_EDIT_BLOCKED: "Revision",
+  REVISION_ALREADY_APPROVED: "Revision",
+  REVISION_VALIDATION_FAILED: "Revision",
+  EMPLOYEE_ELIGIBILITY_VALIDATION_FAILED: "Employee",
 };
 
 const RETRYABLE_CODES = new Set<string>(
@@ -584,11 +562,14 @@ export function formatRedactedError(error: unknown, placeholder = "[redacted]"):
     "refresh_token",
     "signingKey",
   ]);
-  const sanitizedContext = sanitizeContextValue(
-    context,
-    sensitiveKeys,
-    placeholder,
-  ) as Record<string, unknown>;
+  const sanitizedContext: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(context)) {
+    if (sensitiveKeys.has(key)) {
+      sanitizedContext[key] = placeholder;
+    } else {
+      sanitizedContext[key] = value;
+    }
+  }
 
   const category = CATEGORY_MAP[code] ?? "Unknown";
   const retryable = RETRYABLE_CODES.has(code as ContractErrorCodeType);
@@ -658,16 +639,6 @@ export function mapRpcError(error: unknown, context: ErrorContext = {}): Contrac
     );
   }
 
-  if (/contract.*paus|CONTRACT_PAUSED|ContractPaused|payroll.*paus|payments?.*paus/i.test(msg)) {
-    return new ContractExecutionError(
-      DEFAULT_ERROR_MESSAGES[ContractErrorCode.CONTRACT_PAUSED] ??
-        "The payroll contract is currently paused.",
-      ContractErrorCode.CONTRACT_PAUSED,
-      context,
-      cause
-    );
-  }
-
   if (/revert|trap|wasm/i.test(msg)) {
     return new ContractExecutionError(
       `Contract reverted: ${msg}`,
@@ -693,4 +664,3 @@ export function mapRpcError(error: unknown, context: ErrorContext = {}): Contrac
     cause
   );
 }
-
