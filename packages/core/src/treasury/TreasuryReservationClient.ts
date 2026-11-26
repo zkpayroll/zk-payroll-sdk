@@ -28,6 +28,8 @@ import {
   ReserveReductionAuthorizationContext,
 } from "./types";
 import { assertReserveReductionAuthorized } from "./authorization";
+import { ValidationError } from "../core/errors";
+import { getSupportedAssets, checkAssetAvailability } from "../assets/supportedAssets";
 
 /**
  * TreasuryReservationClient provides contract methods for managing
@@ -44,10 +46,16 @@ import { assertReserveReductionAuthorized } from "./authorization";
  */
 export class TreasuryReservationClient extends BaseContractWrapper {
   private readonly networkPassphrase: string;
+  private readonly supportedAssetsFetcher?: () => Promise<unknown>;
 
-  constructor(server: rpc.Server, contractId: string, options?: ClientOptions) {
+  constructor(
+    server: rpc.Server,
+    contractId: string,
+    options?: ClientOptions & { supportedAssetsFetcher?: () => Promise<unknown> }
+  ) {
     super(server, contractId);
     this.networkPassphrase = options?.networkPassphrase ?? Networks.TESTNET;
+    this.supportedAssetsFetcher = options?.supportedAssetsFetcher;
   }
 
   /**
@@ -73,7 +81,8 @@ export class TreasuryReservationClient extends BaseContractWrapper {
     request: ReserveRequest,
     signer: Keypair | ISigner,
     network?: string
-  ): Promise<ReserveResponse> {
+ ): Promise<ReserveResponse> {
+    await this.assertAssetKnown(request.asset);
     const args: xdr.ScVal[] = [
       new Address(request.employer).toScVal(),
       nativeToScVal(request.amount, { type: "i128" }),
@@ -144,7 +153,7 @@ export class TreasuryReservationClient extends BaseContractWrapper {
     signer: Keypair | ISigner,
     authorizationContext: ReserveReductionAuthorizationContext,
     network?: string
-  ): Promise<ReleaseReservationResponse> {
+   ): Promise<ReleaseReservationResponse> {
     await assertReserveReductionAuthorized(signer, authorizationContext);
     const args: xdr.ScVal[] = [
       nativeToScVal(request.reservationId, { type: "string" }),
@@ -364,6 +373,26 @@ export class TreasuryReservationClient extends BaseContractWrapper {
   // Private helper methods
   // ──────────────────────────────────────────────────────────────────────
 
+private async assertAssetKnown(asset: string): Promise<void> {
+    if (!this.supportedAssetsFetcher) return;
+
+    const assets = await getSupportedAssets(this.supportedAssetsFetcher);
+    const input = asset.trim();
+
+    const byContract = assets.find((a) => a.contractId !== null && a.contractId === input);
+    const symbol = byContract ? byContract.symbol : input.toLowerCase() === "native" ? "XLM" : input;
+
+    const result = checkAssetAvailability(symbol, assets);
+    if (!result.available) {
+      throw new ValidationError(
+        result.reason ?? "Asset is not available for treasury reservation.",
+        "asset",
+        "VALIDATION_ERROR",
+        { code: result.code }
+      );
+    }
+  }
+    
   private decodeReservation(scVal: xdr.ScVal): FundingReservation {
     const map = scVal.map();
     if (!map) {
